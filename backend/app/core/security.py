@@ -1,4 +1,5 @@
-"""JWT validation and tenant extraction from Supabase Auth tokens."""
+"""JWT validation and tenant extraction from Supabase Auth tokens (ES256 / ECC P-256)."""
+import json
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -8,6 +9,17 @@ from jose import JWTError, jwt
 from app.core.config import settings
 
 _bearer = HTTPBearer()
+
+# Parse the JWK once at startup — avoids re-parsing on every request
+_PUBLIC_KEY: dict = {}
+
+
+def _get_public_key() -> dict:
+    """Return the parsed EC public JWK, loading it once from settings."""
+    global _PUBLIC_KEY
+    if not _PUBLIC_KEY:
+        _PUBLIC_KEY = json.loads(settings.supabase_jwt_jwk)
+    return _PUBLIC_KEY
 
 
 class TenantContext:
@@ -21,11 +33,11 @@ class TenantContext:
 def get_current_tenant(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
 ) -> TenantContext:
-    """FastAPI dependency: validate Supabase JWT and extract tenant_id.
+    """FastAPI dependency: validate Supabase JWT (ES256) and extract tenant_id.
 
-    Supabase JWTs store the user UUID in 'sub'. The tenant_id is stored
-    in 'app_metadata.tenant_id', populated by a database trigger when
-    the tenant row is created during onboarding.
+    Supabase projects with ECC P-256 sign tokens using ES256.
+    The public JWK is stored in SUPABASE_JWT_JWK env var and used for
+    signature verification only — no shared secret needed.
 
     Args:
         credentials: Bearer token from Authorization header.
@@ -44,8 +56,8 @@ def get_current_tenant(
     try:
         payload = jwt.decode(
             credentials.credentials,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            _get_public_key(),
+            algorithms=["ES256"],
             options={"verify_aud": False},  # Supabase tokens omit aud claim
         )
         user_id: str = payload.get("sub", "")

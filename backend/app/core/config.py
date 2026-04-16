@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str
     supabase_service_key: str
-    supabase_jwt_secret: str
+    supabase_jwt_jwk: str  # JSON string del JWK EC público — Settings → API → JWT Settings → JWKS
     supabase_database_url: str  # postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres
 
     # App
