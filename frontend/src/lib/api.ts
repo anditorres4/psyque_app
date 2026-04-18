@@ -110,6 +110,63 @@ export interface PatientCreatePayload {
   consent_accepted: boolean;
 }
 
+// --- Appointments -----------------------------------------------------------
+
+export type SessionType = "individual" | "couple" | "family" | "followup";
+export type Modality = "presential" | "virtual";
+export type AppointmentStatus = "scheduled" | "completed" | "cancelled" | "noshow";
+export type CancelledBy = "psychologist" | "patient";
+
+export interface AppointmentSummary {
+  id: string;
+  patient_id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  session_type: SessionType;
+  modality: Modality;
+  status: AppointmentStatus;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface AppointmentDetail extends AppointmentSummary {
+  cancellation_reason: string | null;
+  cancelled_by: CancelledBy | null;
+  reminder_sent_48h: boolean;
+  reminder_sent_2h: boolean;
+  updated_at: string;
+}
+
+export interface PaginatedAppointments {
+  items: AppointmentSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface AppointmentCreatePayload {
+  patient_id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  session_type: SessionType;
+  modality: Modality;
+  notes?: string;
+}
+
+export interface AppointmentUpdatePayload {
+  scheduled_start?: string;
+  scheduled_end?: string;
+  session_type?: SessionType;
+  modality?: Modality;
+  notes?: string;
+}
+
+export interface CancelPayload {
+  cancelled_by: CancelledBy;
+  cancellation_reason: string;
+}
+
 export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
@@ -136,5 +193,25 @@ export const api = {
       request<PatientDetail>("GET", `/patients/${id}`),
     update: (id: string, body: Partial<PatientCreatePayload>) =>
       request<PatientDetail>("PUT", `/patients/${id}`, body),
+  },
+  appointments: {
+    listByRange: (start: string, end: string) =>
+      request<AppointmentSummary[]>("GET", `/appointments/range?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`),
+    list: (params?: { page?: number; page_size?: number; patient_id?: string; status?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.page) q.set("page", String(params.page));
+      if (params?.page_size) q.set("page_size", String(params.page_size));
+      if (params?.patient_id) q.set("patient_id", params.patient_id);
+      if (params?.status) q.set("status", params.status);
+      return request<PaginatedAppointments>("GET", `/appointments?${q}`);
+    },
+    create: (body: AppointmentCreatePayload) =>
+      request<AppointmentDetail>("POST", "/appointments", body),
+    get: (id: string) =>
+      request<AppointmentDetail>("GET", `/appointments/${id}`),
+    update: (id: string, body: AppointmentUpdatePayload) =>
+      request<AppointmentDetail>("PUT", `/appointments/${id}`, body),
+    cancel: (id: string, body: CancelPayload) =>
+      request<AppointmentDetail>("POST", `/appointments/${id}/cancel`, body),
   },
 };
