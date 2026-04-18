@@ -41,7 +41,7 @@ class AppointmentService:
             self.db.query(Appointment)
             .filter(
                 Appointment.tenant_id == uuid.UUID(self.tenant_id),
-                Appointment.status.in_(["scheduled", "completed"]),
+                Appointment.status.in_(["scheduled"]),
                 Appointment.scheduled_start < end,
                 Appointment.scheduled_end > start,
             )
@@ -80,9 +80,9 @@ class AppointmentService:
         return appt
 
     def get_by_id(self, appointment_id: str) -> Appointment:
-        """Fetch appointment by UUID. Raises AppointmentNotFoundError if missing."""
+        """Fetch appointment by UUID. Raises AppointmentNotFoundError if missing or wrong tenant."""
         appt = self.db.get(Appointment, uuid.UUID(appointment_id))
-        if not appt:
+        if not appt or appt.tenant_id != uuid.UUID(self.tenant_id):
             raise AppointmentNotFoundError(f"Cita {appointment_id} no encontrada.")
         return appt
 
