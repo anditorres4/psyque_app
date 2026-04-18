@@ -22,6 +22,13 @@ export function useAppointment(id: string) {
   });
 }
 
+export function useAppointments(params?: { page?: number; page_size?: number; patient_id?: string; status?: string }) {
+  return useQuery({
+    queryKey: ["appointments", "list", params],
+    queryFn: () => api.appointments.list(params),
+  });
+}
+
 export function useCreateAppointment() {
   const qc = useQueryClient();
   return useMutation({
