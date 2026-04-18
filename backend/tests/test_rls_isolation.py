@@ -23,6 +23,9 @@ def test_tenant_a_cannot_read_tenant_b_patient(two_tenants: dict, db: Session) -
     tenant_a_id = two_tenants["tenant_a"]["id"]
     patient_b_id = two_tenants["patient_b_id"]
 
+    # Switch to non-superuser role so RLS policies are enforced.
+    # postgres is a superuser and bypasses RLS even with FORCE ROW LEVEL SECURITY.
+    db.execute(text("SET LOCAL ROLE authenticated"))
     db.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_a_id})
 
     result = db.execute(
@@ -41,6 +44,7 @@ def test_tenant_a_can_read_own_patient(two_tenants: dict, db: Session) -> None:
     tenant_a_id = two_tenants["tenant_a"]["id"]
     patient_a_id = two_tenants["patient_a_id"]
 
+    db.execute(text("SET LOCAL ROLE authenticated"))
     db.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_a_id})
 
     result = db.execute(
@@ -59,6 +63,7 @@ def test_tenant_b_cannot_read_tenant_a_patient(two_tenants: dict, db: Session) -
     tenant_b_id = two_tenants["tenant_b"]["id"]
     patient_a_id = two_tenants["patient_a_id"]
 
+    db.execute(text("SET LOCAL ROLE authenticated"))
     db.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_b_id})
 
     result = db.execute(
@@ -74,6 +79,7 @@ def test_tenant_b_cannot_read_tenant_a_patient(two_tenants: dict, db: Session) -
 
 def test_no_tenant_context_returns_empty(two_tenants: dict, db: Session) -> None:
     """Sin contexto de tenant, la tabla patients devuelve cero registros."""
+    db.execute(text("SET LOCAL ROLE authenticated"))
     # RESET elimina la variable de sesión — simula request sin autenticación
     db.execute(text("RESET app.tenant_id"))
 
@@ -90,6 +96,7 @@ def test_rls_prevents_cross_tenant_write(two_tenants: dict, db: Session) -> None
     tenant_a_id = two_tenants["tenant_a"]["id"]
     tenant_b_id = two_tenants["tenant_b"]["id"]
 
+    db.execute(text("SET LOCAL ROLE authenticated"))
     db.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_a_id})
 
     with pytest.raises(DBAPIError):
@@ -116,6 +123,7 @@ def test_tenant_list_only_shows_own_patients(two_tenants: dict, db: Session) -> 
     """SELECT * FROM patients solo retorna los pacientes del tenant activo."""
     tenant_a_id = two_tenants["tenant_a"]["id"]
 
+    db.execute(text("SET LOCAL ROLE authenticated"))
     db.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_a_id})
 
     rows = db.execute(text("SELECT tenant_id FROM patients")).mappings().fetchall()

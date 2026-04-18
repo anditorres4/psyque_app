@@ -2,12 +2,14 @@
  * PatientForm — RF-PAC-01 complete patient registration form.
  * Used for both create and edit. In edit mode, immutable fields are readonly.
  */
-import { useForm } from "react-hook-form";
+import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MUNICIPIOS } from "@/data/municipios";
 import type { PatientCreatePayload, PatientDetail } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
@@ -26,7 +28,7 @@ const patientSchema = z.object({
   marital_status: z.enum(["S", "C", "U", "D", "V", "SE"]),
   occupation: z.string().min(1, "Requerido").max(150),
   address: z.string().min(5, "Dirección completa requerida"),
-  municipality_dane: z.string().min(5, "Código DANE requerido").max(10),
+  municipality_dane: z.string().min(5, "Selecciona un municipio").max(10),
   zone: z.enum(["U", "R"]),
   phone: z.string().min(7, "Teléfono inválido").max(20),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
@@ -50,6 +52,9 @@ interface PatientFormProps {
   isSubmitting?: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Field wrapper
+// ---------------------------------------------------------------------------
 function Field({
   label,
   error,
@@ -77,15 +82,19 @@ function Field({
   );
 }
 
-function Select({
-  options,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & {
-  options: { value: string; label: string }[];
-}) {
+// ---------------------------------------------------------------------------
+// Select — uses forwardRef so React Hook Form can register the DOM element
+// ---------------------------------------------------------------------------
+const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement> & {
+    options: { value: string; label: string }[];
+  }
+>(function Select({ options, className, ...props }, ref) {
   return (
     <select
-      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      ref={ref}
+      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
       {...props}
     >
       {options.map((o) => (
@@ -95,8 +104,88 @@ function Select({
       ))}
     </select>
   );
+});
+
+// ---------------------------------------------------------------------------
+// MunicipioCombobox — searchable dropdown for DANE municipality codes
+// ---------------------------------------------------------------------------
+function MunicipioCombobox({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+  disabled?: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const selected = MUNICIPIOS.find((m) => m.code === value);
+  const displayText = selected
+    ? `${selected.name} — ${selected.dept} (${selected.code})`
+    : value || "";
+
+  const filtered =
+    search.length >= 2
+      ? MUNICIPIOS.filter(
+          (m) =>
+            m.name.toLowerCase().includes(search.toLowerCase()) ||
+            m.dept.toLowerCase().includes(search.toLowerCase()) ||
+            m.code.includes(search)
+        ).slice(0, 8)
+      : [];
+
+  return (
+    <div className="relative">
+      <Input
+        value={open ? search : displayText}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setOpen(true);
+          onChange("");
+        }}
+        onFocus={() => {
+          setSearch("");
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        placeholder="Buscar por nombre o código DANE..."
+        disabled={disabled}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-input rounded-md shadow-lg mt-1 max-h-52 overflow-y-auto">
+          {filtered.map((m) => (
+            <li key={m.code}>
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-baseline gap-2"
+                onMouseDown={() => {
+                  onChange(m.code);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                <span className="font-mono text-xs text-muted-foreground shrink-0">
+                  {m.code}
+                </span>
+                <span className="font-medium">{m.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  — {m.dept}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
+// ---------------------------------------------------------------------------
+// PatientForm
+// ---------------------------------------------------------------------------
 export function PatientForm({
   onSubmit,
   defaultValues,
@@ -107,6 +196,7 @@ export function PatientForm({
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
   } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
@@ -255,10 +345,20 @@ export function PatientForm({
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Dirección completa" error={errors.address?.message} required>
-            <Input {...register("address")} placeholder="Calle 1 # 2-3, Bogotá" className="col-span-2" />
+            <Input {...register("address")} placeholder="Calle 1 # 2-3, Bogotá" />
           </Field>
-          <Field label="Código DANE del municipio" error={errors.municipality_dane?.message} required>
-            <Input {...register("municipality_dane")} placeholder="11001 (Bogotá)" />
+          <Field label="Municipio" error={errors.municipality_dane?.message} required>
+            <Controller
+              name="municipality_dane"
+              control={control}
+              render={({ field }) => (
+                <MunicipioCombobox
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={isEdit}
+                />
+              )}
+            />
           </Field>
           <Field label="Zona" error={errors.zone?.message} required>
             <Select

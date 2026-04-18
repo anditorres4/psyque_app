@@ -6,6 +6,8 @@ import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type PatientCreatePayload, ApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { api as rawApi } from "@/lib/api";
 
 const PAGE_SIZE = 20;
 
@@ -18,7 +20,23 @@ export function PatientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = usePatients({
+  const [settingUp, setSettingUp] = useState(false);
+  const [setupDone, setSetupDone] = useState(false);
+
+  const handleSetup = async () => {
+    setSettingUp(true);
+    try {
+      await rawApi.auth.setupProfile();
+      // Force Supabase to issue a new JWT with the tenant_id now set in app_metadata
+      await supabase.auth.refreshSession();
+      setSetupDone(true);
+      window.location.reload();
+    } catch {
+      setSettingUp(false);
+    }
+  };
+
+  const { data, isLoading, isError, error } = usePatients({
     page,
     page_size: PAGE_SIZE,
     search: search.length >= 2 ? search : undefined,
@@ -130,8 +148,26 @@ export function PatientsPage() {
         <div className="text-center py-12 text-muted-foreground">Cargando pacientes...</div>
       )}
       {isError && (
-        <div className="text-center py-12 text-[#E74C3C]">
-          Error al cargar pacientes. Verifica tu conexión.
+        <div className="text-center py-12">
+          {error instanceof ApiError && error.status === 401 ? (
+            <div className="max-w-sm mx-auto space-y-3">
+              <p className="text-[#1E3A5F] font-medium">Tu cuenta aún no está configurada</p>
+              <p className="text-sm text-muted-foreground">
+                Necesitas activar tu perfil profesional para empezar a registrar pacientes.
+              </p>
+              <Button
+                className="bg-[#2E86AB] hover:bg-[#1E3A5F]"
+                onClick={handleSetup}
+                disabled={settingUp || setupDone}
+              >
+                {settingUp ? "Configurando..." : "Activar mi cuenta"}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-[#E74C3C]">
+              Error al cargar pacientes. Verifica tu conexión.
+            </p>
+          )}
         </div>
       )}
       {data && data.items.length === 0 && (

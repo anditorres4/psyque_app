@@ -111,6 +111,9 @@ export interface PatientCreatePayload {
 }
 
 export const api = {
+  auth: {
+    setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
+  },
   patients: {
     list: (params?: {
       page?: number;

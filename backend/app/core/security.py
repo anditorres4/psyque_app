@@ -22,6 +22,43 @@ def _get_public_key() -> dict:
     return _PUBLIC_KEY
 
 
+class AuthUser:
+    """Authenticated user — JWT is valid but tenant may not be configured yet."""
+
+    def __init__(self, user_id: str, user_metadata: dict) -> None:
+        self.user_id = user_id
+        self.user_metadata = user_metadata
+
+
+def get_auth_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
+) -> "AuthUser":
+    """FastAPI dependency: validate JWT and return user without requiring tenant_id.
+
+    Use this for endpoints that must work before the tenant profile is configured
+    (e.g. POST /auth/setup-profile).
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido o expirado",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            _get_public_key(),
+            algorithms=["ES256"],
+            options={"verify_aud": False},
+        )
+        user_id: str = payload.get("sub", "")
+        if not user_id:
+            raise credentials_exception
+        user_metadata: dict = payload.get("user_metadata", {})
+    except JWTError:
+        raise credentials_exception
+    return AuthUser(user_id=user_id, user_metadata=user_metadata)
+
+
 class TenantContext:
     """Holds the authenticated tenant's identity extracted from JWT."""
 
