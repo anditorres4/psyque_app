@@ -34,7 +34,7 @@ class Appointment(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         sa.Enum("scheduled", "completed", "cancelled", "noshow", name="appointment_status"),
         nullable=False,
-        server_default="scheduled",
+        server_default=sa.text("'scheduled'"),
     )
     cancellation_reason: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     cancelled_by: Mapped[str | None] = mapped_column(
