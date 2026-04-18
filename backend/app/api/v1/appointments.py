@@ -23,7 +23,7 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
 def _service(ctx: TenantDB) -> AppointmentService:
-    return AppointmentService(ctx.db, str(ctx.tenant.tenant_id))
+    return AppointmentService(ctx.db, ctx.tenant.tenant_id)
 
 
 @router.get("", response_model=PaginatedAppointments)
@@ -42,16 +42,11 @@ def list_appointments(
 @router.get("/range", response_model=list[AppointmentSummary])
 def list_appointments_by_range(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
-    start: str = Query(..., description="ISO datetime (UTC)"),
-    end: str = Query(..., description="ISO datetime (UTC)"),
+    start: datetime = Query(..., description="ISO datetime (UTC)"),
+    end: datetime = Query(..., description="ISO datetime (UTC)"),
 ) -> list[AppointmentSummary]:
     """Return appointments overlapping a datetime range. Used by FullCalendar."""
-    try:
-        dt_start = datetime.fromisoformat(start)
-        dt_end = datetime.fromisoformat(end)
-    except ValueError:
-        raise HTTPException(status_code=422, detail="start and end must be ISO datetime strings")
-    appts = _service(ctx).list_by_range(start=dt_start, end=dt_end)
+    appts = _service(ctx).list_by_range(start=start, end=end)
     return [AppointmentSummary.model_validate(a) for a in appts]
 
 
@@ -77,7 +72,7 @@ def get_appointment(
     try:
         return AppointmentDetail.model_validate(_service(ctx).get_by_id(appointment_id))
     except AppointmentNotFoundError:
-        raise HTTPException(status_code=404, detail="Cita no encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
 
 
 @router.put("/{appointment_id}", response_model=AppointmentDetail)
@@ -92,9 +87,9 @@ def update_appointment(
         ctx.db.refresh(appt)
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
-        raise HTTPException(status_code=404, detail="Cita no encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
     except AppointmentConflictError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentDetail)
@@ -113,6 +108,6 @@ def cancel_appointment(
         ctx.db.refresh(appt)
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
-        raise HTTPException(status_code=404, detail="Cita no encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
