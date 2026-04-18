@@ -44,6 +44,11 @@ class AppointmentUpdate(BaseModel):
         if self.scheduled_start and self.scheduled_end:
             if self.scheduled_end <= self.scheduled_start:
                 raise ValueError("scheduled_end must be after scheduled_start")
+            duration = (self.scheduled_end - self.scheduled_start).total_seconds() / 60
+            if duration < 15:
+                raise ValueError("Appointment must be at least 15 minutes long")
+            if duration > 180:
+                raise ValueError("Appointment cannot exceed 3 hours")
         return self
 
 
