@@ -167,6 +167,15 @@ export interface CancelPayload {
   cancellation_reason: string;
 }
 
+// --- Dashboard ---------------------------------------------------------------
+
+export interface DashboardStats {
+  appointments_today: number;
+  pending_to_close: number;
+  attendance_rate_30d: number | null;
+  upcoming: AppointmentSummary[];
+}
+
 export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
@@ -213,5 +222,8 @@ export const api = {
       request<AppointmentDetail>("PUT", `/appointments/${id}`, body),
     cancel: (id: string, body: CancelPayload) =>
       request<AppointmentDetail>("POST", `/appointments/${id}/cancel`, body),
+  },
+  dashboard: {
+    getStats: () => request<DashboardStats>("GET", "/dashboard/stats"),
   },
 };
