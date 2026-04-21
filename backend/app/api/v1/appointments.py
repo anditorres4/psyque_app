@@ -111,3 +111,35 @@ def cancel_appointment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.post("/{appointment_id}/complete", response_model=AppointmentDetail)
+def complete_appointment(
+    appointment_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> AppointmentDetail:
+    try:
+        appt = _service(ctx).complete(appointment_id)
+        ctx.db.commit()
+        ctx.db.refresh(appt)
+        return AppointmentDetail.model_validate(appt)
+    except AppointmentNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.post("/{appointment_id}/noshow", response_model=AppointmentDetail)
+def noshow_appointment(
+    appointment_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> AppointmentDetail:
+    try:
+        appt = _service(ctx).mark_noshow(appointment_id)
+        ctx.db.commit()
+        ctx.db.refresh(appt)
+        return AppointmentDetail.model_validate(appt)
+    except AppointmentNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
