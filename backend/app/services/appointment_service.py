@@ -173,3 +173,27 @@ class AppointmentService:
         self.db.flush()
         self.db.refresh(appt)
         return appt
+
+    def complete(self, appointment_id: str) -> Appointment:
+        """Mark appointment as completed. Raises ValueError if not scheduled."""
+        appt = self.get_by_id(appointment_id)
+        if appt.status != "scheduled":
+            raise ValueError(
+                f"Solo se pueden completar citas en estado 'scheduled'. Estado actual: {appt.status}"
+            )
+        appt.status = "completed"
+        self.db.flush()
+        self.db.refresh(appt)
+        return appt
+
+    def mark_noshow(self, appointment_id: str) -> Appointment:
+        """Mark appointment as noshow. Raises ValueError if not scheduled."""
+        appt = self.get_by_id(appointment_id)
+        if appt.status != "scheduled":
+            raise ValueError(
+                f"Solo se pueden marcar como no-show citas en estado 'scheduled'. Estado actual: {appt.status}"
+            )
+        appt.status = "noshow"
+        self.db.flush()
+        self.db.refresh(appt)
+        return appt

@@ -172,3 +172,57 @@ def test_list_by_range_returns_only_range(svc):
         (a.scheduled_start.replace(tzinfo=None) if a.scheduled_start.tzinfo else a.scheduled_start) == ts_naive
         for a in results
     )
+
+
+def test_complete_changes_status_to_completed(svc):
+    appt = svc.create({
+        "patient_id": PATIENT_ID,
+        "scheduled_start": _dt(10),
+        "scheduled_end": _dt(11),
+        "session_type": "individual",
+        "modality": "presential",
+        "notes": None,
+    })
+    result = svc.complete(str(appt.id))
+    assert result.status == "completed"
+
+
+def test_complete_raises_if_not_scheduled(svc):
+    appt = svc.create({
+        "patient_id": PATIENT_ID,
+        "scheduled_start": _dt(11),
+        "scheduled_end": _dt(12),
+        "session_type": "individual",
+        "modality": "presential",
+        "notes": None,
+    })
+    svc.cancel(str(appt.id), cancelled_by="psychologist", reason="Test cancel")
+    with pytest.raises(ValueError, match="Solo se pueden completar"):
+        svc.complete(str(appt.id))
+
+
+def test_mark_noshow_changes_status(svc):
+    appt = svc.create({
+        "patient_id": PATIENT_ID,
+        "scheduled_start": _dt(12),
+        "scheduled_end": _dt(13),
+        "session_type": "followup",
+        "modality": "virtual",
+        "notes": None,
+    })
+    result = svc.mark_noshow(str(appt.id))
+    assert result.status == "noshow"
+
+
+def test_mark_noshow_raises_if_not_scheduled(svc):
+    appt = svc.create({
+        "patient_id": PATIENT_ID,
+        "scheduled_start": _dt(13),
+        "scheduled_end": _dt(14),
+        "session_type": "couple",
+        "modality": "presential",
+        "notes": None,
+    })
+    svc.complete(str(appt.id))
+    with pytest.raises(ValueError, match="Solo se pueden marcar"):
+        svc.mark_noshow(str(appt.id))
