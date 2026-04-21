@@ -191,6 +191,7 @@ class SessionService:
             session_id=sess.id,
             content=content,
             note_hash=note_hash,
+            created_at=created_at,
         )
         self.db.add(note)
         self.db.flush()

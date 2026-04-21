@@ -163,6 +163,23 @@ def test_list_by_patient_returns_sessions(svc):
     assert all(str(r.patient_id) == fresh_patient for r in results)
 
 
+def test_list_by_patient_filters_by_status(svc):
+    fresh_patient = str(uuid.uuid4())
+    data = _session_data()
+    data["patient_id"] = fresh_patient
+    draft_sess = svc.create(data)
+
+    data2 = _session_data()
+    data2["patient_id"] = fresh_patient
+    signed_sess = svc.create(data2)
+    svc.sign(str(signed_sess.id))
+
+    signed_results = svc.list_by_patient(fresh_patient, status="signed")
+    assert all(r.status == "signed" for r in signed_results)
+    assert str(signed_sess.id) in [str(r.id) for r in signed_results]
+    assert str(draft_sess.id) not in [str(r.id) for r in signed_results]
+
+
 def test_list_paginated_filters_by_status(svc):
     fresh_patient = str(uuid.uuid4())
     data = _session_data()
