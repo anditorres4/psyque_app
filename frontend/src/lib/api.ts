@@ -176,6 +176,82 @@ export interface DashboardStats {
   upcoming: AppointmentSummary[];
 }
 
+// --- Sessions ----------------------------------------------------------------
+
+export type SessionStatus = "draft" | "signed";
+
+export interface SessionSummary {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  actual_start: string;
+  actual_end: string;
+  diagnosis_cie11: string;
+  cups_code: string;
+  session_fee: number;
+  status: SessionStatus;
+  created_at: string;
+}
+
+export interface SessionDetail extends SessionSummary {
+  diagnosis_description: string;
+  consultation_reason: string;
+  intervention: string;
+  evolution: string | null;
+  next_session_plan: string | null;
+  authorization_number: string | null;
+  session_hash: string | null;
+  signed_at: string | null;
+  rips_included: boolean;
+  updated_at: string;
+}
+
+export interface PaginatedSessions {
+  items: SessionSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface SessionCreatePayload {
+  appointment_id: string;
+  patient_id: string;
+  actual_start: string;
+  actual_end: string;
+  diagnosis_cie11: string;
+  diagnosis_description: string;
+  cups_code: string;
+  consultation_reason: string;
+  intervention: string;
+  evolution?: string;
+  next_session_plan?: string;
+  session_fee: number;
+  authorization_number?: string;
+}
+
+export interface SessionUpdatePayload {
+  actual_start?: string;
+  actual_end?: string;
+  diagnosis_cie11?: string;
+  diagnosis_description?: string;
+  cups_code?: string;
+  consultation_reason?: string;
+  intervention?: string;
+  evolution?: string;
+  next_session_plan?: string;
+  session_fee?: number;
+  authorization_number?: string;
+}
+
+export interface SessionNoteDetail {
+  id: string;
+  session_id: string;
+  content: string;
+  note_hash: string;
+  created_at: string;
+}
+
 export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
@@ -225,5 +301,33 @@ export const api = {
   },
   dashboard: {
     getStats: () => request<DashboardStats>("GET", "/dashboard/stats"),
+  },
+  sessions: {
+    list: (params?: { page?: number; page_size?: number; patient_id?: string; status?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.page) q.set("page", String(params.page));
+      if (params?.page_size) q.set("page_size", String(params.page_size));
+      if (params?.patient_id) q.set("patient_id", params.patient_id);
+      if (params?.status) q.set("status", params.status);
+      return request<PaginatedSessions>("GET", `/sessions?${q}`);
+    },
+    create: (body: SessionCreatePayload) =>
+      request<SessionDetail>("POST", "/sessions", body),
+    get: (id: string) =>
+      request<SessionDetail>("GET", `/sessions/${id}`),
+    update: (id: string, body: SessionUpdatePayload) =>
+      request<SessionDetail>("PUT", `/sessions/${id}`, body),
+    sign: (id: string) =>
+      request<SessionDetail>("POST", `/sessions/${id}/sign`),
+    addNote: (id: string, content: string) =>
+      request<SessionNoteDetail>("POST", `/sessions/${id}/notes`, { content }),
+    listNotes: (id: string) =>
+      request<SessionNoteDetail[]>("GET", `/sessions/${id}/notes`),
+  },
+  appointments_status: {
+    complete: (id: string) =>
+      request<AppointmentDetail>("POST", `/appointments/${id}/complete`),
+    noshow: (id: string) =>
+      request<AppointmentDetail>("POST", `/appointments/${id}/noshow`),
   },
 };
