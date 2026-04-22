@@ -100,7 +100,7 @@ export function SessionDetail({ sessionId, onBack }: Props) {
           <Field label="Intervención realizada" value={sess.intervention} />
           <Field label="Evolución" value={sess.evolution} />
           <Field label="Plan próxima sesión" value={sess.next_session_plan} />
-          <Field label="Valor sesión" value={`$${sess.session_fee.toLocaleString("es-CO")} COP`} />
+          <Field label="Valor sesión" value={`$${Number(sess.session_fee).toLocaleString("es-CO")} COP`} />
           <Field label="N° autorización" value={sess.authorization_number} />
         </dl>
 
