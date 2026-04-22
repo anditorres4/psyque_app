@@ -1,7 +1,9 @@
 """Patients router — RF-PAC-01, RF-PAC-02, RF-PAC-03 from PRD §7.1."""
 from typing import Annotated
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_tenant_db, TenantDB
 from app.schemas.patient import (
@@ -11,11 +13,16 @@ from app.schemas.patient import (
     PatientSummary,
     PatientUpdate,
 )
+from app.schemas.session import SessionSummary
+from app.schemas.appointment import AppointmentSummary
 from app.services.patient_service import (
     DuplicateDocumentError,
     PatientNotFoundError,
     PatientService,
 )
+from app.services.history_pdf_service import HistoryPDFService
+from app.services.session_service import SessionService
+from app.services.appointment_service import AppointmentService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -127,34 +134,65 @@ def update_patient(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
 
 
-@router.get("/{patient_id}/sessions", response_model=list[dict])
+@router.get("/{patient_id}/sessions", response_model=list[SessionSummary])
 def get_patient_sessions(
     patient_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
     page: int = Query(1, ge=1),
-) -> list[dict]:
+    page_size: int = Query(20, ge=1, le=100),
+) -> list[SessionSummary]:
     """List clinical sessions for a patient.
 
-    Sessions module (Sprint 5) will replace this stub with full SessionSummary.
+    Returns:
+        List of SessionSummary ordered by date (newest first).
     """
     try:
         _service(ctx).get_by_id(patient_id)
     except PatientNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
-    return []
+    return SessionService(ctx.db, ctx.tenant.tenant_id).list_paginated(
+        page=page, page_size=page_size, patient_id=patient_id
+    ).items
 
 
-@router.get("/{patient_id}/appointments", response_model=list[dict])
+@router.get("/{patient_id}/appointments", response_model=list[AppointmentSummary])
 def get_patient_appointments(
     patient_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
-) -> list[dict]:
+) -> list[AppointmentSummary]:
     """List appointments for a patient.
 
-    Appointments module (Sprint 3) will replace this stub.
+    Returns:
+        List of AppointmentSummary ordered by scheduled_start.
     """
     try:
         _service(ctx).get_by_id(patient_id)
     except PatientNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
-    return []
+    return AppointmentService(ctx.db, ctx.tenant.tenant_id).list_by_patient(patient_id)
+
+
+@router.get("/{patient_id}/history-export")
+def export_patient_history(
+    patient_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> StreamingResponse:
+    """Generate and download clinical history PDF (Res. 1995/1999 Art. 15)."""
+    try:
+        _service(ctx).get_by_id(patient_id)
+    except PatientNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
+
+    try:
+        pdf_bytes = HistoryPDFService(ctx.db, ctx.tenant.tenant_id).generate(patient_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    filename = f"HC_{patient_id}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d_%H%M')}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Type": "application/pdf",
+        },
+    )

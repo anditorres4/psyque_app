@@ -1,4 +1,5 @@
 """Pydantic schemas for patient endpoints."""
+import re
 import uuid
 from datetime import date, datetime
 from typing import Literal
@@ -15,10 +16,16 @@ MaritalStatus = Literal["S", "C", "U", "D", "V", "SE"]
 Zone = Literal["U", "R"]
 PayerType = Literal["PA", "CC", "SS", "PE", "SE"]
 
+_STRIP_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _sanitize(s: str) -> str:
+    """Strip control characters; let UTF-8 through."""
+    return _STRIP_RE.sub("", s)
+
 
 # ---------------------------------------------------------------------------
 # PatientCreate — used in POST /patients
-# The client IP is injected by the endpoint from the HTTP request, not the body
 # ---------------------------------------------------------------------------
 class PatientCreate(BaseModel):
     doc_type: DocType
@@ -43,10 +50,21 @@ class PatientCreate(BaseModel):
     eps_name: str | None = Field(None, max_length=200)
     eps_code: str | None = Field(None, max_length=10)
     authorization_number: str | None = Field(None, max_length=30)
-    # Consentimiento informado explícito — checkbox en el frontend
     consent_accepted: bool = Field(
         ..., description="Paciente aceptó el tratamiento de datos (Ley 1581/2012)"
     )
+
+    @field_validator(
+        "doc_number", "first_surname", "first_name",
+        "occupation", "address", "phone",
+        "emergency_contact_name", "emergency_contact_phone",
+        "eps_name", "eps_code", "authorization_number",
+    )
+    @classmethod
+    def _strip_control(cls, v: str) -> str:
+        if isinstance(v, str):
+            return _sanitize(v)
+        return v
 
     @field_validator("consent_accepted")
     @classmethod

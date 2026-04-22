@@ -11,6 +11,7 @@ export function usePatients(params?: {
   return useQuery({
     queryKey: ["patients", params],
     queryFn: () => api.patients.list(params),
+    retry: 2,
   });
 }
 

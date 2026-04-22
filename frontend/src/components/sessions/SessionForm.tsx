@@ -22,6 +22,12 @@ const CUPS_OPTIONS = [
   { code: "890701", label: "890701 — Psicoterapia familiar" },
 ];
 
+const CIE11_RE = /^[0-9A-Z][0-9A-Z]{2,3}(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?$/;
+
+function isValidCie11(v: string) {
+  return CIE11_RE.test(v);
+}
+
 function toLocalDatetimeValue(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -38,6 +44,7 @@ export function SessionForm({
   error,
 }: Props) {
   const [diagnosisCie11, setDiagnosisCie11] = useState("");
+  const [diagnosisCie11Touched, setDiagnosisCie11Touched] = useState(false);
   const [diagnosisDesc, setDiagnosisDesc] = useState("");
   const [cupsCode, setCupsCode] = useState("890403");
   const [reason, setReason] = useState("");
@@ -55,6 +62,8 @@ export function SessionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setDiagnosisCie11Touched(true);
+    if (diagnosisCie11 && !isValidCie11(diagnosisCie11)) return;
     onSubmit({
       appointment_id: defaultAppointmentId,
       patient_id: defaultPatientId,
@@ -99,10 +108,15 @@ export function SessionForm({
           <Input
             value={diagnosisCie11}
             onChange={(e) => setDiagnosisCie11(e.target.value.toUpperCase())}
+            onBlur={() => setDiagnosisCie11Touched(true)}
             placeholder="Ej: 6A70"
             required
             maxLength={20}
+            className={diagnosisCie11Touched && diagnosisCie11 && !isValidCie11(diagnosisCie11) ? "border-red-500" : ""}
           />
+          {diagnosisCie11Touched && diagnosisCie11 && !isValidCie11(diagnosisCie11) && (
+            <p className="text-xs text-red-500 mt-1">Formato inválido. Ej: 6A70, 6A70.1</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">

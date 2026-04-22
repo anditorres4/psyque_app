@@ -8,6 +8,8 @@ import { useAppointmentsByRange, useCreateAppointment } from "@/hooks/useAppoint
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 import { AppointmentSidebar } from "@/components/appointments/AppointmentSidebar";
 import { ApiError, type AppointmentCreatePayload } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "#2E86AB",
@@ -29,7 +31,7 @@ export function AgendaPage() {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
 
-  const { data: appointments = [], isLoading } = useAppointmentsByRange(rangeStart, rangeEnd);
+  const { data: appointments = [], isLoading, isError } = useAppointmentsByRange(rangeStart, rangeEnd);
   const createMutation = useCreateAppointment();
 
   const [showForm, setShowForm] = useState(false);
@@ -98,10 +100,18 @@ export function AgendaPage() {
         </div>
 
         {isLoading && (
-          <div className="text-sm text-muted-foreground mb-2">Cargando citas...</div>
+          <div className="flex-1 flex items-center justify-center">
+            <Skeleton className="w-full h-full" />
+          </div>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        {isError && !isLoading && (
+          <div className="flex-1 flex items-center justify-center">
+            <ErrorState message="No se pudieron cargar las citas." />
+          </div>
+        )}
+
+        {!isLoading && !isError && (
           <FullCalendar
             ref={calendarRef}
             plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}

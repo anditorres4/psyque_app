@@ -1,5 +1,8 @@
 import { useDashboardStats } from "@/hooks/useDashboard";
 import type { AppointmentSummary } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   individual: "Individual",
@@ -76,14 +79,25 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 text-[#1E3A5F] text-sm">Cargando...</div>
+      <div className="p-8 space-y-6 max-w-4xl">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-48" />
+      </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="p-8 text-[#E74C3C] text-sm">
-        Error al cargar el dashboard.
+      <div className="p-8 max-w-4xl">
+        <ErrorState onRetry={() => window.location.reload()} />
       </div>
     );
   }
@@ -137,8 +151,12 @@ export function DashboardPage() {
       )}
 
       {data.upcoming.length === 0 && (
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6 text-center text-muted-foreground text-sm">
-          No hay citas próximas agendadas.
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
+          <EmptyState
+            title="No hay citas próximas"
+            description="Agenda una nueva cita para ver aquí su resumen."
+            icon="📅"
+          />
         </div>
       )}
     </div>

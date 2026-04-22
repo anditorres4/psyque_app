@@ -5,6 +5,8 @@ import { PatientCard } from "@/components/patients/PatientCard";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { type PatientCreatePayload, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { api as rawApi } from "@/lib/api";
@@ -145,7 +147,11 @@ export function PatientsPage() {
 
       {/* Patient list */}
       {isLoading && (
-        <div className="text-center py-12 text-muted-foreground">Cargando pacientes...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
       )}
       {isError && (
         <div className="text-center py-12">
@@ -164,9 +170,7 @@ export function PatientsPage() {
               </Button>
             </div>
           ) : (
-            <p className="text-[#E74C3C]">
-              Error al cargar pacientes. Verifica tu conexión.
-            </p>
+            <ErrorState />
           )}
         </div>
       )}
