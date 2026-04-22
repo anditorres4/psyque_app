@@ -8,6 +8,11 @@ import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
 import type { PatientCreatePayload } from "@/lib/api";
+import { useSessions, useCreateSession } from "@/hooks/useSessions";
+import { SessionForm } from "@/components/sessions/SessionForm";
+import { SessionDetail } from "@/components/sessions/SessionDetail";
+import type { SessionCreatePayload } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 
 type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips";
 
@@ -171,21 +176,15 @@ export function PatientDetailPage() {
         )
       )}
 
-      {activeTab === "historia" && (
-        <div className="max-w-xl">
-          <div className="rounded-lg border bg-amber-50 p-4 text-sm text-amber-800">
-            El módulo de Historia Clínica se implementará en Sprint 5 (Panel de Sesión).
-            Las notas firmadas aparecerán aquí en orden cronológico inverso.
-          </div>
+      {activeTab === "historia" && id && (
+        <div className="max-w-2xl space-y-3">
+          <p className="text-sm text-muted-foreground mb-3">Sesiones firmadas — solo lectura (Res. 1995/1999)</p>
+          <PatientSignedSessionsList patientId={id} />
         </div>
       )}
 
-      {activeTab === "sesiones" && (
-        <div className="max-w-xl">
-          <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
-            El historial de sesiones estará disponible en Sprint 5.
-          </div>
-        </div>
+      {activeTab === "sesiones" && id && (
+        <PatientSessionsTab patientId={id} />
       )}
 
       {activeTab === "documentos" && (
@@ -201,6 +200,138 @@ export function PatientDetailPage() {
           <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
             Historial de RIPS generados para este paciente — Sprint 6.
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PatientSignedSessionsList({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useSessions({ patient_id: patientId, status: "signed" });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  if (selectedId) {
+    return <SessionDetail sessionId={selectedId} onBack={() => setSelectedId(null)} />;
+  }
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Cargando...</p>;
+  if (!data || data.items.length === 0) {
+    return (
+      <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
+        No hay sesiones firmadas para este paciente.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {data.items.map((sess) => (
+        <button
+          key={sess.id}
+          type="button"
+          onClick={() => setSelectedId(sess.id)}
+          className="w-full text-left border rounded-lg p-4 hover:bg-slate-50 transition-colors border-green-100"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[#1E3A5F]">
+              {new Date(sess.actual_start).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" })}
+            </span>
+            <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">Firmada</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            CIE-11: {sess.diagnosis_cie11} · CUPS: {sess.cups_code}
+          </p>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PatientSessionsTab({ patientId }: { patientId: string }) {
+  const { data, isLoading } = useSessions({ patient_id: patientId });
+  const createMutation = useCreateSession();
+  const [showForm, setShowForm] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const handleCreate = async (payload: SessionCreatePayload) => {
+    setCreateError(null);
+    try {
+      const sess = await createMutation.mutateAsync(payload);
+      setSelectedId(sess.id);
+      setShowForm(false);
+    } catch (err) {
+      setCreateError(err instanceof ApiError ? err.message : "Error al crear sesión.");
+    }
+  };
+
+  if (selectedId) {
+    return (
+      <div className="max-w-2xl">
+        <SessionDetail sessionId={selectedId} onBack={() => setSelectedId(null)} />
+      </div>
+    );
+  }
+
+  if (showForm) {
+    return (
+      <div className="max-w-2xl">
+        <button type="button" onClick={() => setShowForm(false)} className="text-sm text-muted-foreground mb-4 block">← Volver</button>
+        <h3 className="text-lg font-semibold text-[#1E3A5F] mb-4">Nueva nota de sesión</h3>
+        <SessionForm
+          defaultPatientId={patientId}
+          onSubmit={handleCreate}
+          isSubmitting={createMutation.isPending}
+          error={createError}
+        />
+      </div>
+    );
+  }
+
+  const STATUS_COLORS: Record<string, string> = {
+    draft: "bg-amber-50 text-amber-700",
+    signed: "bg-green-50 text-green-700",
+  };
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-[#1E3A5F]">Historial de sesiones</h3>
+        <Button size="sm" className="bg-[#2E86AB] hover:bg-[#1E3A5F] text-white" onClick={() => setShowForm(true)}>
+          + Nueva sesión
+        </Button>
+      </div>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
+
+      {!isLoading && data && data.items.length === 0 && (
+        <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
+          No hay sesiones registradas para este paciente.
+        </div>
+      )}
+
+      {!isLoading && data && data.items.length > 0 && (
+        <div className="space-y-2">
+          {data.items.map((sess) => (
+            <button
+              key={sess.id}
+              type="button"
+              onClick={() => setSelectedId(sess.id)}
+              className="w-full text-left border rounded-lg p-4 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[#1E3A5F]">
+                  {new Date(sess.actual_start).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" })}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[sess.status] ?? ""}`}>
+                  {sess.status === "signed" ? "Firmada" : "Borrador"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                CIE-11: {sess.diagnosis_cie11} · CUPS: {sess.cups_code} · ${Number(sess.session_fee).toLocaleString("es-CO")} COP
+              </p>
+            </button>
+          ))}
         </div>
       )}
     </div>

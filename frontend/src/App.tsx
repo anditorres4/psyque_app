@@ -7,6 +7,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { PatientsPage } from "@/pages/patients/PatientsPage";
 import { PatientDetailPage } from "@/pages/patients/PatientDetailPage";
 import { AgendaPage } from "@/pages/agenda/AgendaPage";
+import { SessionsPage } from "@/pages/sessions/SessionsPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,7 +31,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Rutas protegidas — requieren autenticación */}
+      {/* Rutas protegidas */}
       <Route
         element={
           <ProtectedRoute>
@@ -42,7 +43,8 @@ export default function App() {
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/patients/:id" element={<PatientDetailPage />} />
         <Route path="/agenda" element={<AgendaPage />} />
-        <Route path="/sessions" element={<div className="p-8"><h1 className="text-2xl font-bold text-[#1E3A5F]">Sesiones activas</h1><p className="text-muted-foreground mt-2">Sprint 5</p></div>} />
+        <Route path="/sessions" element={<SessionsPage />} />
+        <Route path="/sessions/new" element={<SessionsPage />} />
         <Route path="/rips" element={<div className="p-8"><h1 className="text-2xl font-bold text-[#1E3A5F]">RIPS</h1><p className="text-muted-foreground mt-2">Sprint 6</p></div>} />
         <Route path="/settings" element={<div className="p-8"><h1 className="text-2xl font-bold text-[#1E3A5F]">Configuración</h1><p className="text-muted-foreground mt-2">Sprint 7</p></div>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
