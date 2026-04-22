@@ -6,5 +6,6 @@ export function useDashboardStats() {
     queryKey: ["dashboard", "stats"],
     queryFn: () => api.dashboard.getStats(),
     staleTime: 60_000,
+    retry: 2,
   });
 }

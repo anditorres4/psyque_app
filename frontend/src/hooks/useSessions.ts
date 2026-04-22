@@ -14,6 +14,7 @@ export function useSessions(params?: {
   return useQuery({
     queryKey: ["sessions", "list", params],
     queryFn: () => api.sessions.list(params),
+    retry: 2,
   });
 }
 

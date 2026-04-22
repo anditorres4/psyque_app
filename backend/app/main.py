@@ -11,6 +11,12 @@ from app.api.v1.appointments import router as appointments_router
 from app.api.v1.sessions import router as sessions_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.patients import router as patients_router
+from app.api.v1.rips import router as rips_router
+from app.api.v1.invoices import router as invoices_router
+from app.api.v1.profile import router as profile_router
+from app.api.v1.availability import router as availability_router
+from app.api.v1.documents import router as documents_router
+from app.api.v1.reports import router as reports_router
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.jobs.reminders import run_reminder_check
@@ -58,3 +64,9 @@ app.include_router(patients_router, prefix="/api/v1")
 app.include_router(appointments_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
+app.include_router(rips_router, prefix="/api/v1")
+app.include_router(invoices_router, prefix="/api/v1")
+app.include_router(profile_router, prefix="/api/v1")
+app.include_router(availability_router, prefix="/api/v1")
+app.include_router(documents_router, prefix="/api/v1")
+app.include_router(reports_router, prefix="/api/v1")

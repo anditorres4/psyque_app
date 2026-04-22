@@ -32,6 +32,30 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+async function downloadBlob(
+  method: string,
+  path: string,
+  body?: unknown
+): Promise<{ blob: Blob; filename: string }> {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, err.detail ?? "Error desconocido");
+  }
+
+  const contentDisposition = res.headers.get("Content-Disposition") ?? "";
+  const filenameMatch = contentDisposition.match(/filename=(.+)/);
+  const filename = filenameMatch ? filenameMatch[1].replace(/"/g, "") : "download";
+  const blob = await res.blob();
+  return { blob, filename };
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -252,9 +276,182 @@ export interface SessionNoteDetail {
   created_at: string;
 }
 
+// --- RIPS -----------------------------------------------------------------
+
+export interface RipsExportSummary {
+  id: string;
+  period_year: number;
+  period_month: number;
+  status: string;
+  sessions_count: number;
+  total_value_cop: number;
+  file_hash: string | null;
+  generated_at: string | null;
+}
+
+export interface RipsGenerateRequest {
+  year: number;
+  month: number;
+}
+
+export interface RipsGenerationResponse {
+  export: RipsExportSummary;
+  message: string;
+}
+
+// --- Invoices --------------------------------------------------------------
+
+export type InvoiceStatus = "draft" | "issued" | "paid";
+
+export interface InvoiceSummary {
+  id: string;
+  invoice_number: string;
+  patient_id: string;
+  status: InvoiceStatus;
+  issue_date: string | null;
+  due_date: string | null;
+  subtotal_cop: number;
+  tax_cop: number;
+  total_cop: number;
+  created_at: string;
+}
+
+export interface InvoiceDetail extends InvoiceSummary {
+  session_ids: string[];
+  notes: string | null;
+  paid_at: string | null;
+  pdf_file_path: string | null;
+}
+
+export interface InvoiceListResponse {
+  items: InvoiceSummary[];
+  total: number;
+}
+
+export interface InvoiceCreatePayload {
+  patient_id: string;
+  session_ids: string[];
+}
+
+export interface InvoiceUpdatePayload {
+  notes?: string;
+}
+
+// --- Profile -----------------------------------------------------------------
+export interface TenantProfile {
+  id: string;
+  full_name: string;
+  colpsic_number: string;
+  reps_code: string | null;
+  nit: string | null;
+  city: string;
+  session_duration_min: number;
+  plan: "starter" | "pro" | "clinic";
+  plan_expires_at: string;
+}
+
+export interface TenantProfileUpdate {
+  full_name?: string;
+  colpsic_number?: string;
+  reps_code?: string;
+  nit?: string;
+  city?: string;
+  session_duration_min?: number;
+}
+
+// --- Availability ------------------------------------------------------------
+export interface AvailabilityBlock {
+  id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+}
+
+export interface AvailabilityBlockCreate {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+}
+
+// --- Documents -------------------------------------------------------------
+export interface ClinicalDocument {
+  id: string;
+  patient_id: string;
+  filename: string;
+  content_type: string;
+  file_size: number;
+  document_type: string;
+  description: string | null;
+  created_at: string;
+}
+
+// --- Reports -------------------------------------------------------------
+export interface RevenueReportItem {
+  month: string;
+  revenue: number;
+}
+
+export interface AttendanceReportItem {
+  month: string;
+  completed: number;
+  cancelled: number;
+  noshow: number;
+}
+
+export interface SessionTypeReportItem {
+  cups_code: string;
+  count: number;
+}
+
+export interface NewPatientsReportItem {
+  month: string;
+  count: number;
+}
+
+export interface DashboardSummary {
+  total_revenue: number;
+  total_sessions: number;
+  attendance_rate: number;
+}
+
 export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
+  },
+  rips: {
+    generate: (body: RipsGenerateRequest) =>
+      request<RipsGenerationResponse>("POST", "/rips/generate", body),
+    list: (limit?: number) => {
+      const q = new URLSearchParams();
+      if (limit) q.set("limit", String(limit));
+      return request<RipsExportSummary[]>("GET", `/rips?${q}`);
+    },
+    get: (id: string) =>
+      request<RipsExportSummary>("GET", `/rips/${id}`),
+    download: (id: string) =>
+      downloadBlob("GET", `/rips/${id}/download`),
+  },
+  invoices: {
+    create: (body: InvoiceCreatePayload) =>
+      request<InvoiceSummary>("POST", "/invoices", body),
+    list: (params?: { patient_id?: string; status?: string; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.patient_id) q.set("patient_id", params.patient_id);
+      if (params?.status) q.set("status", params.status);
+      if (params?.limit) q.set("limit", String(params.limit));
+      return request<InvoiceListResponse>("GET", `/invoices?${q}`);
+    },
+    get: (id: string) =>
+      request<InvoiceDetail>("GET", `/invoices/${id}`),
+    update: (id: string, body: InvoiceUpdatePayload) =>
+      request<InvoiceSummary>("PUT", `/invoices/${id}`, body),
+    issue: (id: string) =>
+      request<InvoiceSummary>("POST", `/invoices/${id}/issue`),
+    pay: (id: string) =>
+      request<InvoiceSummary>("POST", `/invoices/${id}/pay`),
+    getPdf: (id: string) =>
+      downloadBlob("GET", `/invoices/${id}/pdf`),
   },
   patients: {
     list: (params?: {
@@ -278,6 +475,15 @@ export const api = {
       request<PatientDetail>("GET", `/patients/${id}`),
     update: (id: string, body: Partial<PatientCreatePayload>) =>
       request<PatientDetail>("PUT", `/patients/${id}`, body),
+    exportHistory: (id: string): Promise<Blob> => {
+      return getAuthHeader().then((headers) =>
+        fetch(`${API_BASE}/patients/${id}/history-export`, { headers })
+          .then((res) => {
+            if (!res.ok) throw new ApiError(res.status, "Error exporting history");
+            return res.blob();
+          })
+      );
+    },
   },
   appointments: {
     listByRange: (start: string, end: string) =>
@@ -329,5 +535,68 @@ export const api = {
       request<AppointmentDetail>("POST", `/appointments/${id}/complete`),
     noshow: (id: string) =>
       request<AppointmentDetail>("POST", `/appointments/${id}/noshow`),
+  },
+  // --- Profile -----------------------------------------------------------------
+  profile: {
+    get: () => request<TenantProfile>("GET", "/profile"),
+    update: (body: TenantProfileUpdate) =>
+      request<TenantProfile>("PUT", "/profile", body),
+  },
+  // --- Availability ------------------------------------------------------------
+  availability: {
+    list: () => request<AvailabilityBlock[]>("GET", "/availability"),
+    create: (body: AvailabilityBlockCreate) =>
+      request<AvailabilityBlock>("POST", "/availability", body),
+    delete: (id: string) =>
+      request<void>("DELETE", `/availability/${id}`),
+  },
+  // --- Documents -------------------------------------------------------------
+  documents: {
+    listByPatient: (patientId: string) =>
+      request<ClinicalDocument[]>("GET", `/patients/${patientId}/documents`),
+    upload: async (patientId: string, file: File, documentType: string, description?: string) => {
+      const headers = await getAuthHeader();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_type", documentType);
+      if (description) formData.append("description", description);
+      const res = await fetch(`${API_BASE}/patients/${patientId}/documents`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new ApiError(res.status, err.detail ?? "Error desconocido");
+      }
+      return res.json() as Promise<ClinicalDocument>;
+    },
+    getDownloadUrl: (documentId: string) =>
+      request<{ url: string }>("GET", `/documents/${documentId}/download`),
+    delete: (documentId: string) =>
+      request<void>("DELETE", `/documents/${documentId}`),
+  },
+  // --- Reports ------------------------------------------------------------
+  reports: {
+    revenue: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<{ data: RevenueReportItem[]; summary: DashboardSummary }>(`GET`, `/reports/revenue${q}`);
+    },
+    attendance: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<{ data: AttendanceReportItem[] }>(`GET`, `/reports/attendance${q}`);
+    },
+    sessionTypes: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<{ data: SessionTypeReportItem[] }>(`GET`, `/reports/session-types${q}`);
+    },
+    newPatients: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<{ data: NewPatientsReportItem[] }>(`GET`, `/reports/new-patients${q}`);
+    },
+    summary: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<DashboardSummary>(`GET`, `/reports/summary${q}`);
+    },
   },
 };

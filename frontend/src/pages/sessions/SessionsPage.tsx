@@ -5,6 +5,9 @@ import { SessionForm } from "@/components/sessions/SessionForm";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import type { SessionCreatePayload } from "@/lib/api";
 import { ApiError } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -30,7 +33,7 @@ export function SessionsPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
 
-  const { data, isLoading } = useSessions({ status: statusFilter || undefined });
+  const { data, isLoading, isError } = useSessions({ status: statusFilter || undefined });
   const createMutation = useCreateSession();
 
   const handleCreate = async (payload: SessionCreatePayload) => {
@@ -104,11 +107,28 @@ export function SessionsPage() {
         </select>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
+      {isLoading && (
+        <div className="border rounded-lg overflow-hidden">
+          <Skeleton className="h-10 border-b" />
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-12 border-b last:border-0" />
+          ))}
+        </div>
+      )}
 
-      {!isLoading && data && data.items.length === 0 && (
-        <div className="border rounded-lg p-8 text-center text-muted-foreground text-sm">
-          No hay sesiones registradas.
+      {isError && !isLoading && (
+        <div className="border rounded-lg p-8">
+          <ErrorState />
+        </div>
+      )}
+
+      {!isLoading && !isError && data && data.items.length === 0 && (
+        <div className="border rounded-lg p-8">
+          <EmptyState
+            title="Sin sesiones registradas"
+            description={statusFilter ? "No hay sesiones con ese filtro." : "Crea tu primera nota de sesión para comenzar."}
+            icon="📝"
+          />
         </div>
       )}
 

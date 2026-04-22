@@ -11,6 +11,7 @@ export function useAppointmentsByRange(start: string, end: string) {
     queryKey: ["appointments", "range", start, end],
     queryFn: () => api.appointments.listByRange(start, end),
     enabled: !!start && !!end,
+    retry: 2,
   });
 }
 

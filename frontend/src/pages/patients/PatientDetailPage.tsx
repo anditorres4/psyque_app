@@ -7,12 +7,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientCreatePayload } from "@/lib/api";
 import { useSessions, useCreateSession } from "@/hooks/useSessions";
 import { SessionForm } from "@/components/sessions/SessionForm";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import type { SessionCreatePayload } from "@/lib/api";
-import { ApiError } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
+import { DocumentsTab } from "@/components/patients/DocumentsTab";
 
 type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips";
 
@@ -59,12 +63,19 @@ export function PatientDetailPage() {
   const updateMutation = useUpdatePatient(id ?? "");
 
   if (isLoading) {
-    return <div className="p-8 text-muted-foreground">Cargando paciente...</div>;
+    return (
+      <div className="p-8 space-y-4 max-w-xl">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-48" />
+        <Skeleton className="h-32" />
+      </div>
+    );
   }
   if (isError || !patient) {
     return (
-      <div className="p-8">
-        <p className="text-[#E74C3C]">Paciente no encontrado.</p>
+      <div className="p-8 max-w-xl">
+        <ErrorState onRetry={() => window.location.reload()} />
         <Button variant="outline" className="mt-4" onClick={() => navigate("/patients")}>
           ← Volver a pacientes
         </Button>
@@ -78,6 +89,21 @@ export function PatientDetailPage() {
   const handleUpdate = async (data: PatientCreatePayload) => {
     await updateMutation.mutateAsync(data);
     setIsEditing(false);
+  };
+
+  const handleExportHistory = async () => {
+    if (!id) return;
+    try {
+      const blob = await api.patients.exportHistory(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `HC_${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exporting history:", err);
+    }
   };
 
   return (
@@ -117,6 +143,9 @@ export function PatientDetailPage() {
             onClick={() => setIsEditing(!isEditing)}
           >
             {isEditing ? "Cancelar edición" : "Editar"}
+          </Button>
+          <Button onClick={handleExportHistory}>
+            Exportar HC
           </Button>
         </div>
       </div>
@@ -187,19 +216,20 @@ export function PatientDetailPage() {
         <PatientSessionsTab patientId={id} />
       )}
 
-      {activeTab === "documentos" && (
-        <div className="max-w-xl">
-          <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
-            Documentos clínicos (consentimientos PDF, adjuntos) — Sprint 7.
-          </div>
-        </div>
+      {activeTab === "documentos" && id && (
+        <DocumentsTab patientId={id} />
       )}
 
-      {activeTab === "rips" && (
+      {activeTab === "rips" && id && (
         <div className="max-w-xl">
-          <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
-            Historial de RIPS generados para este paciente — Sprint 6.
-          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            RIPS generados que incluyen sesiones de este paciente.
+          </p>
+          <EmptyState
+            title="Sin RIPS generados"
+            description="Genera RIPS desde la página de RIPS después de firmar sesiones."
+            icon="📦"
+          />
         </div>
       )}
     </div>
@@ -214,12 +244,14 @@ function PatientSignedSessionsList({ patientId }: { patientId: string }) {
     return <SessionDetail sessionId={selectedId} onBack={() => setSelectedId(null)} />;
   }
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Cargando...</p>;
+  if (isLoading) return <Skeleton className="h-24" />;
   if (!data || data.items.length === 0) {
     return (
-      <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
-        No hay sesiones firmadas para este paciente.
-      </div>
+      <EmptyState
+        title="Sin sesiones firmadas"
+        description="Las sesiones aparecen aquí una vez firmadas."
+        icon="📋"
+      />
     );
   }
 
@@ -248,7 +280,7 @@ function PatientSignedSessionsList({ patientId }: { patientId: string }) {
 }
 
 function PatientSessionsTab({ patientId }: { patientId: string }) {
-  const { data, isLoading } = useSessions({ patient_id: patientId });
+  const { data, isLoading, isError } = useSessions({ patient_id: patientId });
   const createMutation = useCreateSession();
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -302,12 +334,16 @@ function PatientSessionsTab({ patientId }: { patientId: string }) {
         </Button>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
+      {isLoading && <Skeleton className="h-20" />}
 
-      {!isLoading && data && data.items.length === 0 && (
-        <div className="rounded-lg border bg-slate-50 p-4 text-sm text-muted-foreground">
-          No hay sesiones registradas para este paciente.
-        </div>
+      {isError && !isLoading && <ErrorState message="Error al cargar sesiones." />}
+
+      {!isLoading && !isError && data && data.items.length === 0 && (
+        <EmptyState
+          title="Sin sesiones registradas"
+          description="Crea la primera nota de sesión para este paciente."
+          icon="📝"
+        />
       )}
 
       {!isLoading && data && data.items.length > 0 && (

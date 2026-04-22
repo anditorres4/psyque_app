@@ -197,3 +197,16 @@ class AppointmentService:
         self.db.flush()
         self.db.refresh(appt)
         return appt
+
+    def list_by_patient(self, patient_id: str) -> list[AppointmentSummary]:
+        """List all appointments for a patient, ordered by scheduled date (newest first)."""
+        rows = (
+            self.db.query(Appointment)
+            .filter(
+                Appointment.tenant_id == uuid.UUID(self.tenant_id),
+                Appointment.patient_id == uuid.UUID(patient_id),
+            )
+            .order_by(Appointment.scheduled_start.desc())
+            .all()
+        )
+        return [AppointmentSummary.model_validate(r) for r in rows]

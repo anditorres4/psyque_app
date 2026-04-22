@@ -1,8 +1,12 @@
 """Pydantic schemas for session endpoints — clinical notes (Res. 1995/1999)."""
+import re
 import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
+
+_CIE11_RE = re.compile(r"^[0-9A-Z][0-9A-Z]{2,3}(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?$")
+_CUPS_RE = re.compile(r"^\d{6}$")
 
 
 class SessionCreate(BaseModel):
@@ -26,6 +30,18 @@ class SessionCreate(BaseModel):
             raise ValueError("actual_end must be after actual_start")
         return self
 
+    @model_validator(mode="after")
+    def codes_format(self) -> "SessionCreate":
+        if not _CIE11_RE.match(self.diagnosis_cie11):
+            raise ValueError(
+                "diagnosis_cie11 must follow CIE-11 format (e.g. 6A70, 6A70.1, 11A6/Z)"
+            )
+        if not _CUPS_RE.match(self.cups_code):
+            raise ValueError(
+                "cups_code must be a 6-digit numeric code (e.g. 890403)"
+            )
+        return self
+
 
 class SessionUpdate(BaseModel):
     actual_start: datetime | None = None
@@ -45,6 +61,18 @@ class SessionUpdate(BaseModel):
         if self.actual_start and self.actual_end:
             if self.actual_end <= self.actual_start:
                 raise ValueError("actual_end must be after actual_start")
+        return self
+
+    @model_validator(mode="after")
+    def codes_format(self) -> "SessionUpdate":
+        if self.diagnosis_cie11 and not _CIE11_RE.match(self.diagnosis_cie11):
+            raise ValueError(
+                "diagnosis_cie11 must follow CIE-11 format (e.g. 6A70, 6A70.1, 11A6/Z)"
+            )
+        if self.cups_code and not _CUPS_RE.match(self.cups_code):
+            raise ValueError(
+                "cups_code must be a 6-digit numeric code (e.g. 890403)"
+            )
         return self
 
 
