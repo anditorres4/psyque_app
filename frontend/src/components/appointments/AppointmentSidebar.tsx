@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAppointment, useCancelAppointment } from "@/hooks/useAppointments";
+import { useCompleteAppointment, useNoshowAppointment } from "@/hooks/useSessions";
 import type { CancelledBy } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
@@ -24,12 +26,17 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function AppointmentSidebar({ appointmentId, onClose }: Props) {
+  const navigate = useNavigate();
   const { data: appt, isLoading } = useAppointment(appointmentId);
   const cancelMutation = useCancelAppointment(appointmentId);
+  const completeMutation = useCompleteAppointment(appointmentId);
+  const noshowMutation = useNoshowAppointment(appointmentId);
+
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelledBy, setCancelledBy] = useState<CancelledBy>("psychologist");
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (isLoading) return (
     <div className="p-6 text-muted-foreground text-sm">Cargando...</div>
@@ -46,11 +53,26 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
       await cancelMutation.mutateAsync({ cancelled_by: cancelledBy, cancellation_reason: cancelReason });
       setShowCancelForm(false);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setCancelError(err.message);
-      } else {
-        setCancelError("Error al cancelar la cita.");
-      }
+      setCancelError(err instanceof ApiError ? err.message : "Error al cancelar la cita.");
+    }
+  };
+
+  const handleComplete = async () => {
+    setActionError(null);
+    try {
+      await completeMutation.mutateAsync();
+      navigate(`/sessions/new?appointment_id=${appointmentId}&patient_id=${appt.patient_id}&start=${encodeURIComponent(appt.scheduled_start)}&end=${encodeURIComponent(appt.scheduled_end)}`);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Error al completar la cita.");
+    }
+  };
+
+  const handleNoshow = async () => {
+    setActionError(null);
+    try {
+      await noshowMutation.mutateAsync();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Error al marcar como no asistió.");
     }
   };
 
@@ -97,15 +119,36 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
           )}
         </dl>
 
+        {actionError && <p className="text-xs text-[#E74C3C]">{actionError}</p>}
+
         {appt.status === "scheduled" && !showCancelForm && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-[#E74C3C] border-[#E74C3C] hover:bg-red-50"
-            onClick={() => setShowCancelForm(true)}
-          >
-            Cancelar cita
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              size="sm"
+              className="bg-[#27AE60] hover:bg-green-700 text-white"
+              onClick={handleComplete}
+              disabled={completeMutation.isPending}
+            >
+              {completeMutation.isPending ? "Procesando..." : "✓ Completar y registrar sesión"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-amber-700 border-amber-400 hover:bg-amber-50"
+              onClick={handleNoshow}
+              disabled={noshowMutation.isPending}
+            >
+              {noshowMutation.isPending ? "Procesando..." : "No asistió"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[#E74C3C] border-[#E74C3C] hover:bg-red-50"
+              onClick={() => setShowCancelForm(true)}
+            >
+              Cancelar cita
+            </Button>
+          </div>
         )}
 
         {showCancelForm && (
