@@ -11,7 +11,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function SettingsPage() {
+export function SettingsPage() {
   const [active, setActive] = useState<TabId>("perfil");
 
   return (
