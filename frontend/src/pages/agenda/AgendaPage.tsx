@@ -99,20 +99,18 @@ export function AgendaPage() {
           </button>
         </div>
 
-        {isLoading && (
-          <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 overflow-hidden">
+          {isLoading && (
             <Skeleton className="w-full h-full" />
-          </div>
-        )}
-
-        {isError && !isLoading && (
-          <div className="flex-1 flex items-center justify-center">
-            <ErrorState message="No se pudieron cargar las citas." />
-          </div>
-        )}
-
-        {!isLoading && !isError && (
-          <FullCalendar
+          )}
+          {isError && !isLoading && (
+            <div className="flex items-center justify-center h-full">
+              <ErrorState message="No se pudieron cargar las citas." />
+            </div>
+          )}
+          {!isLoading && !isError && (
+            <>
+            <FullCalendar
             ref={calendarRef}
             plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
@@ -172,8 +170,10 @@ export function AgendaPage() {
               onSubmit={handleCreate}
               isSubmitting={createMutation.isPending}
               error={formError}
-            />
-          </div>
+/>
+            </>
+          )}
+        </div>
         </div>
       )}
 
