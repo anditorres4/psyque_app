@@ -39,9 +39,15 @@ export function LoginPage() {
       password: data.password,
     });
     if (error) {
-      setServerError(
-        "Email o contraseña incorrectos. Verifica tus datos e intenta de nuevo."
-      );
+      if (error.code === "email_not_confirmed") {
+        setServerError(
+          "Tu cuenta aún no está confirmada. Revisa tu correo electrónico y haz clic en el enlace de confirmación. Si no lo recibiste, revisa la carpeta de spam."
+        );
+      } else if (error.code === "invalid_credentials") {
+        setServerError("Email o contraseña incorrectos. Verifica tus datos e intenta de nuevo.");
+      } else {
+        setServerError("Error al iniciar sesión. Intenta de nuevo.");
+      }
       return;
     }
     navigate("/dashboard");
