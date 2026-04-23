@@ -1,7 +1,1 @@
-{
-  "steps": {
-    "install": {
-      "commands": ["pip install -r requirements.txt"]
-    }
-  }
-}
+{}
