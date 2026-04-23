@@ -1,7 +1,7 @@
 {
   "steps": {
     "install": {
-      "commands": ["pip install -r psicogest/backend/requirements.txt"]
+      "commands": ["pip install -r requirements.txt"]
     }
   }
 }
