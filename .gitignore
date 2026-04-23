@@ -20,6 +20,7 @@ build/
 # ── Node / frontend ───────────────────────────────────────────────────────────
 node_modules/
 psicogest/frontend/dist/
+psicogest/frontend/.vite/
 
 # ── Logs ─────────────────────────────────────────────────────────────────────
 *.log
