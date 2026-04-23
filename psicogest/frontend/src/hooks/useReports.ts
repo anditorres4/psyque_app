@@ -1,13 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-  api,
-  AttendanceReportItem,
-  DashboardSummary,
-  NewPatientsReportItem,
-  RevenueReportItem,
-  SessionTypeReportItem,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function useRevenueReport(months: number = 12) {
   return useQuery({

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, ClinicalDocument } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function useDocuments(patientId: string) {
   return useQuery({
@@ -33,7 +33,7 @@ export function useUploadDocument() {
 export function useDeleteDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ documentId, patientId }: { documentId: string; patientId: string }) =>
+    mutationFn: ({ documentId }: { documentId: string; patientId: string }) =>
       api.documents.delete(documentId),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["documents", variables.patientId] });

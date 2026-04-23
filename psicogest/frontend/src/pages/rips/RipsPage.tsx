@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, RipsExportSummary } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function RipsPage() {
   const queryClient = useQueryClient();
@@ -28,7 +28,7 @@ export function RipsPage() {
     generateMutation.mutate({ year, month });
   };
 
-  const handleDownload = async (id: string, period: string) => {
+  const handleDownload = async (id: string, _period: string) => {
     const { blob, filename } = await api.rips.download(id);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

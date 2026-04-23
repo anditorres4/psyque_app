@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { api, InvoiceSummary, InvoiceStatus, PatientSummary } from "@/lib/api";
+import { api, InvoiceStatus, PatientSummary } from "@/lib/api";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -118,7 +118,7 @@ export function InvoicesPage() {
     },
   });
 
-  const handleDownload = async (id: string, invoiceNumber: string) => {
+  const handleDownload = async (id: string, _invoiceNumber: string) => {
     const { blob, filename } = await api.invoices.getPdf(id);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

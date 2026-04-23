@@ -24,11 +24,9 @@ function formatFileSize(bytes: number): string {
 
 function DocumentRow({
   doc,
-  patientId,
   onDelete,
 }: {
   doc: ClinicalDocument;
-  patientId: string;
   onDelete: (id: string) => void;
 }) {
   const [downloading, setDownloading] = useState(false);
@@ -188,7 +186,6 @@ export function DocumentsTab({ patientId }: { patientId: string }) {
             <DocumentRow
               key={doc.id}
               doc={doc}
-              patientId={patientId}
               onDelete={handleDelete}
             />
           ))}
