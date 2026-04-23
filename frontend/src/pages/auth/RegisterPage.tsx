@@ -34,6 +34,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const {
     register,
@@ -57,13 +58,15 @@ export function RegisterPage() {
     });
 
     if (error) {
-      setServerError(
-        error.message.includes("already registered")
-          ? "Ya existe una cuenta con este email. Intenta iniciar sesión."
-          : "Error al crear la cuenta. Por favor intenta de nuevo."
-      );
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered") || error.code === "user_already_registered") {
+        setServerError("Ya existe una cuenta con este email. Intenta iniciar sesión.");
+      } else {
+        setServerError("Error al crear la cuenta. Por favor intenta de nuevo.");
+      }
       return;
     }
+    setRegisteredEmail(data.email);
     setEmailSent(true);
   };
 
@@ -75,17 +78,19 @@ export function RegisterPage() {
             <div className="text-4xl mb-2">📬</div>
             <CardTitle className="text-[#27AE60]">¡Revisa tu email!</CardTitle>
             <CardDescription>
-              Enviamos un enlace de verificación a tu correo. Debes verificar
-              tu email antes de poder ingresar al sistema.
+              Enviamos un enlace de verificación a <strong>{registeredEmail}</strong>. Haz clic en el enlace para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              ⚠️ No cierres esta ventana — necesitarás el enlace de confirmación.
+            </div>
             <Button
               variant="outline"
               onClick={() => navigate("/login")}
               className="mt-2"
             >
-              Ir al inicio de sesión
+              Volver al inicio de sesión
             </Button>
           </CardContent>
         </Card>

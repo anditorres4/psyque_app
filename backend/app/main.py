@@ -52,10 +52,12 @@ app.add_middleware(
         settings.app_url,
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5175",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 app.include_router(health_router, prefix="/api/v1")

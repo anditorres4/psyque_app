@@ -99,58 +99,54 @@ export function AgendaPage() {
           </button>
         </div>
 
-        {isLoading && (
-          <div className="flex-1 flex items-center justify-center">
-            <Skeleton className="w-full h-full" />
-          </div>
-        )}
-
+        {isLoading && <Skeleton className="flex-1" />}
         {isError && !isLoading && (
           <div className="flex-1 flex items-center justify-center">
             <ErrorState message="No se pudieron cargar las citas." />
           </div>
         )}
-
         {!isLoading && !isError && (
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
-            locale="es"
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            buttonText={{
-              today: "Hoy",
-              month: "Mes",
-              week: "Semana",
-              day: "Día",
-            }}
-            slotMinTime="07:00:00"
-            slotMaxTime="21:00:00"
-            slotDuration="00:30:00"
-            allDaySlot={false}
-            selectable
-            selectMirror
-            events={calendarEvents}
-            datesSet={handleDatesSet}
-            select={handleDateSelect}
-            eventClick={handleEventClick}
-            height="100%"
-            eventContent={(arg) => (
-              <div className="px-1 py-0.5 overflow-hidden">
-                <div className="text-xs font-semibold leading-tight truncate">
-                  {arg.event.title}
+          <div className="flex-1 overflow-hidden">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+              initialView="timeGridWeek"
+              locale="es"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              buttonText={{
+                today: "Hoy",
+                month: "Mes",
+                week: "Semana",
+                day: "Día",
+              }}
+              slotMinTime="07:00:00"
+              slotMaxTime="21:00:00"
+              slotDuration="00:30:00"
+              allDaySlot={false}
+              selectable
+              selectMirror
+              events={calendarEvents}
+              datesSet={handleDatesSet}
+              select={handleDateSelect}
+              eventClick={handleEventClick}
+              height="100%"
+              eventContent={(arg) => (
+                <div className="px-1 py-0.5 overflow-hidden">
+                  <div className="text-xs font-semibold leading-tight truncate">
+                    {arg.event.title}
+                  </div>
+                  <div className="text-xs opacity-80 capitalize">
+                    {arg.event.extendedProps.modality}
+                  </div>
                 </div>
-                <div className="text-xs opacity-80 capitalize">
-                  {arg.event.extendedProps.modality}
-                </div>
-              </div>
-            )}
-          />
-        </div>
+              )}
+            />
+          </div>
+        )}
       </div>
 
       {/* New appointment form modal */}
