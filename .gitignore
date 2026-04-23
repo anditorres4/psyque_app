@@ -1,35 +1,38 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
-.Python
-*.egg-info/
-dist/
-build/
 .venv/
 venv/
 env/
-*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Environment variables — NEVER commit real secrets
-backend/.env
-frontend/.env.local
-frontend/.env
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
 
-# Alembic cache
-backend/alembic/versions/__pycache__/
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+psicogest/frontend/dist/
+psicogest/frontend/.vite/
 
-# Node / Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+*.log.out
+*.log.err
+uvicorn.log*
 
-# OS
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# IDE
+# ── IDEs ─────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
