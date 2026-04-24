@@ -4,16 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { api, type RipsValidateResponse } from "@/lib/api";
 
 export function RipsPage() {
   const queryClient = useQueryClient();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [validation, setValidation] = useState<RipsValidateResponse | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   const { data: exports, isLoading } = useQuery({
     queryKey: ["rips"],
     queryFn: () => api.rips.list(20),
+  });
+
+  const validateMutation = useMutation({
+    mutationFn: ({ year, month }: { year: number; month: number }) =>
+      api.rips.validate({ year, month }),
+    onSuccess: (data) => {
+      setValidation(data);
+      setShowValidation(true);
+    },
   });
 
   const generateMutation = useMutation({
@@ -21,8 +32,14 @@ export function RipsPage() {
       api.rips.generate({ year, month }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rips"] });
+      setShowValidation(false);
+      setValidation(null);
     },
   });
+
+  const handleValidate = () => {
+    validateMutation.mutate({ year, month });
+  };
 
   const handleGenerate = () => {
     generateMutation.mutate({ year, month });
@@ -71,7 +88,7 @@ export function RipsPage() {
           <CardHeader>
             <CardTitle>Generar Exportación</CardTitle>
             <CardDescription>
-              Seleccione el período para generar el archivo RIPS
+              Seleccione el período para validar y generar el archivo RIPS
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,21 +114,89 @@ export function RipsPage() {
                 />
               </div>
               <Button
+                variant="outline"
+                onClick={handleValidate}
+                disabled={validateMutation.isPending}
+              >
+                {validateMutation.isPending ? "Validando..." : "Validar"}
+              </Button>
+              <Button
                 onClick={handleGenerate}
-                disabled={generateMutation.isPending}
+                disabled={generateMutation.isPending || (showValidation && !validation?.valid)}
+                title={showValidation && validation && !validation.valid ? "Corrija los errores antes de generar" : ""}
               >
                 {generateMutation.isPending ? "Generando..." : "Generar"}
               </Button>
             </div>
+
+            {validateMutation.isError && (
+              <p className="mt-4 text-sm text-red-600">
+                Error: {(validateMutation.error as Error).message}
+              </p>
+            )}
+
             {generateMutation.isError && (
               <p className="mt-4 text-sm text-red-600">
                 Error: {(generateMutation.error as Error).message}
               </p>
             )}
+
             {generateMutation.isSuccess && (
               <p className="mt-4 text-sm text-green-600">
                 {generateMutation.data.message}
               </p>
+            )}
+
+            {showValidation && validation && (
+              <div className="mt-4 p-4 rounded-lg border">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium">
+                    {validation.valid ? (
+                      <span className="text-green-600">✓ Validación exitosa</span>
+                    ) : (
+                      <span className="text-red-600">✕ Errores de validación</span>
+                    )}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {validation.sessions_count} sesiones
+                  </span>
+                </div>
+
+                {validation.errors.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-600">Errores:</p>
+                    <div className="max-h-48 overflow-y-auto border rounded">
+                      <table className="w-full text-sm">
+                        <thead className="bg-red-50 sticky top-0">
+                          <tr>
+                            <th className="text-left px-2 py-1">Campo</th>
+                            <th className="text-left px-2 py-1">Mensaje</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {validation.errors.map((err, idx) => (
+                            <tr key={idx} className="border-t">
+                              <td className="px-2 py-1 font-mono text-xs">{err.field}</td>
+                              <td className="px-2 py-1">{err.message}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {validation.warnings.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-yellow-600">Advertencias:</p>
+                    <ul className="list-disc list-inside text-sm text-muted-foreground">
+                      {validation.warnings.map((warn, idx) => (
+                        <li key={idx}>{warn.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -150,7 +235,7 @@ export function RipsPage() {
                           size="sm"
                           onClick={() => handleDownload(exp.id, `${exp.period_year}${String(exp.period_month).padStart(2, "0")}`)}
                         >
-                          Descargar
+                          Descargar ZIP
                         </Button>
                       )}
                     </div>

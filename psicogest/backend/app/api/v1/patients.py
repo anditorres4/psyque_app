@@ -1,11 +1,16 @@
 """Patients router — RF-PAC-01, RF-PAC-02, RF-PAC-03 from PRD §7.1."""
+import uuid
 from typing import Annotated
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 
 from app.core.deps import get_tenant_db, TenantDB
+from app.models.clinical_record import ClinicalRecord
+from app.models.patient import Patient
+from app.schemas.clinical_record import ClinicalRecordDetail, ClinicalRecordUpsert
 from app.schemas.patient import (
     PaginatedPatients,
     PatientCreate,
@@ -196,3 +201,66 @@ def export_patient_history(
             "Content-Type": "application/pdf",
         },
     )
+
+
+@router.get("/{patient_id}/clinical-record", response_model=ClinicalRecordDetail)
+def get_clinical_record(
+    patient_id: uuid.UUID,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> ClinicalRecordDetail:
+    """Return clinical record for patient, or an empty default if not yet created."""
+    result = ctx.db.execute(
+        select(ClinicalRecord).where(ClinicalRecord.patient_id == patient_id)
+    )
+    record = result.scalar_one_or_none()
+    if record is None:
+        return ClinicalRecordDetail(
+            id=uuid.uuid4(),
+            patient_id=patient_id,
+            chief_complaint=None,
+            antecedentes_personales=None,
+            antecedentes_familiares=None,
+            antecedentes_medicos=None,
+            antecedentes_psicologicos=None,
+            initial_diagnosis_cie11=None,
+            initial_diagnosis_description=None,
+            treatment_plan=None,
+            therapeutic_goals=None,
+            created_at=datetime.now(tz=timezone.utc),
+            updated_at=datetime.now(tz=timezone.utc),
+        )
+    return record
+
+
+@router.put("/{patient_id}/clinical-record", response_model=ClinicalRecordDetail)
+def upsert_clinical_record(
+    patient_id: uuid.UUID,
+    body: ClinicalRecordUpsert,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> ClinicalRecordDetail:
+    """Create or update clinical record for patient."""
+    result = ctx.db.execute(
+        select(ClinicalRecord).where(ClinicalRecord.patient_id == patient_id)
+    )
+    record = result.scalar_one_or_none()
+
+    data = body.model_dump(exclude_unset=False)
+    for key in ("antecedentes_personales", "antecedentes_familiares",
+                "antecedentes_medicos", "antecedentes_psicologicos"):
+        if data.get(key) is not None:
+            data[key] = data[key].model_dump() if hasattr(data[key], "model_dump") else data[key]
+
+    if record is None:
+        record = ClinicalRecord(
+            tenant_id=ctx.tenant.tenant_id,
+            patient_id=patient_id,
+            **data,
+        )
+        ctx.db.add(record)
+    else:
+        for k, v in data.items():
+            setattr(record, k, v)
+
+    ctx.db.commit()
+    ctx.db.refresh(record)
+    return record

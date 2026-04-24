@@ -2,13 +2,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_tenant_db, TenantDB
 from app.schemas.rips import (
     RipsExportSummary,
     RipsGenerateRequest,
     RipsGenerationResponse,
+    RipsValidateRequest,
+    RipsValidateResponse,
 )
 from app.services.rips_service import RipsGenerationError, RipsService
 
@@ -17,6 +19,20 @@ router = APIRouter(prefix="/rips", tags=["rips"])
 
 def _service(ctx: TenantDB) -> RipsService:
     return RipsService(ctx.db, ctx.tenant.tenant_id)
+
+
+@router.post("/validate", response_model=RipsValidateResponse)
+def validate_rips(
+    body: RipsValidateRequest,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> RipsValidateResponse:
+    result = _service(ctx).validate(body.year, body.month)
+    return RipsValidateResponse(
+        valid=result["valid"],
+        errors=result["errors"],
+        warnings=result["warnings"],
+        sessions_count=result["sessions_count"],
+    )
 
 
 @router.post("/generate", response_model=RipsGenerationResponse)
@@ -69,8 +85,9 @@ def download_rips(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ) -> StreamingResponse:
     try:
-        zip_bytes = _service(ctx).download_zip(export_id)
-        export = _service(ctx).get_export(export_id)
+        service = _service(ctx)
+        export = service.get_export(export_id)
+        zip_bytes = service.download_zip(export_id)
         filename = f"rips_{export.period_year:04d}{export.period_month:02d}.zip"
         return StreamingResponse(
             iter([zip_bytes]),

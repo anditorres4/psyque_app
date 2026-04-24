@@ -11,6 +11,8 @@ const navItems: NavItem[] = [
   { to: "/sessions", label: "Sesiones activas", icon: "🩺" },
   { to: "/rips", label: "RIPS", icon: "📋" },
   { to: "/invoices", label: "Facturas", icon: "💳" },
+  { to: "/caja", label: "Caja", icon: "💵" },
+  { to: "/cartera", label: "Cartera", icon: "📁" },
   { to: "/reports", label: "Reportes", icon: "📈" },
   { to: "/settings", label: "Configuración", icon: "⚙️" },
 ];

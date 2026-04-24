@@ -12,6 +12,8 @@ import { AgendaPage } from "@/pages/agenda/AgendaPage";
 import { SessionsPage } from "@/pages/sessions/SessionsPage";
 import { RipsPage } from "@/pages/rips/RipsPage";
 import { InvoicesPage } from "@/pages/invoices/InvoicesPage";
+import { CajaPage } from "@/pages/caja/CajaPage";
+import { CarteraPage } from "@/pages/cartera/CarteraPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
 
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/sessions/new" element={<SessionsPage />} />
         <Route path="/rips" element={<RipsPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/caja" element={<CajaPage />} />
+        <Route path="/cartera" element={<CarteraPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

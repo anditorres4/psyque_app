@@ -32,3 +32,4 @@ class RipsExport(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.TIMESTAMP(timezone=True), nullable=True
     )
     validation_errors: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
+    snapshot: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)

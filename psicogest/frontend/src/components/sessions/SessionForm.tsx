@@ -219,6 +219,7 @@ export function SessionForm({
   const [nextPlan, setNextPlan] = useState("");
   const [fee, setFee] = useState("150000");
   const [authNumber, setAuthNumber] = useState("");
+  const [tipoDxPrincipal, setTipoDxPrincipal] = useState("1");
   const [actualStart, setActualStart] = useState(
     defaultStart ? toLocalDatetimeValue(defaultStart) : ""
   );
@@ -254,6 +255,7 @@ export function SessionForm({
       next_session_plan: nextPlan || undefined,
       session_fee: parseInt(fee, 10),
       authorization_number: authNumber || undefined,
+      tipo_dx_principal: tipoDxPrincipal,
     });
   };
 
@@ -396,6 +398,21 @@ export function SessionForm({
             maxLength={30}
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Tipo de diagnóstico principal <span className="text-[#E74C3C]">*</span>
+        </label>
+        <select
+          className="h-10 w-full rounded-md border border-input px-3 text-sm"
+          value={tipoDxPrincipal}
+          onChange={(e) => setTipoDxPrincipal(e.target.value)}
+        >
+          <option value="1">1 — Impresión diagnóstica</option>
+          <option value="2">2 — Diagnóstico confirmado</option>
+          <option value="3">3 — Diagnóstico descartado</option>
+        </select>
       </div>
 
       <div className="pt-2">

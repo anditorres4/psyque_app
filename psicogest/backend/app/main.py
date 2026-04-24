@@ -5,6 +5,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.caja import router as caja_router
+from app.api.v1.cartera import router as cartera_router
 from app.api.v1.auth_routes import router as auth_router
 from app.api.v1.health import router as health_router
 from app.api.v1.appointments import router as appointments_router
@@ -72,3 +74,5 @@ app.include_router(profile_router, prefix="/api/v1")
 app.include_router(availability_router, prefix="/api/v1")
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
+app.include_router(caja_router, prefix="/api/v1")
+app.include_router(cartera_router, prefix="/api/v1")

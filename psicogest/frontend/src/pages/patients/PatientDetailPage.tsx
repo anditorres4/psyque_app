@@ -18,6 +18,8 @@ import { SessionDetail } from "@/components/sessions/SessionDetail";
 import type { SessionCreatePayload } from "@/lib/api";
 import { ApiError, api } from "@/lib/api";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
+import { ClinicalRecordSection } from "@/components/patients/ClinicalRecordSection";
+import { SessionTimeline } from "@/components/patients/SessionTimeline";
 
 type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips";
 
@@ -207,9 +209,17 @@ export function PatientDetailPage() {
       )}
 
       {activeTab === "historia" && id && (
-        <div className="max-w-2xl space-y-3">
-          <p className="text-sm text-muted-foreground mb-3">Sesiones firmadas — solo lectura (Res. 1995/1999)</p>
-          <PatientSignedSessionsList patientId={id} />
+        <div className="max-w-2xl space-y-8">
+          <ClinicalRecordSection patientId={id} />
+          <div>
+            <h3 className="text-sm font-semibold text-[#1E3A5F] mb-3">Evolución — Sesiones</h3>
+            <SessionTimeline
+              patientId={id}
+              onOpenSession={(sessionId) => {
+                setActiveTab("sesiones");
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -224,49 +234,6 @@ export function PatientDetailPage() {
       {activeTab === "rips" && id && (
         <RipsTab />
       )}
-    </div>
-  );
-}
-
-function PatientSignedSessionsList({ patientId }: { patientId: string }) {
-  const { data, isLoading } = useSessions({ patient_id: patientId, status: "signed" });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  if (selectedId) {
-    return <SessionDetail sessionId={selectedId} onBack={() => setSelectedId(null)} />;
-  }
-
-  if (isLoading) return <Skeleton className="h-24" />;
-  if (!data || data.items.length === 0) {
-    return (
-      <EmptyState
-        title="Sin sesiones firmadas"
-        description="Las sesiones aparecen aquí una vez firmadas."
-        icon="📋"
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {data.items.map((sess) => (
-        <button
-          key={sess.id}
-          type="button"
-          onClick={() => setSelectedId(sess.id)}
-          className="w-full text-left border rounded-lg p-4 hover:bg-slate-50 transition-colors border-green-100"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[#1E3A5F]">
-              {new Date(sess.actual_start).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" })}
-            </span>
-            <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">Firmada</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            CIE-11: {sess.diagnosis_cie11} · CUPS: {sess.cups_code}
-          </p>
-        </button>
-      ))}
     </div>
   );
 }

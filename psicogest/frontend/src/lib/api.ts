@@ -19,10 +19,14 @@ async function request<T>(
   body?: unknown
 ): Promise<T> {
   const headers = await getAuthHeader();
+  const hasBody = body !== undefined;
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json", ...headers },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    },
+    body: hasBody ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
@@ -252,6 +256,7 @@ export interface SessionCreatePayload {
   next_session_plan?: string;
   session_fee: number;
   authorization_number?: string;
+  tipo_dx_principal?: string;
 }
 
 export interface SessionUpdatePayload {
@@ -266,6 +271,7 @@ export interface SessionUpdatePayload {
   next_session_plan?: string;
   session_fee?: number;
   authorization_number?: string;
+  tipo_dx_principal?: string;
 }
 
 export interface SessionNoteDetail {
@@ -292,6 +298,27 @@ export interface RipsExportSummary {
 export interface RipsGenerateRequest {
   year: number;
   month: number;
+}
+
+export interface RipsValidationError {
+  session_id?: string;
+  field: string;
+  value?: string;
+  message: string;
+}
+
+export interface RipsValidationWarning {
+  session_id?: string;
+  field: string;
+  value?: string;
+  message: string;
+}
+
+export interface RipsValidateResponse {
+  valid: boolean;
+  errors: RipsValidationError[];
+  warnings: RipsValidationWarning[];
+  sessions_count: number;
 }
 
 export interface RipsGenerationResponse {
@@ -386,7 +413,131 @@ export interface ClinicalDocument {
   created_at: string;
 }
 
-// --- Reports -------------------------------------------------------------
+// --- Clinical Record --------------------------------------------------------
+export interface AntecedentesBlock {
+  items: string[];
+  notas: string;
+}
+
+export interface ClinicalRecord {
+  id: string;
+  patient_id: string;
+  chief_complaint: string | null;
+  antecedentes_personales: AntecedentesBlock | null;
+  antecedentes_familiares: AntecedentesBlock | null;
+  antecedentes_medicos: AntecedentesBlock | null;
+  antecedentes_psicologicos: AntecedentesBlock | null;
+  initial_diagnosis_cie11: string | null;
+  initial_diagnosis_description: string | null;
+  treatment_plan: string | null;
+  therapeutic_goals: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClinicalRecordUpsert {
+  chief_complaint?: string | null;
+  antecedentes_personales?: AntecedentesBlock | null;
+  antecedentes_familiares?: AntecedentesBlock | null;
+  antecedentes_medicos?: AntecedentesBlock | null;
+  antecedentes_psicologicos?: AntecedentesBlock | null;
+  initial_diagnosis_cie11?: string | null;
+  initial_diagnosis_description?: string | null;
+  treatment_plan?: string | null;
+  therapeutic_goals?: string | null;
+}
+
+// --- Caja / Cash ----------------------------------------------------------
+
+export type CashSessionStatus = "open" | "closed";
+export type TransactionType = "income" | "expense";
+export type IncomeCategory = "particular" | "eps" | "otro";
+export type ExpenseCategory = "nomina" | "servicios" | "compras" | "otro";
+export type PaymentMethod = "efectivo" | "transferencia" | "tarjeta";
+
+export interface CashSessionSummary {
+  id: string;
+  opened_at: string;
+  closed_at: string | null;
+  status: CashSessionStatus;
+  notes: string | null;
+  total_income: number;
+  total_expense: number;
+}
+
+export interface CashSessionDetail extends CashSessionSummary {
+  created_by: string;
+}
+
+export interface CashTransactionSummary {
+  id: string;
+  session_id: string | null;
+  type: TransactionType;
+  amount: number;
+  category: IncomeCategory | ExpenseCategory;
+  payment_method: PaymentMethod | null;
+  description: string;
+  patient_id: string | null;
+  invoice_id: string | null;
+  created_at: string;
+  created_by: string;
+}
+
+export interface CashTransactionCreate {
+  type: TransactionType;
+  amount: number;
+  category: IncomeCategory | ExpenseCategory;
+  payment_method?: PaymentMethod;
+  description?: string;
+  invoice_id?: string;
+  patient_id?: string;
+  eps_name?: string;
+}
+
+export interface CashSessionClose {
+  notes?: string;
+}
+
+export interface CashSessionListResponse {
+  items: CashSessionSummary[];
+  total: number;
+}
+
+export interface CashTransactionListResponse {
+  items: CashTransactionSummary[];
+  total: number;
+}
+
+// --- Cartera --------------------------------------------------------------
+
+export type PortfolioType = "particular" | "eps" | "all";
+
+export interface CarteraSummary {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  payer_type: string;
+  eps_name: string | null;
+  total_billed: number;
+  total_paid: number;
+  balance: number;
+  last_activity: string | null;
+  invoice_ids: string[];
+}
+
+export interface CarteraPortfolioSummary {
+  total_particular: number;
+  total_eps: number;
+  grand_total: number;
+}
+
+export interface CarteraPaymentCreate {
+  amount: number;
+  description?: string;
+  invoice_id: string;
+}
+
+// --- Reports ------------------------------------------------------------
 export interface RevenueReportItem {
   month: string;
   revenue: number;
@@ -419,9 +570,37 @@ export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
   },
+  caja: {
+    listSessions: () => request<CashSessionListResponse>("GET", "/caja/sessions"),
+    getSession: (id: string) => request<CashSessionDetail>("GET", `/caja/sessions/${id}`),
+    getCurrentSession: () => request<CashSessionDetail>("GET", "/caja/sessions/current"),
+    openSession: () => request<CashSessionDetail>("POST", "/caja/sessions"),
+    closeSession: (id: string, body?: CashSessionClose) => request<CashSessionDetail>("PUT", `/caja/sessions/${id}/close`, body),
+    listTransactions: (sessionId: string) => request<CashTransactionListResponse>("GET", `/caja/sessions/${sessionId}/transactions`),
+    createTransaction: (sessionId: string, body: CashTransactionCreate) =>
+      request<CashTransactionSummary>("POST", `/caja/sessions/${sessionId}/transactions`, body),
+    updateTransaction: (id: string, body: Partial<CashTransactionCreate>) =>
+      request<CashTransactionSummary>("PUT", `/caja/transactions/${id}`, body),
+    deleteTransaction: (id: string) => request<void>("DELETE", `/caja/transactions/${id}`),
+  },
+  cartera: {
+    list: (params?: { type?: PortfolioType; search?: string; page?: number; page_size?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.type && params.type !== "all") q.set("type", params.type);
+      if (params?.search) q.set("search", params.search);
+      if (params?.page) q.set("page", String(params.page));
+      if (params?.page_size) q.set("page_size", String(params.page_size));
+      return request<{ items: CarteraSummary[]; total: number }>("GET", `/cartera?${q}`);
+    },
+    getSummary: () => request<CarteraPortfolioSummary>("GET", "/cartera/summary"),
+    registerPayment: (invoiceId: string, body: CarteraPaymentCreate) =>
+      request<CashTransactionSummary>("POST", `/cartera/invoices/${invoiceId}/payments`, body),
+  },
   rips: {
     generate: (body: RipsGenerateRequest) =>
       request<RipsGenerationResponse>("POST", "/rips/generate", body),
+    validate: (body: RipsGenerateRequest) =>
+      request<RipsValidateResponse>("POST", "/rips/validate", body),
     list: (limit?: number) => {
       const q = new URLSearchParams();
       if (limit) q.set("limit", String(limit));
@@ -575,6 +754,13 @@ export const api = {
       request<{ url: string }>("GET", `/documents/${documentId}/download`),
     delete: (documentId: string) =>
       request<void>("DELETE", `/documents/${documentId}`),
+  },
+  // --- Clinical Record --------------------------------------------------------
+  clinicalRecord: {
+    get: (patientId: string): Promise<ClinicalRecord> =>
+      request<ClinicalRecord>("GET", `/patients/${patientId}/clinical-record`),
+    upsert: (patientId: string, body: ClinicalRecordUpsert): Promise<ClinicalRecord> =>
+      request<ClinicalRecord>("PUT", `/patients/${patientId}/clinical-record`, body),
   },
   // --- Reports ------------------------------------------------------------
   reports: {

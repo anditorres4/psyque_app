@@ -55,6 +55,9 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     rips_included: Mapped[bool] = mapped_column(
         sa.Boolean(), nullable=False, server_default=sa.text("false")
     )
+    tipo_dx_principal: Mapped[str] = mapped_column(
+        sa.String(1), nullable=False, server_default=sa.text("'1'")
+    )
 
 
 class SessionNote(Base, UUIDPrimaryKey, TenantMixin):

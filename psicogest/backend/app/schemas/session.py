@@ -3,7 +3,9 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.core.constants import DIAGNOSIS_TYPE
 
 _CIE11_RE = re.compile(r"^[0-9A-Z][0-9A-Z]{2,3}(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?$")
 _CUPS_RE = re.compile(r"^\d{6}$")
@@ -23,6 +25,14 @@ class SessionCreate(BaseModel):
     next_session_plan: str | None = None
     session_fee: int = Field(..., ge=0)
     authorization_number: str | None = Field(None, max_length=30)
+    tipo_dx_principal: str = Field(default="1", max_length=1)
+
+    @field_validator("tipo_dx_principal")
+    @classmethod
+    def validate_tipo_dx(cls, v: str) -> str:
+        if v not in DIAGNOSIS_TYPE:
+            raise ValueError(f"tipo_dx_principal debe ser uno de: {', '.join(DIAGNOSIS_TYPE.keys())}")
+        return v
 
     @model_validator(mode="after")
     def end_after_start(self) -> "SessionCreate":
@@ -55,6 +65,14 @@ class SessionUpdate(BaseModel):
     next_session_plan: str | None = None
     session_fee: int | None = Field(None, ge=0)
     authorization_number: str | None = Field(None, max_length=30)
+    tipo_dx_principal: str | None = Field(None, max_length=1)
+
+    @field_validator("tipo_dx_principal")
+    @classmethod
+    def validate_tipo_dx(cls, v: str | None) -> str | None:
+        if v is not None and v not in DIAGNOSIS_TYPE:
+            raise ValueError(f"tipo_dx_principal debe ser uno de: {', '.join(DIAGNOSIS_TYPE.keys())}")
+        return v
 
     @model_validator(mode="after")
     def end_after_start(self) -> "SessionUpdate":
@@ -89,6 +107,7 @@ class SessionSummary(BaseModel):
     session_fee: int
     status: str
     created_at: datetime
+    tipo_dx_principal: str
 
 
 class SessionDetail(SessionSummary):

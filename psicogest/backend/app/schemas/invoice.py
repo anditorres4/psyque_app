@@ -26,6 +26,8 @@ class InvoiceSummary(BaseModel):
     subtotal_cop: int
     tax_cop: int
     total_cop: int
+    amount_paid: int
+    payment_status: str
     created_at: datetime
 
 

@@ -70,6 +70,7 @@ class SessionService:
             next_session_plan=data.get("next_session_plan"),
             session_fee=data["session_fee"],
             authorization_number=data.get("authorization_number"),
+            tipo_dx_principal=data.get("tipo_dx_principal", "1"),
             status="draft",
         )
         self.db.add(sess)
@@ -88,6 +89,7 @@ class SessionService:
             "actual_start", "actual_end", "diagnosis_cie11", "diagnosis_description",
             "cups_code", "consultation_reason", "intervention", "evolution",
             "next_session_plan", "session_fee", "authorization_number",
+            "tipo_dx_principal",
         }
         for key, value in data.items():
             if key in allowed:
@@ -119,6 +121,7 @@ class SessionService:
             sess.next_session_plan or "",
             str(sess.session_fee),
             sess.authorization_number or "",
+            sess.tipo_dx_principal,
         ])
         sess.session_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
         sess.signed_at = datetime.now(tz=timezone.utc)
