@@ -11,6 +11,8 @@ from app.models.invoice import Invoice
 from app.models.patient import Patient
 from app.models.session import Session
 from app.models.tenant import Tenant
+from app.services.email_service import EmailService
+from app.services.invoice_pdf_service import build_invoice_pdf
 
 
 class InvoiceNotFoundError(Exception):
@@ -73,6 +75,42 @@ class InvoiceService:
         self.db.refresh(invoice)
         return invoice
 
+    def create_draft_bulk(
+        self,
+        patient_id: str,
+        date_from: datetime,
+        date_to: datetime,
+    ) -> Invoice:
+        """Create a draft invoice from all signed sessions in a date range."""
+        patient_uuid = uuid.UUID(patient_id)
+
+        patient = self.db.get(Patient, patient_uuid)
+        if not patient or patient.tenant_id != self._tenant_uuid:
+            raise InvoiceNotFoundError("Paciente no encontrado.")
+
+        sessions = (
+            self.db.query(Session)
+            .filter(
+                Session.tenant_id == self._tenant_uuid,
+                Session.patient_id == patient_uuid,
+                Session.status == "signed",
+                Session.actual_start >= date_from,
+                Session.actual_start <= date_to,
+            )
+            .order_by(Session.actual_start)
+            .all()
+        )
+
+        if not sessions:
+            raise InvoiceNotFoundError(
+                "No hay sesiones firmadas en el rango de fechas indicado."
+            )
+
+        return self.create_draft(
+            patient_id=patient_id,
+            session_ids=[str(s.id) for s in sessions],
+        )
+
     def _generate_invoice_number(self) -> str:
         """Generate sequential invoice number: INV-YYYY-NNNN."""
         year = datetime.now().year
@@ -86,12 +124,32 @@ class InvoiceService:
         ) + 1
         return f"INV-{year}-{count:04d}"
 
-    def issue(self, invoice_id: str) -> Invoice:
-        """Issue a draft invoice (change status to issued)."""
+    def issue(self, invoice_id: str, email_service: EmailService | None = None) -> Invoice:
+        """Issue a draft invoice (change status to issued).
+
+        If email_service is provided and patient has email, sends invoice PDF.
+        """
         invoice = self._get_invoice(invoice_id)
         invoice.status = "issued"
         invoice.issue_date = datetime.now(tz=timezone.utc)
         self.db.flush()
+
+        if email_service is not None:
+            patient = self.db.get(Patient, invoice.patient_id)
+            if patient and patient.email:
+                try:
+                    pdf_data = self.get_pdf_data(invoice_id)
+                    pdf_bytes = build_invoice_pdf(pdf_data)
+                    email_service.send_invoice(
+                        to_email=patient.email,
+                        patient_name=patient.full_name,
+                        invoice_number=invoice.invoice_number,
+                        total_cop=invoice.total_cop,
+                        pdf_bytes=pdf_bytes,
+                    )
+                except Exception:
+                    pass  # email failure must not revert the invoice
+
         self.db.refresh(invoice)
         return invoice
 

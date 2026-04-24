@@ -2,16 +2,18 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_tenant_db, TenantDB
 from app.schemas.invoice import (
+    InvoiceBulkCreate,
     InvoiceCreate,
     InvoiceDetail,
     InvoiceListResponse,
     InvoiceSummary,
     InvoiceUpdate,
 )
+from app.services.email_service import EmailService
 from app.services.invoice_pdf_service import build_invoice_pdf
 from app.services.invoice_service import InvoiceNotFoundError, InvoiceService
 
@@ -59,6 +61,27 @@ def list_invoices(
     )
 
 
+@router.post("/bulk", response_model=InvoiceSummary, status_code=status.HTTP_201_CREATED)
+def create_bulk_invoice(
+    body: InvoiceBulkCreate,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> InvoiceSummary:
+    try:
+        invoice = _service(ctx).create_draft_bulk(
+            patient_id=str(body.patient_id),
+            date_from=body.date_from,
+            date_to=body.date_to,
+        )
+        ctx.db.commit()
+        ctx.db.refresh(invoice)
+        return InvoiceSummary.model_validate(invoice)
+    except InvoiceNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+
 @router.get("/{invoice_id}", response_model=InvoiceDetail)
 def get_invoice(
     invoice_id: str,
@@ -98,7 +121,8 @@ def issue_invoice(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ) -> InvoiceSummary:
     try:
-        invoice = _service(ctx).issue(invoice_id)
+        email_svc = EmailService()
+        invoice = _service(ctx).issue(invoice_id, email_service=email_svc)
         ctx.db.commit()
         ctx.db.refresh(invoice)
         return InvoiceSummary.model_validate(invoice)

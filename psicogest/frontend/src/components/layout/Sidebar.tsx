@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
-interface NavItem { to: string; label: string; icon: string; }
+interface NavItem { to: string; label: string; icon: string; indent?: boolean; }
 
 const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -11,6 +11,7 @@ const navItems: NavItem[] = [
   { to: "/sessions", label: "Sesiones activas", icon: "🩺" },
   { to: "/rips", label: "RIPS", icon: "📋" },
   { to: "/invoices", label: "Facturas", icon: "💳" },
+  { to: "/invoices/bulk", label: "Facturación en masa", icon: "📦", indent: true },
   { to: "/caja", label: "Caja", icon: "💵" },
   { to: "/cartera", label: "Cartera", icon: "📁" },
   { to: "/reports", label: "Reportes", icon: "📈" },
@@ -58,6 +59,7 @@ export function Sidebar({ onSearchClick }: SidebarProps) {
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                item.indent && "pl-8",
                 isActive
                   ? "bg-[#2E86AB] text-white"
                   : "text-white/70 hover:bg-white/10 hover:text-white"

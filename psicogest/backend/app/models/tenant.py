@@ -46,3 +46,23 @@ class Tenant(Base, UUIDPrimaryKey):
         onupdate=func.now(),
         nullable=False,
     )
+
+    # --- Datos fiscales para FEV (Factura Electrónica de Venta) ---
+    email: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
+    address: Mapped[str | None] = mapped_column(sa.String(300), nullable=True)
+    municipio_code: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
+    tipo_persona: Mapped[str | None] = mapped_column(
+        sa.Enum("natural", "juridica", name="tipo_persona_enum"),
+        nullable=True,
+    )
+    regime_tributario: Mapped[str | None] = mapped_column(
+        sa.Enum("ordinario", "simplificado", name="regime_tributario_enum"),
+        nullable=True,
+    )
+
+    # --- Resolución DIAN para numeración FEV ---
+    dian_resolution_number: Mapped[str | None] = mapped_column(sa.String(20), nullable=True)
+    dian_resolution_prefix: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
+    dian_resolution_from: Mapped[int | None] = mapped_column(sa.Integer(), nullable=True)
+    dian_resolution_to: Mapped[int | None] = mapped_column(sa.Integer(), nullable=True)
+    dian_resolution_date: Mapped[date | None] = mapped_column(sa.Date(), nullable=True)

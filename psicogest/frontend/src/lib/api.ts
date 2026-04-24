@@ -360,6 +360,12 @@ export interface InvoiceCreatePayload {
   session_ids: string[];
 }
 
+export interface InvoiceBulkPayload {
+  patient_id: string;
+  date_from: string;
+  date_to: string;
+}
+
 export interface InvoiceUpdatePayload {
   notes?: string;
 }
@@ -614,6 +620,8 @@ export const api = {
   invoices: {
     create: (body: InvoiceCreatePayload) =>
       request<InvoiceSummary>("POST", "/invoices", body),
+    bulk: (body: InvoiceBulkPayload) =>
+      request<InvoiceSummary>("POST", "/invoices/bulk", body),
     list: (params?: { patient_id?: string; status?: string; limit?: number }) => {
       const q = new URLSearchParams();
       if (params?.patient_id) q.set("patient_id", params.patient_id);

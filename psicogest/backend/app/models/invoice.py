@@ -36,7 +36,11 @@ class Invoice(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     subtotal_cop: Mapped[int] = mapped_column(sa.Integer(), nullable=False)
     tax_cop: Mapped[int] = mapped_column(sa.Integer(), nullable=False)
     total_cop: Mapped[int] = mapped_column(sa.Integer(), nullable=False)
-    amount_paid: Mapped[int] = mapped_column(sa.Integer(), nullable=False, default=0)
+    amount_paid: Mapped[int] = mapped_column(
+        sa.BigInteger(),
+        nullable=False,
+        default=0,
+    )
     payment_status: Mapped[str] = mapped_column(
         sa.Enum("unpaid", "partial", "paid", name="payment_status_enum"),
         nullable=False,
@@ -48,15 +52,15 @@ class Invoice(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.TIMESTAMP(timezone=True), nullable=True
     )
     pdf_file_path: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
-    amount_paid: Mapped[int] = mapped_column(
-        sa.BigInteger(),
-        nullable=False,
-        default=0,
-    )
-    payment_status: Mapped[str] = mapped_column(
-        sa.Enum("unpaid", "partial", "paid", name="payment_status"),
-        nullable=False,
-        default="unpaid",
+
+    # --- Campos FEV (Factura Electrónica de Venta) ---
+    cufe: Mapped[str | None] = mapped_column(sa.String(96), nullable=True)
+    qr_data: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    dian_response_code: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
+    dian_response_message: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    xml_file_path: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    fev_sent_at: Mapped[datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=True
     )
 
     def update_payment_status(self) -> None:

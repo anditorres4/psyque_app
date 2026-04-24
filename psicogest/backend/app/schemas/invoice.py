@@ -10,6 +10,12 @@ class InvoiceCreate(BaseModel):
     session_ids: list[uuid.UUID] = Field(..., min_length=1)
 
 
+class InvoiceBulkCreate(BaseModel):
+    patient_id: uuid.UUID
+    date_from: datetime
+    date_to: datetime
+
+
 class InvoiceUpdate(BaseModel):
     notes: str | None = None
 
