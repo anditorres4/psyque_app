@@ -13,7 +13,7 @@ export async function getAuthHeader(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
-async function request<T>(
+export async function request<T>(
   method: string,
   path: string,
   body?: unknown
