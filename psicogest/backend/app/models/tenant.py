@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, func
 
@@ -66,3 +66,20 @@ class Tenant(Base, UUIDPrimaryKey):
     dian_resolution_from: Mapped[int | None] = mapped_column(sa.Integer(), nullable=True)
     dian_resolution_to: Mapped[int | None] = mapped_column(sa.Integer(), nullable=True)
     dian_resolution_date: Mapped[date | None] = mapped_column(sa.Date(), nullable=True)
+
+    # --- Agendamiento público ---
+    booking_slug: Mapped[str | None] = mapped_column(sa.String(50), nullable=True, unique=True)
+    booking_enabled: Mapped[bool] = mapped_column(
+        sa.Boolean(), nullable=False, server_default=sa.text("false")
+    )
+    booking_welcome_message: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+
+    # --- IA / Diagnóstico asistido ---
+    ai_provider: Mapped[str | None] = mapped_column(sa.String(20), nullable=True)
+    ai_model: Mapped[str | None] = mapped_column(sa.String(100), nullable=True)
+    ai_api_key: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+
+    # --- Feature flags (JSONB) ---
+    features: Mapped[dict] = mapped_column(
+        JSONB(), nullable=False, server_default=sa.text("'{\"ai_diagnosis\": true, \"ai_summaries\": true, \"ai_documents\": true}'::jsonb")
+    )

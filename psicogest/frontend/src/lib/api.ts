@@ -60,6 +60,19 @@ async function downloadBlob(
   return { blob, filename };
 }
 
+async function publicRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: body !== undefined ? { "Content-Type": "application/json" } : {},
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, err.detail ?? "Error desconocido");
+  }
+  return res.json() as Promise<T>;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -102,6 +115,7 @@ export interface PatientDetail extends PatientSummary {
   authorization_number: string | null;
   consent_signed_at: string;
   updated_at: string;
+  clinical_record: Record<string, unknown> | null;
 }
 
 export interface PaginatedPatients {
@@ -110,6 +124,13 @@ export interface PaginatedPatients {
   page: number;
   page_size: number;
   pages: number;
+}
+
+export interface HistoryExportOptions {
+  include_diagnosis?: boolean;
+  include_treatment?: boolean;
+  include_evolution?: boolean;
+  patient_profile?: "adulto" | "infante" | "familiar";
 }
 
 export interface PatientCreatePayload {
@@ -202,6 +223,19 @@ export interface DashboardStats {
   pending_to_close: number;
   attendance_rate_30d: number | null;
   upcoming: AppointmentSummary[];
+}
+
+// --- Top Diagnoses -----------------------------------------------------------
+
+export interface TopDiagnosisItem {
+  diagnosis_cie11: string;
+  diagnosis_description: string;
+  count: number;
+}
+
+export interface TopDiagnosesResponse {
+  data: TopDiagnosisItem[];
+  months: number;
 }
 
 // --- Sessions ----------------------------------------------------------------
@@ -381,6 +415,9 @@ export interface TenantProfile {
   session_duration_min: number;
   plan: "starter" | "pro" | "clinic";
   plan_expires_at: string;
+  booking_enabled: boolean;
+  booking_slug: string | null;
+  booking_welcome_message: string | null;
 }
 
 export interface TenantProfileUpdate {
@@ -390,6 +427,8 @@ export interface TenantProfileUpdate {
   nit?: string;
   city?: string;
   session_duration_min?: number;
+  booking_enabled?: boolean;
+  booking_welcome_message?: string;
 }
 
 // --- Availability ------------------------------------------------------------
@@ -437,8 +476,24 @@ export interface ClinicalRecord {
   initial_diagnosis_description: string | null;
   treatment_plan: string | null;
   therapeutic_goals: string | null;
+  presenting_problems: string | null;
+  symptom_description: string | null;
+  mental_exam: MentalExamBlock | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MentalExamBlock {
+  appearance: string | null;
+  psychomotor: string | null;
+  cognition: string | null;
+  thought: string | null;
+  perception: string | null;
+  affect: string | null;
+  insight: string | null;
+  judgment: string | null;
+  language: string | null;
+  orientation: string | null;
 }
 
 export interface ClinicalRecordUpsert {
@@ -451,6 +506,131 @@ export interface ClinicalRecordUpsert {
   initial_diagnosis_description?: string | null;
   treatment_plan?: string | null;
   therapeutic_goals?: string | null;
+  presenting_problems?: string | null;
+  symptom_description?: string | null;
+  mental_exam?: MentalExamBlock | null;
+}
+
+// --- Therapy Indicators -----------------------------------------------------
+
+export interface TherapyIndicator {
+  id: string;
+  patient_id: string;
+  name: string;
+  description: string | null;
+  unit: string | null;
+  initial_value: number | null;
+  target_value: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TherapyMeasurement {
+  id: string;
+  indicator_id: string;
+  session_id: string | null;
+  value: number;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+}
+
+export interface TherapyIndicatorWithMeasurements extends TherapyIndicator {
+  measurements: TherapyMeasurement[];
+}
+
+export interface TherapyIndicatorCreate {
+  name: string;
+  description?: string | null;
+  unit?: string | null;
+  initial_value?: number | null;
+  target_value?: number | null;
+}
+
+export interface TherapyIndicatorUpdate extends Partial<TherapyIndicatorCreate> {
+  is_active?: boolean;
+}
+
+export interface TherapyMeasurementCreate {
+  value: number;
+  notes?: string | null;
+  session_id?: string | null;
+  measured_at: string;
+}
+
+// --- Referrals ----------------------------------------------------------
+
+export interface Referral {
+  id: string;
+  patient_id: string;
+  session_id: string | null;
+  referred_to_name: string;
+  referred_to_specialty: string;
+  referred_to_institution: string | null;
+  reason: string;
+  priority: "urgente" | "preferente" | "programado";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReferralCreate {
+  referred_to_name: string;
+  referred_to_specialty: string;
+  referred_to_institution?: string | null;
+  reason: string;
+  priority?: "urgente" | "preferente" | "programado";
+  notes?: string | null;
+  session_id?: string | null;
+}
+
+// --- Booking -----------------------------------------------------------------
+
+export interface BookingInfo {
+  tenant_name: string;
+  welcome_message: string;
+  session_duration_min: number;
+  slots: string[];
+}
+
+export interface BookingRequestCreate {
+  patient_name: string;
+  patient_email: string;
+  patient_phone?: string;
+  session_type: "individual" | "couple" | "family" | "followup";
+  requested_start: string;
+  notes?: string;
+}
+
+export interface BookingRequestCreated {
+  id: string;
+  status: string;
+}
+
+export interface BookingRequestSummary {
+  id: string;
+  patient_name: string;
+  patient_email: string;
+  patient_phone: string | null;
+  session_type: string;
+  requested_start: string;
+  requested_end: string;
+  status: "pending" | "confirmed" | "rejected";
+  notes: string | null;
+  created_at: string;
+}
+
+// --- Google Calendar --------------------------------------------------------
+
+export interface GCalStatus {
+  connected: boolean;
+  sync_enabled: boolean;
+  calendar_id: string | null;
+}
+
+export interface GCalAuthUrl {
+  auth_url: string;
 }
 
 // --- Caja / Cash ----------------------------------------------------------
@@ -662,14 +842,14 @@ export const api = {
       request<PatientDetail>("GET", `/patients/${id}`),
     update: (id: string, body: Partial<PatientCreatePayload>) =>
       request<PatientDetail>("PUT", `/patients/${id}`, body),
-    exportHistory: (id: string): Promise<Blob> => {
-      return getAuthHeader().then((headers) =>
-        fetch(`${API_BASE}/patients/${id}/history-export`, { headers })
-          .then((res) => {
-            if (!res.ok) throw new ApiError(res.status, "Error exporting history");
-            return res.blob();
-          })
-      );
+    exportHistory: async (id: string, opts: HistoryExportOptions = {}) => {
+      const params = new URLSearchParams();
+      if (opts.include_diagnosis !== undefined) params.set("include_diagnosis", String(opts.include_diagnosis));
+      if (opts.include_treatment !== undefined) params.set("include_treatment", String(opts.include_treatment));
+      if (opts.include_evolution !== undefined) params.set("include_evolution", String(opts.include_evolution));
+      if (opts.patient_profile) params.set("patient_profile", opts.patient_profile);
+      const qs = params.toString();
+      return downloadBlob("GET", `/patients/${id}/history-export${qs ? `?${qs}` : ""}`);
     },
   },
   appointments: {
@@ -792,5 +972,62 @@ export const api = {
       const q = months ? `?months=${months}` : "";
       return request<DashboardSummary>(`GET`, `/reports/summary${q}`);
     },
+    topDiagnoses: (months?: number) => {
+      const q = months ? `?months=${months}` : "";
+      return request<TopDiagnosesResponse>("GET", `/reports/top-diagnoses${q}`);
+    },
+  },
+  // --- Therapy Indicators ----------------------------------------------------
+  indicators: {
+    list: (patientId: string): Promise<TherapyIndicator[]> =>
+      request<TherapyIndicator[]>("GET", `/patients/${patientId}/indicators`),
+    create: (patientId: string, body: TherapyIndicatorCreate): Promise<TherapyIndicator> =>
+      request<TherapyIndicator>("POST", `/patients/${patientId}/indicators`, body),
+    get: (indicatorId: string): Promise<TherapyIndicatorWithMeasurements> =>
+      request<TherapyIndicatorWithMeasurements>("GET", `/indicators/${indicatorId}`),
+    update: (indicatorId: string, body: TherapyIndicatorUpdate): Promise<TherapyIndicator> =>
+      request<TherapyIndicator>("PUT", `/indicators/${indicatorId}`, body),
+    delete: (indicatorId: string): Promise<void> =>
+      request<void>("DELETE", `/indicators/${indicatorId}`),
+    addMeasurement: (indicatorId: string, body: TherapyMeasurementCreate): Promise<TherapyMeasurement> =>
+      request<TherapyMeasurement>("POST", `/indicators/${indicatorId}/measurements`, body),
+    listMeasurements: (indicatorId: string): Promise<TherapyMeasurement[]> =>
+      request<TherapyMeasurement[]>("GET", `/indicators/${indicatorId}/measurements`),
+  },
+referrals: {
+    list: (patientId: string) =>
+      request<Referral[]>("GET", `/patients/${patientId}/referrals`),
+    create: (patientId: string, body: ReferralCreate) =>
+      request<Referral>("POST", `/patients/${patientId}/referrals`, body),
+    downloadPdf: (referralId: string) =>
+      downloadBlob("GET", `/referrals/${referralId}/pdf`),
+  },
+  // --- Booking -----------------------------------------------------------------
+  booking: {
+    getInfo: (slug: string): Promise<BookingInfo> =>
+      publicRequest<BookingInfo>("GET", `/public/booking/${slug}`),
+    createRequest: (slug: string, body: BookingRequestCreate): Promise<BookingRequestCreated> =>
+      publicRequest<BookingRequestCreated>("POST", `/public/booking/${slug}/request`, body),
+  },
+  bookingRequests: {
+    list: (status?: string): Promise<BookingRequestSummary[]> => {
+      const q = status ? `?status=${status}` : "";
+      return request<BookingRequestSummary[]>("GET", `/booking-requests${q}`);
+    },
+    confirm: (id: string): Promise<BookingRequestSummary> =>
+      request<BookingRequestSummary>("POST", `/booking-requests/${id}/confirm`),
+    reject: (id: string): Promise<BookingRequestSummary> =>
+      request<BookingRequestSummary>("POST", `/booking-requests/${id}/reject`),
+  },
+  // --- Google Calendar --------------------------------------------------------
+  googleCalendar: {
+    getStatus: (): Promise<GCalStatus> =>
+      request<GCalStatus>("GET", "/google-calendar/status"),
+    getAuthUrl: (): Promise<GCalAuthUrl> =>
+      request<GCalAuthUrl>("GET", "/google-calendar/auth-url"),
+    disconnect: (): Promise<void> =>
+      request<void>("POST", "/google-calendar/disconnect"),
+    syncNow: (): Promise<void> =>
+      request<void>("POST", "/google-calendar/sync"),
   },
 };

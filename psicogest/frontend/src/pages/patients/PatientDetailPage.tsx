@@ -17,11 +17,20 @@ import { SessionForm } from "@/components/sessions/SessionForm";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import type { SessionCreatePayload } from "@/lib/api";
 import { ApiError, api } from "@/lib/api";
+import { useClinicalRecord } from "@/hooks/useClinicalRecord";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { ClinicalRecordSection } from "@/components/patients/ClinicalRecordSection";
 import { SessionTimeline } from "@/components/patients/SessionTimeline";
+import { IndicatorsTab } from "@/components/patients/IndicatorsTab";
+import { ReferralsTab } from "@/components/patients/ReferralsTab";
+import { AiDiagnosisPanel } from "@/components/patients/AiDiagnosisPanel";
+import { AiSummariesPanel } from "@/components/patients/AiSummariesPanel";
+import { AiDocumentsPanel } from "@/components/patients/AiDocumentsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
-type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips";
+type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips" | "seguimiento" | "remisiones" | "psyque-ia";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "info", label: "Información general" },
@@ -29,6 +38,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "sesiones", label: "Sesiones" },
   { id: "documentos", label: "Documentos" },
   { id: "rips", label: "RIPS" },
+  { id: "seguimiento", label: "Seguimiento" },
+  { id: "remisiones", label: "Remisiones" },
+  { id: "psyque-ia", label: "Psyque IA" },
 ];
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -61,9 +73,18 @@ export function PatientDetailPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [isEditing, setIsEditing] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportOptions, setExportOptions] = useState({
+    include_diagnosis: true,
+    include_treatment: true,
+    include_evolution: true,
+    patient_profile: "adulto" as "adulto" | "infante" | "familiar",
+  });
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: patient, isLoading, isError } = usePatient(id ?? "");
   const updateMutation = useUpdatePatient(id ?? "");
+  const { data: clinicalRecord } = useClinicalRecord(id ?? "");
 
   if (isLoading) {
     return (
@@ -96,16 +117,20 @@ export function PatientDetailPage() {
 
   const handleExportHistory = async () => {
     if (!id) return;
+    setIsExporting(true);
     try {
-      const blob = await api.patients.exportHistory(id);
-      const url = URL.createObjectURL(blob);
+      const result = await api.patients.exportHistory(id, exportOptions);
+      const url = URL.createObjectURL(result.blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `HC_${id}.pdf`;
+      a.download = result.filename;
       a.click();
       URL.revokeObjectURL(url);
+      setExportModalOpen(false);
     } catch (err) {
       console.error("Error exporting history:", err);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -147,9 +172,75 @@ export function PatientDetailPage() {
           >
             {isEditing ? "Cancelar edición" : "Editar"}
           </Button>
-          <Button onClick={handleExportHistory}>
-            Exportar HC
-          </Button>
+          <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Exportar HC</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Opciones de exportación</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Perfil del paciente</p>
+                  <div className="flex gap-4">
+                    {(["adulto", "infante", "familiar"] as const).map((p) => (
+                      <label key={p} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="patient_profile"
+                          value={p}
+                          checked={exportOptions.patient_profile === p}
+                          onChange={() => setExportOptions((o) => ({ ...o, patient_profile: p }))}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm capitalize">{p}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {exportOptions.patient_profile === "infante" && (
+                    <p className="text-xs text-muted-foreground">
+                      Incluye responsable legal desde contacto de emergencia.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Secciones a incluir</p>
+                  {(
+                    [
+                      { key: "include_diagnosis", label: "Diagnóstico (CIE-11)" },
+                      { key: "include_treatment", label: "Intervención y plan" },
+                      { key: "include_evolution", label: "Evolución" },
+                    ] as const
+                  ).map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={key}
+                        checked={exportOptions[key]}
+                        onCheckedChange={(checked) =>
+                          setExportOptions((o) => ({ ...o, [key]: !!checked }))
+                        }
+                      />
+                      <Label htmlFor={key} className="text-sm font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setExportModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleExportHistory} disabled={isExporting}>
+                  {isExporting ? "Generando..." : "Descargar PDF"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -233,6 +324,26 @@ export function PatientDetailPage() {
 
       {activeTab === "rips" && id && (
         <RipsTab />
+      )}
+
+      {activeTab === "seguimiento" && id && (
+        <IndicatorsTab patientId={id} />
+      )}
+
+      {activeTab === "remisiones" && id && (
+        <ReferralsTab patientId={id} />
+      )}
+
+      {activeTab === "psyque-ia" && id && patient && (
+        <div className="space-y-6">
+          <AiDiagnosisPanel
+            patientId={id}
+            clinicalRecord={clinicalRecord ?? null}
+            recentSessions={[]}
+          />
+          <AiSummariesPanel patientId={id} />
+          <AiDocumentsPanel patientId={id} />
+        </div>
       )}
     </div>
   );

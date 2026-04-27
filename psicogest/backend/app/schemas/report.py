@@ -45,3 +45,14 @@ class SessionTypeReportResponse(BaseModel):
 
 class NewPatientsReportResponse(BaseModel):
     data: list[NewPatientsReportItem]
+
+
+class TopDiagnosisItem(BaseModel):
+    diagnosis_cie11: str
+    diagnosis_description: str
+    count: int
+
+
+class TopDiagnosesResponse(BaseModel):
+    data: list[TopDiagnosisItem]
+    months: int

@@ -5,9 +5,10 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, EventClickArg, DatesSetArg } from "@fullcalendar/core";
 import { useAppointmentsByRange, useCreateAppointment } from "@/hooks/useAppointments";
+import { useBookingRequests, useConfirmBookingRequest, useRejectBookingRequest } from "@/hooks/useBooking";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 import { AppointmentSidebar } from "@/components/appointments/AppointmentSidebar";
-import { ApiError, type AppointmentCreatePayload } from "@/lib/api";
+import { ApiError, type AppointmentCreatePayload, type BookingRequestSummary } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -39,6 +40,11 @@ export function AgendaPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [selectedBookingRequest, setSelectedBookingRequest] = useState<BookingRequestSummary | null>(null);
+
+  const { data: bookingRequests = [] } = useBookingRequests("pending");
+  const confirmMutation = useConfirmBookingRequest();
+  const rejectMutation = useRejectBookingRequest();
 
   const handleDatesSet = useCallback((info: DatesSetArg) => {
     setRangeStart(info.start.toISOString());
@@ -52,8 +58,16 @@ export function AgendaPage() {
   }, []);
 
   const handleEventClick = useCallback((info: EventClickArg) => {
-    setSelectedAppointmentId(info.event.id);
-  }, []);
+    const { type, requestId } = info.event.extendedProps as { type?: string; requestId?: string };
+    if (type === "booking_request") {
+      const req = bookingRequests.find((r) => r.id === requestId) ?? null;
+      setSelectedBookingRequest(req);
+      setSelectedAppointmentId(null);
+    } else {
+      setSelectedAppointmentId(info.event.id);
+      setSelectedBookingRequest(null);
+    }
+  }, [bookingRequests]);
 
   const handleCreate = async (payload: AppointmentCreatePayload) => {
     setFormError(null);
@@ -69,16 +83,28 @@ export function AgendaPage() {
     }
   };
 
-  const calendarEvents = appointments.map((appt) => ({
-    id: appt.id,
-    title: `${SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type}`,
-    start: appt.scheduled_start,
-    end: appt.scheduled_end,
-    backgroundColor: STATUS_COLORS[appt.status] ?? "#2E86AB",
-    borderColor: STATUS_COLORS[appt.status] ?? "#2E86AB",
-    textColor: "#fff",
-    extendedProps: { status: appt.status, modality: appt.modality },
-  }));
+  const calendarEvents = [
+    ...appointments.map((appt) => ({
+      id: appt.id,
+      title: SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type,
+      start: appt.scheduled_start,
+      end: appt.scheduled_end,
+      backgroundColor: STATUS_COLORS[appt.status] ?? "#2E86AB",
+      borderColor: STATUS_COLORS[appt.status] ?? "#2E86AB",
+      textColor: "#fff",
+      extendedProps: { type: "appointment", status: appt.status, modality: appt.modality },
+    })),
+    ...bookingRequests.map((req) => ({
+      id: `br-${req.id}`,
+      title: `⏳ ${req.patient_name}`,
+      start: req.requested_start,
+      end: req.requested_end,
+      backgroundColor: "#F39C12",
+      borderColor: "#d68910",
+      textColor: "#fff",
+      extendedProps: { type: "booking_request", requestId: req.id },
+    })),
+  ];
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
@@ -180,6 +206,59 @@ export function AgendaPage() {
             appointmentId={selectedAppointmentId}
             onClose={() => setSelectedAppointmentId(null)}
           />
+        </div>
+      )}
+
+      {selectedBookingRequest && (
+        <div className="w-80 border-l bg-white shadow-md flex-shrink-0 overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="font-semibold text-[#1E3A5F]">Solicitud de cita</h2>
+            <button type="button" onClick={() => setSelectedBookingRequest(null)} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+          </div>
+          <div className="p-4 space-y-4">
+            <span className="inline-block text-xs px-2 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
+              Pendiente
+            </span>
+            <dl className="space-y-3">
+              <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Paciente</dt>
+                <dd className="text-sm font-medium">{selectedBookingRequest.patient_name}</dd></div>
+              <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Email</dt>
+                <dd className="text-sm">{selectedBookingRequest.patient_email}</dd></div>
+              {selectedBookingRequest.patient_phone && (
+                <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Teléfono</dt>
+                  <dd className="text-sm">{selectedBookingRequest.patient_phone}</dd></div>
+              )}
+              <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Fecha solicitada</dt>
+                <dd className="text-sm">{new Date(selectedBookingRequest.requested_start).toLocaleString("es-CO", {
+                  weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",
+                })}</dd></div>
+              <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Tipo</dt>
+                <dd className="text-sm capitalize">{selectedBookingRequest.session_type}</dd></div>
+              {selectedBookingRequest.notes && (
+                <div><dt className="text-xs text-muted-foreground uppercase tracking-wide">Notas</dt>
+                  <dd className="text-sm">{selectedBookingRequest.notes}</dd></div>
+              )}
+            </dl>
+            <div className="flex flex-col gap-2 pt-2">
+              <button type="button"
+                disabled={confirmMutation.isPending}
+                onClick={() => confirmMutation.mutate(selectedBookingRequest.id, { onSuccess: () => setSelectedBookingRequest(null) })}
+                className="w-full text-sm py-2 rounded bg-[#27AE60] hover:bg-green-700 text-white font-medium disabled:opacity-50"
+              >
+                {confirmMutation.isPending ? "Confirmando..." : "✓ Confirmar solicitud"}
+              </button>
+              <button type="button"
+                disabled={rejectMutation.isPending}
+                onClick={() => rejectMutation.mutate(selectedBookingRequest.id, { onSuccess: () => setSelectedBookingRequest(null) })}
+                className="w-full text-sm py-2 rounded border border-red-300 hover:bg-red-50 text-red-600 font-medium disabled:opacity-50"
+              >
+                {rejectMutation.isPending ? "Rechazando..." : "✕ Rechazar"}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Al confirmar, crea la cita manualmente en la agenda.
+            </p>
+          </div>
         </div>
       )}
     </div>

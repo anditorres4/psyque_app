@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 from app.core.deps import get_tenant_db, TenantDB
 from app.schemas.appointment import (
@@ -18,6 +18,7 @@ from app.services.appointment_service import (
     AppointmentNotFoundError,
     AppointmentService,
 )
+from app.services.gcal_sync_service import sync_appointment_background
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -54,11 +55,15 @@ def list_appointments_by_range(
 def create_appointment(
     body: AppointmentCreate,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
 ) -> AppointmentDetail:
     try:
         appt = _service(ctx).create(body.model_dump())
         ctx.db.commit()
         ctx.db.refresh(appt)
+        background_tasks.add_task(
+            sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "create"
+        )
         return AppointmentDetail.model_validate(appt)
     except AppointmentConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
@@ -80,11 +85,15 @@ def update_appointment(
     appointment_id: str,
     body: AppointmentUpdate,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
 ) -> AppointmentDetail:
     try:
         appt = _service(ctx).update(appointment_id, body.model_dump(exclude_none=True))
         ctx.db.commit()
         ctx.db.refresh(appt)
+        background_tasks.add_task(
+            sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "update"
+        )
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
@@ -97,6 +106,7 @@ def cancel_appointment(
     appointment_id: str,
     body: CancelRequest,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
 ) -> AppointmentDetail:
     try:
         appt = _service(ctx).cancel(
@@ -106,6 +116,9 @@ def cancel_appointment(
         )
         ctx.db.commit()
         ctx.db.refresh(appt)
+        background_tasks.add_task(
+            sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "cancel"
+        )
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
@@ -117,11 +130,15 @@ def cancel_appointment(
 def complete_appointment(
     appointment_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
 ) -> AppointmentDetail:
     try:
         appt = _service(ctx).complete(appointment_id)
         ctx.db.commit()
         ctx.db.refresh(appt)
+        background_tasks.add_task(
+            sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "update"
+        )
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
@@ -133,11 +150,15 @@ def complete_appointment(
 def noshow_appointment(
     appointment_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
 ) -> AppointmentDetail:
     try:
         appt = _service(ctx).mark_noshow(appointment_id)
         ctx.db.commit()
         ctx.db.refresh(appt)
+        background_tasks.add_task(
+            sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "update"
+        )
         return AppointmentDetail.model_validate(appt)
     except AppointmentNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")

@@ -1,5 +1,6 @@
-import { useDashboardStats } from "@/hooks/useDashboard";
-import type { AppointmentSummary } from "@/lib/api";
+import { useState } from "react";
+import { useDashboardStats, useTopDiagnoses } from "@/hooks/useDashboard";
+import type { AppointmentSummary, TopDiagnosisItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -15,6 +16,81 @@ const MODALITY_LABELS: Record<string, string> = {
   presential: "Presencial",
   virtual: "Virtual",
 };
+
+const MONTHS_OPTIONS = [
+  { value: 3, label: "3 m" },
+  { value: 6, label: "6 m" },
+  { value: 12, label: "12 m" },
+] as const;
+
+function DiagnosisRow({ item, rank }: { item: TopDiagnosisItem; rank: number }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b last:border-0">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold text-muted-foreground w-5 text-right shrink-0">
+          {rank}
+        </span>
+        <div>
+          <p className="text-sm font-medium text-[#1E3A5F]">{item.diagnosis_description}</p>
+          <p className="text-xs text-muted-foreground font-mono">{item.diagnosis_cie11}</p>
+        </div>
+      </div>
+      <span className="text-sm font-semibold text-[#1E3A5F] shrink-0 ml-4">
+        {item.count} {item.count === 1 ? "sesión" : "sesiones"}
+      </span>
+    </div>
+  );
+}
+
+function TopDiagnosesWidget() {
+  const [months, setMonths] = useState<3 | 6 | 12>(3);
+  const { data, isLoading, isError } = useTopDiagnoses(months);
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
+      <div className="px-5 py-4 border-b flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide">
+          Diagnósticos frecuentes
+        </h2>
+        <div className="flex gap-1">
+          {MONTHS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setMonths(opt.value)}
+              className={`text-xs px-2 py-1 rounded transition-colors ${
+                months === opt.value
+                  ? "bg-[#1E3A5F] text-white"
+                  : "text-muted-foreground hover:bg-gray-100"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-5">
+        {isLoading && (
+          <div className="py-6 text-center text-sm text-muted-foreground">Cargando...</div>
+        )}
+        {isError && (
+          <div className="py-6 text-center text-sm text-red-500">
+            Error al cargar diagnósticos.
+          </div>
+        )}
+        {data && data.data.length === 0 && (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No hay sesiones firmadas en los últimos {months} meses.
+          </div>
+        )}
+        {data &&
+          data.data.map((item, i) => (
+            <DiagnosisRow key={item.diagnosis_cie11} item={item} rank={i + 1} />
+          ))}
+      </div>
+    </div>
+  );
+}
 
 function StatCard({
   label,
@@ -159,6 +235,8 @@ export function DashboardPage() {
           />
         </div>
       )}
+
+      <TopDiagnosesWidget />
     </div>
   );
 }

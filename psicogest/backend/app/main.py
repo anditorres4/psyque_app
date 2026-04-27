@@ -19,9 +19,16 @@ from app.api.v1.profile import router as profile_router
 from app.api.v1.availability import router as availability_router
 from app.api.v1.documents import router as documents_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.indicators import router as indicators_router
+from app.api.v1.referrals import router as referrals_router
+from app.api.v1.booking import router as booking_public_router
+from app.api.v1.booking_requests import router as booking_requests_router
+from app.api.v1.google_calendar import router as gcal_router
+from app.api.v1.ai import router as ai_router
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.jobs.reminders import run_reminder_check
+from app.jobs.gcal_sync import run_gcal_sync
 
 
 @asynccontextmanager
@@ -33,6 +40,13 @@ async def lifespan(app: FastAPI):
         minutes=15,
         kwargs={"session_factory": SessionLocal},
         id="reminder_check",
+    )
+    scheduler.add_job(
+        run_gcal_sync,
+        "interval",
+        minutes=15,
+        kwargs={"session_factory": SessionLocal},
+        id="gcal_sync",
     )
     scheduler.start()
     yield
@@ -76,3 +90,9 @@ app.include_router(documents_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
 app.include_router(caja_router, prefix="/api/v1")
 app.include_router(cartera_router, prefix="/api/v1")
+app.include_router(indicators_router, prefix="/api/v1")
+app.include_router(referrals_router, prefix="/api/v1")
+app.include_router(booking_public_router, prefix="/api/v1")
+app.include_router(booking_requests_router, prefix="/api/v1")
+app.include_router(gcal_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")

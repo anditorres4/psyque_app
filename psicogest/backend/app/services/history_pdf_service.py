@@ -4,7 +4,9 @@ Generates a downloadable PDF containing the complete clinical history
 for a patient — all signed sessions, notes, and integrity hashes.
 """
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Literal
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -28,14 +30,25 @@ from app.models.session import SessionNote
 from app.models.tenant import Tenant
 
 
+@dataclass
+class PDFOptions:
+    include_diagnosis: bool = True
+    include_treatment: bool = True
+    include_evolution: bool = True
+    patient_profile: Literal["adulto", "infante", "familiar"] = "adulto"
+
+
 def _build_pdf(
     buffer,
     tenant: Tenant,
     patient: Patient,
     sessions: list[ClinicalSession],
     notes: dict[str, list[SessionNote]],
+    opts: PDFOptions | None = None,
 ) -> None:
     """Build PDF into an existing buffer (file-like object)."""
+    if opts is None:
+        opts = PDFOptions()
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
@@ -189,6 +202,12 @@ def _build_pdf(
             *patient_field("EPS", patient.eps_name),
         ]
 
+    if opts.patient_profile == "infante" and (patient.emergency_contact_name or patient.emergency_contact_phone):
+        patient_data += [
+            *patient_field("Responsable legal", patient.emergency_contact_name),
+            *patient_field("Teléfono responsable", patient.emergency_contact_phone),
+        ]
+
     for i in range(0, len(patient_data), 2):
         row = patient_data[i : i + 2]
         t = Table([row], colWidths=["50%", "50%"])
@@ -221,20 +240,28 @@ def _build_pdf(
 
             sess_fields = [
                 ("Fecha", sess.actual_start.strftime("%d/%m/%Y %H:%M")),
-                ("Hora fin", sess.actual_end.strftime("%H:%M")),
-                ("CIE-11", sess.diagnosis_cie11),
-                ("Diagnóstico", sess.diagnosis_description),
-                ("CUPS", sess.cups_code),
-                ("Valor", f"${sess.session_fee:,.0f} COP"),
             ]
+            if sess.actual_end:
+                sess_fields.append(("Hora fin", sess.actual_end.strftime("%H:%M")))
+            if sess.cups_code:
+                sess_fields.append(("CUPS", sess.cups_code))
+            if sess.session_fee is not None:
+                sess_fields.append(("Valor", f"${sess.session_fee:,.0f} COP"))
+            if opts.include_diagnosis and sess.diagnosis_cie11:
+                sess_fields += [
+                    ("CIE-11", sess.diagnosis_cie11),
+                    ("Diagnóstico", sess.diagnosis_description or ""),
+                ]
             if sess.authorization_number:
                 sess_fields.append(("Autorización", sess.authorization_number))
-            sess_fields.append(("Motivo de consulta", sess.consultation_reason))
-            sess_fields.append(("Intervención", sess.intervention))
-            if sess.evolution:
+            if sess.consultation_reason:
+                sess_fields.append(("Motivo de consulta", sess.consultation_reason))
+            if opts.include_treatment and sess.intervention:
+                sess_fields.append(("Intervención", sess.intervention))
+                if sess.next_session_plan:
+                    sess_fields.append(("Plan", sess.next_session_plan))
+            if opts.include_evolution and sess.evolution:
                 sess_fields.append(("Evolución", sess.evolution))
-            if sess.next_session_plan:
-                sess_fields.append(("Plan", sess.next_session_plan))
 
             for label, value in sess_fields:
                 story.append(Paragraph(label.upper(), styles["FieldLabel"]))
@@ -313,9 +340,11 @@ class HistoryPDFService:
         self.db = db
         self._tenant_id = uuid.UUID(tenant_id)
 
-    def generate(self, patient_id: str) -> bytes:
+    def generate(self, patient_id: str, opts: PDFOptions | None = None) -> bytes:
         """Generate clinical history PDF and return as bytes."""
         import io
+        if opts is None:
+            opts = PDFOptions()
 
         patient_uuid = uuid.UUID(patient_id)
         patient = self.db.get(Patient, patient_uuid)
@@ -354,6 +383,6 @@ class HistoryPDFService:
                 all_notes[key].append(n)
 
         buffer = io.BytesIO()
-        _build_pdf(buffer, tenant, patient, sessions, all_notes)
+        _build_pdf(buffer, tenant, patient, sessions, all_notes, opts)
         buffer.seek(0)
         return buffer.read()

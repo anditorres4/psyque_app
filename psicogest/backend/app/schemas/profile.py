@@ -16,6 +16,12 @@ class TenantProfileRead(BaseModel):
     session_duration_min: int
     plan: Literal["starter", "pro", "clinic"]
     plan_expires_at: datetime
+    booking_enabled: bool
+    booking_slug: str | None
+    booking_welcome_message: str | None
+    ai_provider: str | None
+    ai_model: str | None
+    features: dict = {}
 
     model_config = {"from_attributes": True}
 
@@ -27,3 +33,5 @@ class TenantProfileUpdate(BaseModel):
     nit: str | None = Field(None, max_length=15)
     city: str | None = Field(None, max_length=100)
     session_duration_min: int | None = Field(None, ge=30, le=120)
+    booking_enabled: bool | None = None
+    booking_welcome_message: str | None = Field(None, max_length=500)

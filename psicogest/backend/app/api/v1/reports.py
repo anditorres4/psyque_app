@@ -10,6 +10,7 @@ from app.schemas.report import (
     NewPatientsReportResponse,
     RevenueReportResponse,
     SessionTypeReportResponse,
+    TopDiagnosesResponse,
 )
 from app.services.report_service import ReportService
 
@@ -58,3 +59,13 @@ def dashboard_summary(
     months: int = Query(12, ge=1, le=24),
 ) -> DashboardSummary:
     return DashboardSummary(**_service(ctx).dashboard_summary(months))
+
+
+@router.get("/top-diagnoses", response_model=TopDiagnosesResponse)
+def top_diagnoses(
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    months: int = Query(3, ge=1, le=24),
+    limit: int = Query(10, ge=1, le=20),
+) -> TopDiagnosesResponse:
+    result = _service(ctx).top_diagnoses(months, limit)
+    return TopDiagnosesResponse(**result)

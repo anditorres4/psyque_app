@@ -1,7 +1,6 @@
 """Patients router — RF-PAC-01, RF-PAC-02, RF-PAC-03 from PRD §7.1."""
 import uuid
-from typing import Annotated
-from datetime import datetime, timezone
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -25,7 +24,7 @@ from app.services.patient_service import (
     PatientNotFoundError,
     PatientService,
 )
-from app.services.history_pdf_service import HistoryPDFService
+from app.services.history_pdf_service import HistoryPDFService, PDFOptions
 from app.services.session_service import SessionService
 from app.services.appointment_service import AppointmentService
 
@@ -181,6 +180,10 @@ def get_patient_appointments(
 def export_patient_history(
     patient_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    include_diagnosis: bool = Query(True),
+    include_treatment: bool = Query(True),
+    include_evolution: bool = Query(True),
+    patient_profile: Literal["adulto", "infante", "familiar"] = Query("adulto"),
 ) -> StreamingResponse:
     """Generate and download clinical history PDF (Res. 1995/1999 Art. 15)."""
     try:
@@ -188,8 +191,15 @@ def export_patient_history(
     except PatientNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
 
+    opts = PDFOptions(
+        include_diagnosis=include_diagnosis,
+        include_treatment=include_treatment,
+        include_evolution=include_evolution,
+        patient_profile=patient_profile,
+    )
+
     try:
-        pdf_bytes = HistoryPDFService(ctx.db, ctx.tenant.tenant_id).generate(patient_id)
+        pdf_bytes = HistoryPDFService(ctx.db, ctx.tenant.tenant_id).generate(patient_id, opts)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

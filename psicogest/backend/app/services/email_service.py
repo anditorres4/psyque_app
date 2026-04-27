@@ -51,6 +51,46 @@ class EmailService:
         response.raise_for_status()
         return True
 
+    def send_booking_notification(
+        self, *, to_email: str, tenant_name: str, patient_name: str,
+        patient_email: str, patient_phone: str | None,
+        requested_start: datetime, session_type: str, notes: str | None,
+    ) -> bool:
+        """Notifica al psicólogo sobre una nueva solicitud de cita."""
+        if not settings.resend_api_key:
+            return False
+
+        session_labels = {
+            "individual": "Individual", "couple": "Pareja",
+            "family": "Familia", "followup": "Seguimiento",
+        }
+        date_str = requested_start.strftime("%A %d de %B de %Y")
+        time_str = requested_start.strftime("%H:%M")
+        phone_line = f"<br><strong>Teléfono:</strong> {patient_phone}" if patient_phone else ""
+        notes_line = f"<p><strong>Notas:</strong> {notes}</p>" if notes else ""
+
+        payload = {
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Nueva solicitud de cita — {patient_name}",
+            "html": (
+                f"<p>Hola {tenant_name},</p>"
+                f"<p>Nueva solicitud de cita:</p>"
+                f"<p><strong>Paciente:</strong> {patient_name}<br>"
+                f"<strong>Email:</strong> {patient_email}{phone_line}<br>"
+                f"<strong>Tipo:</strong> {session_labels.get(session_type, session_type)}<br>"
+                f"<strong>Fecha:</strong> {date_str} — {time_str}</p>"
+                f"{notes_line}"
+                f"<p>Ingresa a psyque app para confirmar o rechazar.</p>"
+            ),
+        }
+        response = httpx.post(
+            self.RESEND_URL, json=payload,
+            headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
+        )
+        response.raise_for_status()
+        return True
+
     def send_invoice(
         self,
         *,

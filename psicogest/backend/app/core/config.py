@@ -18,12 +18,17 @@ class Settings(BaseSettings):
     supabase_database_url: str  # postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres
 
     # App
-    app_url: str = "http://localhost:3000"
+    app_url: str = "http://localhost:5173"
     environment: str = "development"
 
     # Email (Resend)
     resend_api_key: str = ""
     resend_from_email: str = "noreply@psyque.app"
+
+    # --- Google Calendar OAuth2 ---
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/v1/google-calendar/callback"
 
     @property
     def is_development(self) -> bool:

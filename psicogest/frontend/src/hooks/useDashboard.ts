@@ -9,3 +9,12 @@ export function useDashboardStats() {
     retry: 2,
   });
 }
+
+export function useTopDiagnoses(months: number = 3) {
+  return useQuery({
+    queryKey: ["reports", "top-diagnoses", months],
+    queryFn: () => api.reports.topDiagnoses(months),
+    staleTime: 5 * 60_000,
+    retry: 2,
+  });
+}

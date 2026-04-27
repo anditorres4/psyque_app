@@ -47,3 +47,4 @@ class Appointment(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.Boolean(), nullable=False, server_default=sa.text("false")
     )
     notes: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    gcal_event_id: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)

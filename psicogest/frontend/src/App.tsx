@@ -17,6 +17,7 @@ import { CajaPage } from "@/pages/caja/CajaPage";
 import { CarteraPage } from "@/pages/cartera/CarteraPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
+import { BookingPage } from "@/pages/booking/BookingPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/book/:slug" element={<BookingPage />} />
 
       {/* Rutas protegidas */}
       <Route

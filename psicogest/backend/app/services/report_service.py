@@ -179,3 +179,35 @@ class ReportService:
             "total_sessions": total_sessions,
             "attendance_rate": round(attendance_rate, 1),
         }
+
+    def top_diagnoses(self, months: int = 3, limit: int = 10) -> dict:
+        """Top N diagnoses by frequency in signed sessions."""
+        start_date = datetime.now() - timedelta(days=months * 30)
+        results = (
+            self.db.query(
+                Session.diagnosis_cie11,
+                Session.diagnosis_description,
+                func.count(Session.id).label("count"),
+            )
+            .filter(
+                Session.tenant_id == self._tenant_id,
+                Session.status == "signed",
+                Session.actual_start >= start_date,
+                Session.diagnosis_cie11 != "",
+            )
+            .group_by(Session.diagnosis_cie11, Session.diagnosis_description)
+            .order_by(func.count(Session.id).desc())
+            .limit(limit)
+            .all()
+        )
+        return {
+            "data": [
+                {
+                    "diagnosis_cie11": r[0],
+                    "diagnosis_description": r[1],
+                    "count": r[2],
+                }
+                for r in results
+            ],
+            "months": months,
+        }
