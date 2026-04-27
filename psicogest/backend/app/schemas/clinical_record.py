@@ -11,6 +11,19 @@ class AntecedentesBlock(BaseModel):
     notas: str = ""
 
 
+class MentalExamBlock(BaseModel):
+    appearance: str | None = None
+    psychomotor: str | None = None
+    cognition: str | None = None
+    thought: str | None = None
+    perception: str | None = None
+    affect: str | None = None
+    insight: str | None = None
+    judgment: str | None = None
+    language: str | None = None
+    orientation: str | None = None
+
+
 class ClinicalRecordUpsert(BaseModel):
     chief_complaint: str | None = None
     antecedentes_personales: AntecedentesBlock | None = None
@@ -21,6 +34,9 @@ class ClinicalRecordUpsert(BaseModel):
     initial_diagnosis_description: str | None = None
     treatment_plan: str | None = None
     therapeutic_goals: str | None = None
+    presenting_problems: str | None = None
+    symptom_description: str | None = None
+    mental_exam: MentalExamBlock | None = None
 
 
 class ClinicalRecordDetail(BaseModel):
@@ -37,5 +53,8 @@ class ClinicalRecordDetail(BaseModel):
     initial_diagnosis_description: str | None
     treatment_plan: str | None
     therapeutic_goals: str | None
+    presenting_problems: str | None
+    symptom_description: str | None
+    mental_exam: Any | None
     created_at: datetime
     updated_at: datetime

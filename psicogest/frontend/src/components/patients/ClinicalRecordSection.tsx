@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useClinicalRecord, useUpsertClinicalRecord } from "@/hooks/useClinicalRecord";
-import type { AntecedentesBlock, ClinicalRecordUpsert } from "@/lib/api";
+import type { AntecedentesBlock, ClinicalRecordUpsert, MentalExamBlock } from "@/lib/api";
 
 interface AntecedenteItem {
   id: string;
@@ -48,6 +48,21 @@ function checkedToBlock(checked: Record<string, boolean>, notas: string): Antece
   return {
     items: Object.entries(checked).filter(([, v]) => v).map(([k]) => k),
     notas,
+  };
+}
+
+function emptyMentalExam(): MentalExamBlock {
+  return {
+    appearance: null,
+    psychomotor: null,
+    cognition: null,
+    thought: null,
+    perception: null,
+    affect: null,
+    insight: null,
+    judgment: null,
+    language: null,
+    orientation: null,
   };
 }
 
@@ -119,6 +134,9 @@ export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps)
   const [antMedNotas, setAntMedNotas] = useState("");
   const [antPsic, setAntPsic] = useState<Record<string, boolean>>({});
   const [antPsicNotas, setAntPsicNotas] = useState("");
+  const [presentingProblems, setPresentingProblems] = useState("");
+  const [symptomDescription, setSymptomDescription] = useState("");
+  const [mentalExam, setMentalExam] = useState<MentalExamBlock>(emptyMentalExam());
 
   const syncFromRecord = () => {
     if (!record) return;
@@ -135,6 +153,9 @@ export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps)
     setAntMedNotas(record.antecedentes_medicos?.notas ?? "");
     setAntPsic(blockToChecked(record.antecedentes_psicologicos));
     setAntPsicNotas(record.antecedentes_psicologicos?.notas ?? "");
+    setPresentingProblems(record.presenting_problems ?? "");
+    setSymptomDescription(record.symptom_description ?? "");
+    setMentalExam(record.mental_exam ?? emptyMentalExam());
   };
 
   useEffect(() => {
@@ -152,6 +173,9 @@ export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps)
       antecedentes_familiares: checkedToBlock(antFam, antFamNotas),
       antecedentes_medicos: checkedToBlock(antMed, antMedNotas),
       antecedentes_psicologicos: checkedToBlock(antPsic, antPsicNotas),
+      presenting_problems: presentingProblems || null,
+      symptom_description: symptomDescription || null,
+      mental_exam: mentalExam,
     };
     try {
       await upsertMutation.mutateAsync(payload);
@@ -281,6 +305,198 @@ export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps)
               {record?.therapeutic_goals || <span className="italic text-muted-foreground">No registrado</span>}
             </p>
           )}
+        </div>
+
+        {/* Síntomas y Motivo de Consulta */}
+        <div className="border-t pt-6 space-y-4">
+          <h4 className="text-sm font-semibold text-[#1E3A5F]">Síntomas y Motivo de Consulta</h4>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Problemas presentados</label>
+            {editing ? (
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                value={presentingProblems}
+                onChange={(e) => setPresentingProblems(e.target.value)}
+                placeholder="Describe los problemas que presenta el paciente..."
+              />
+            ) : (
+              <p className="text-sm">
+                {record?.presenting_problems || <span className="italic text-muted-foreground">No registrado</span>}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Descripción de síntomas</label>
+            {editing ? (
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[80px]"
+                value={symptomDescription}
+                onChange={(e) => setSymptomDescription(e.target.value)}
+                placeholder="Descripción detallada de los síntomas..."
+              />
+            ) : (
+              <p className="text-sm">
+                {record?.symptom_description || <span className="italic text-muted-foreground">No registrado</span>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Examen Mental */}
+        <div className="border-t pt-6 space-y-4">
+          <h4 className="text-sm font-semibold text-[#1E3A5F]">Examen Mental</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Apariencia y presentación</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.appearance ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, appearance: e.target.value || null })}
+                  placeholder="Apariencia general..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.appearance || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Psicomotricidad y actitud</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.psychomotor ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, psychomotor: e.target.value || null })}
+                  placeholder="Psicomotricidad..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.psychomotor || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Funciones cognitivas</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.cognition ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, cognition: e.target.value || null })}
+                  placeholder="Memoria, atención, concentración..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.cognition || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Pensamiento (curso y contenido)</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.thought ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, thought: e.target.value || null })}
+                  placeholder="Pensamiento..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.thought || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Percepción</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.perception ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, perception: e.target.value || null })}
+                  placeholder="Alucinaciones, ilusiones..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.perception || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Afecto y humor</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.affect ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, affect: e.target.value || null })}
+                  placeholder="Afecto, humor..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.affect || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Conciencia del problema (Insight)</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.insight ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, insight: e.target.value || null })}
+                  placeholder="Insight..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.insight || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Juicio y abstracción</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.judgment ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, judgment: e.target.value || null })}
+                  placeholder="Juicio..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.judgment || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Lenguaje y comunicación</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.language ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, language: e.target.value || null })}
+                  placeholder="Lenguaje..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.language || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Orientación témporo-espacial</label>
+              {editing ? (
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]"
+                  value={mentalExam.orientation ?? ""}
+                  onChange={(e) => setMentalExam({ ...mentalExam, orientation: e.target.value || null })}
+                  placeholder="Orientación..."
+                />
+              ) : (
+                <p className="text-sm">
+                  {record?.mental_exam?.orientation || <span className="italic text-muted-foreground">-</span>}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="border-t pt-6 space-y-6">

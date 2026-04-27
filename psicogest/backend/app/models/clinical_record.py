@@ -23,3 +23,6 @@ class ClinicalRecord(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     initial_diagnosis_description: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     treatment_plan: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     therapeutic_goals: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    presenting_problems: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    symptom_description: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    mental_exam: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
