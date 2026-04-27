@@ -92,7 +92,7 @@ def download_rips(
         return StreamingResponse(
             iter([zip_bytes]),
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except RipsGenerationError as exc:
         raise HTTPException(

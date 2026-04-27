@@ -78,4 +78,6 @@ def manual_sync(ctx: Annotated[TenantDB, Depends(get_tenant_db)]):
     try:
         GCalSyncService(ctx.db).pull_external_blocks(uuid.UUID(ctx.tenant.tenant_id))
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Google Calendar sync failed: {exc}")
+        import logging
+        logging.getLogger(__name__).error("GCal manual sync failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=502, detail="Google Calendar sync failed. Inténtalo de nuevo.")

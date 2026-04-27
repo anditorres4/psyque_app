@@ -207,7 +207,7 @@ def export_patient_history(
     return StreamingResponse(
         iter([pdf_bytes]),
         headers={
-            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "application/pdf",
         },
     )
@@ -220,7 +220,10 @@ def get_clinical_record(
 ) -> ClinicalRecordDetail:
     """Return clinical record for patient, or an empty default if not yet created."""
     result = ctx.db.execute(
-        select(ClinicalRecord).where(ClinicalRecord.patient_id == patient_id)
+        select(ClinicalRecord).where(
+            ClinicalRecord.patient_id == patient_id,
+            ClinicalRecord.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
+        )
     )
     record = result.scalar_one_or_none()
     if record is None:
@@ -250,7 +253,10 @@ def upsert_clinical_record(
 ) -> ClinicalRecordDetail:
     """Create or update clinical record for patient."""
     result = ctx.db.execute(
-        select(ClinicalRecord).where(ClinicalRecord.patient_id == patient_id)
+        select(ClinicalRecord).where(
+            ClinicalRecord.patient_id == patient_id,
+            ClinicalRecord.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
+        )
     )
     record = result.scalar_one_or_none()
 

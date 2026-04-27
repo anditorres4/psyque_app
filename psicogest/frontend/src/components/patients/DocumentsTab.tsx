@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDocuments, useUploadDocument, useDeleteDocument } from "@/hooks/useDocuments";
-import { ClinicalDocument } from "@/lib/api";
+import { ClinicalDocument, API_BASE, getAuthHeader } from "@/lib/api";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -34,12 +34,16 @@ function DocumentRow({
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const response = await fetch(`/api/v1/documents/${doc.id}/download`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.redirected) {
-        window.location.href = response.url;
-      }
+      const headers = await getAuthHeader();
+      const response = await fetch(`${API_BASE}/documents/${doc.id}/download`, { headers });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.filename;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setDownloading(false);
     }

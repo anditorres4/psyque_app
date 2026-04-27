@@ -53,7 +53,7 @@ class ReferralService:
     def get(self, referral_id: uuid.UUID) -> Referral:
         stmt = select(Referral).where(
             Referral.id == referral_id,
-            Referral.tenant_id == self._tenant_id,
+            Referral.tenant_id == self.tenant_id,
         )
         referral = self.db.scalar(stmt)
         if not referral:

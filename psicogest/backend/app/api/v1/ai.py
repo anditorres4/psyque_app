@@ -316,6 +316,7 @@ def analyze_document(
     document = ctx.db.query(ClinicalDocument).filter(
         ClinicalDocument.id == input_data.document_id,
         ClinicalDocument.patient_id == input_data.patient_id,
+        ClinicalDocument.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
     ).first()
 
     if not document:

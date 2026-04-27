@@ -62,14 +62,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        settings.app_url,
+_cors_origins = [settings.app_url]
+if settings.is_development:
+    _cors_origins += [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5175",
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
