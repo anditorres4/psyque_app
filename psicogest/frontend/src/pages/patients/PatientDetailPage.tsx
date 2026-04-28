@@ -2,7 +2,7 @@
  * Patient profile page — RF-PAC-03
  * 5 tabs: Información general, Historia clínica, Sesiones, Documentos, RIPS
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
@@ -73,6 +73,7 @@ export function PatientDetailPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [isEditing, setIsEditing] = useState(false);
+  const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportOptions, setExportOptions] = useState({
     include_diagnosis: true,
@@ -307,6 +308,7 @@ export function PatientDetailPage() {
             <SessionTimeline
               patientId={id}
               onOpenSession={(sessionId) => {
+                setInitialSessionId(sessionId);
                 setActiveTab("sesiones");
               }}
             />
@@ -315,7 +317,11 @@ export function PatientDetailPage() {
       )}
 
       {activeTab === "sesiones" && id && (
-        <PatientSessionsTab patientId={id} />
+        <PatientSessionsTab
+          patientId={id}
+          initialSessionId={initialSessionId}
+          onInitialSessionConsumed={() => setInitialSessionId(null)}
+        />
       )}
 
       {activeTab === "documentos" && id && (
@@ -349,12 +355,27 @@ export function PatientDetailPage() {
   );
 }
 
-function PatientSessionsTab({ patientId }: { patientId: string }) {
+function PatientSessionsTab({
+  patientId,
+  initialSessionId,
+  onInitialSessionConsumed,
+}: {
+  patientId: string;
+  initialSessionId: string | null;
+  onInitialSessionConsumed: () => void;
+}) {
   const { data, isLoading, isError } = useSessions({ patient_id: patientId });
   const createMutation = useCreateSession();
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialSessionId && selectedId !== initialSessionId) {
+      setSelectedId(initialSessionId);
+      onInitialSessionConsumed();
+    }
+  }, [initialSessionId, onInitialSessionConsumed, selectedId]);
 
   const handleCreate = async (payload: SessionCreatePayload) => {
     setCreateError(null);

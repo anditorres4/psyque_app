@@ -108,7 +108,7 @@ export function DocumentsTab({ patientId }: { patientId: string }) {
       setSelectedFile(null);
       setDescription("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (err) {
+    } catch {
       setUploadError("Error al subir el documento. Intenta de nuevo.");
     }
   };

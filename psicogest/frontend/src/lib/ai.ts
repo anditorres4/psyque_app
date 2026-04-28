@@ -127,8 +127,9 @@ export const api = {
     });
   },
 
-  async analyzeDocument(documentId: string): Promise<DocumentAnalysis> {
+  async analyzeDocument(patientId: string, documentId: string): Promise<DocumentAnalysis> {
     return request<DocumentAnalysis>("POST", "/ai/analyze/document", {
+      patient_id: patientId,
       document_id: documentId,
     });
   },

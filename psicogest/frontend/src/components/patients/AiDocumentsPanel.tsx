@@ -17,7 +17,7 @@ interface AiDocumentsPanelProps {
 }
 
 export function AiDocumentsPanel({ patientId }: AiDocumentsPanelProps) {
-  const { documents } = useDocuments(patientId);
+  const { data: documents } = useDocuments(patientId);
   const { analyses, loading, error, analyzeDocument, clearError } = useAiDocuments();
   const [selectedDocId, setSelectedDocId] = useState<string>("");
 
@@ -28,7 +28,7 @@ export function AiDocumentsPanel({ patientId }: AiDocumentsPanelProps) {
   const handleAnalyze = async () => {
     if (!selectedDocId) return;
     try {
-      await analyzeDocument(selectedDocId);
+      await analyzeDocument(patientId, selectedDocId);
     } catch (e) {
       console.error("Error analyzing document:", e);
     }
@@ -36,9 +36,7 @@ export function AiDocumentsPanel({ patientId }: AiDocumentsPanelProps) {
 
   const latestAnalysis = analyses[0];
 
-  const patientDocs = documents?.filter(
-    (d) => d.patient_id === patientId
-  );
+  const patientDocs = documents ?? [];
 
   return (
     <Card>
@@ -64,9 +62,9 @@ export function AiDocumentsPanel({ patientId }: AiDocumentsPanelProps) {
                 <SelectValue placeholder="Selecciona un documento" />
               </SelectTrigger>
               <SelectContent>
-                {patientDocs?.map((doc) => (
+                {patientDocs.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
-                    {doc.title || doc.document_type}
+                    {doc.filename || doc.document_type}
                   </SelectItem>
                 ))}
               </SelectContent>

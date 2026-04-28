@@ -93,6 +93,13 @@ export function AiSettings() {
           </div>
         )}
 
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
+
         {!loading && (
           <>
             <div className="space-y-2">

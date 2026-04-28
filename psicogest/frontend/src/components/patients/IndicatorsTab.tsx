@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useIndicators, useCreateIndicator, useDeleteIndicator, useAddMeasurement, useIndicatorWithMeasurements, useUpdateIndicator } from "@/hooks/useTherapyIndicators";
-import type { TherapyIndicator, TherapyMeasurement, TherapyIndicatorCreate, TherapyMeasurementCreate } from "@/lib/api";
+import type { TherapyIndicator, TherapyIndicatorCreate, TherapyMeasurementCreate } from "@/lib/api";
 
 interface IndicatorsTabProps {
   patientId: string;
@@ -95,6 +95,10 @@ function IndicatorCard({
         </div>
       )}
 
+      {isLoading && (
+        <p className="text-xs text-muted-foreground">Cargando mediciones...</p>
+      )}
+
       {chartData.length >= 2 && (
         <div className="h-16">
           <ResponsiveContainer width="100%" height="100%">
@@ -112,11 +116,9 @@ function IndicatorCard({
 }
 
 function MeasurementForm({
-  indicatorId,
   onClose,
   onSubmit,
 }: {
-  indicatorId: string;
   onClose: () => void;
   onSubmit: (data: TherapyMeasurementCreate) => void;
 }) {
@@ -281,7 +283,6 @@ export function IndicatorsTab({ patientId }: IndicatorsTabProps) {
 
       {measuringIndicatorId && (
         <MeasurementForm
-          indicatorId={measuringIndicatorId}
           onClose={() => setMeasuringIndicatorId(null)}
           onSubmit={handleAddMeasurement}
         />

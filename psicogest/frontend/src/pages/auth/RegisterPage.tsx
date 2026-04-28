@@ -181,7 +181,7 @@ export function RegisterPage() {
 
             <div className="space-y-2">
               <Label htmlFor="repsCode">
-                Código REPS{" "}
+                Rethus{" "}
                 <span className="text-xs text-muted-foreground">(opcional)</span>
               </Label>
               <Input

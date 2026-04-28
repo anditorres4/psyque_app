@@ -57,6 +57,7 @@ export function useAddMeasurement(patientId: string) {
       api.indicators.addMeasurement(indicatorId, body),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["indicator", vars.indicatorId] });
+      qc.invalidateQueries({ queryKey: ["indicators", patientId] });
     },
   });
 }

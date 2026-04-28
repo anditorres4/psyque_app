@@ -1,6 +1,6 @@
 /** AI Diagnosis hook */
 import { useState, useCallback } from "react";
-import { api, DiagnosisSuggestion, DiagnosisFeedback } from "@/lib/ai";
+import { api, DiagnosisSuggestion } from "@/lib/ai";
 
 export interface UseAiDiagnosisReturn {
   suggestions: DiagnosisSuggestion[];

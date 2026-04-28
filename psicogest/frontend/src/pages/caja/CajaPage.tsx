@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ErrorState } from "@/components/ui/error-state";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +32,6 @@ import {
 } from "@/components/ui/select";
 import {
   api,
-  CashSessionDetail,
-  CashSessionSummary,
   CashTransactionSummary,
   CashTransactionCreate,
   PatientSummary,
@@ -173,8 +170,9 @@ function IncomeModal({ sessionId, open, onClose, editTx }: { sessionId: string; 
   const handlePatientSelect = (p: PatientSummary) => {
     setPatient(p);
     setInvoiceId("");
-    setCategory(p.payer_type === "eps" ? "eps" : "particular");
-    setShowEps(p.payer_type === "eps");
+    const isParticular = p.payer_type === "PA";
+    setCategory(isParticular ? "particular" : "eps");
+    setShowEps(!isParticular);
   };
 
   const handleSubmit = () => {
@@ -542,7 +540,14 @@ export function CajaPage() {
               <TableBody>
                 {transactions.items.map(tx => (
                   <TransactionRow key={tx.id} tx={tx}
-                    onEdit={() => { setEditTx(tx); tx.type === "income" ? setShowIncome(true) : setShowExpense(true); }}
+                    onEdit={() => {
+                      setEditTx(tx);
+                      if (tx.type === "income") {
+                        setShowIncome(true);
+                      } else {
+                        setShowExpense(true);
+                      }
+                    }}
                     onDelete={() => deleteMutation.mutate(tx.id)} />
                 ))}
               </TableBody>

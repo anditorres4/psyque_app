@@ -720,7 +720,6 @@ export interface CarteraPortfolioSummary {
 export interface CarteraPaymentCreate {
   amount: number;
   description?: string;
-  invoice_id: string;
 }
 
 // --- Reports ------------------------------------------------------------
@@ -773,9 +772,8 @@ export const api = {
     list: (params?: { type?: PortfolioType; search?: string; page?: number; page_size?: number }) => {
       const q = new URLSearchParams();
       if (params?.type && params.type !== "all") q.set("type", params.type);
-      if (params?.search) q.set("search", params.search);
-      if (params?.page) q.set("page", String(params.page));
-      if (params?.page_size) q.set("page_size", String(params.page_size));
+      if (params?.search) q.set("patient_name", params.search);
+      if (params?.page_size) q.set("limit", String(params.page_size));
       return request<{ items: CarteraSummary[]; total: number }>("GET", `/cartera?${q}`);
     },
     getSummary: () => request<CarteraPortfolioSummary>("GET", "/cartera/summary"),

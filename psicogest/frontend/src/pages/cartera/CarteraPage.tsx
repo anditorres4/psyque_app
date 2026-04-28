@@ -1,7 +1,7 @@
 import { useState } from "react";
 const formatCurrency = (v: number) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP" }).format(v);
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,10 +38,14 @@ function PaymentModal({ open, onClose, carteraItem }: { open: boolean; onClose: 
   const [description, setDescription] = useState("");
 
   const mutation = useMutation({
-    mutationFn: () => api.cartera.registerPayment(carteraItem!.invoice_ids[0], {
-      amount: parseFloat(amount),
-      description: description || undefined,
-    }),
+    mutationFn: () => {
+      const invoiceId = carteraItem?.invoice_ids[0];
+      if (!invoiceId) throw new Error("No hay factura disponible para registrar el abono.");
+      return api.cartera.registerPayment(invoiceId, {
+        amount: parseFloat(amount),
+        description: description || undefined,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cartera"] });
       queryClient.invalidateQueries({ queryKey: ["cartera-summary"] });
@@ -114,7 +118,6 @@ function SummaryCards({ summary, isLoading }: { summary: CarteraPortfolioSummary
 }
 
 export function CarteraPage() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PortfolioType>("all");
   const [paymentTarget, setPaymentTarget] = useState<CarteraSummary | null>(null);
   const [search, setSearch] = useState("");

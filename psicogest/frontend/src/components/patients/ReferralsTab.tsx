@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { api, ApiError } from "@/lib/api";
-import type { ReferralCreate } from "@/lib/api";
+import type { Referral, ReferralCreate } from "@/lib/api";
 
 interface ReferralsTabProps {
   patientId: string;
@@ -19,7 +19,7 @@ const PRIORITY_OPTIONS = [
   { value: "urgente", label: "Urgente" },
 ] as const;
 
-function ReferralCard({ referral, onDownloadPdf }: { referral: any; onDownloadPdf: () => void }) {
+function ReferralCard({ referral, onDownloadPdf }: { referral: Referral; onDownloadPdf: () => void }) {
   const priorityColors: Record<string, string> = {
     urgente: "bg-red-100 text-red-800 border-red-200",
     preferente: "bg-amber-100 text-amber-800 border-amber-200",
