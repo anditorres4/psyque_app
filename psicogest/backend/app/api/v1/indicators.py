@@ -27,7 +27,8 @@ def list_indicators(
     patient_id: uuid.UUID,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
-    return _svc(ctx).list_by_patient(patient_id)
+    indicators = _svc(ctx).list_by_patient(patient_id)
+    return [TherapyIndicatorDetail.model_validate(indicator) for indicator in indicators]
 
 
 @router.post(
@@ -40,7 +41,8 @@ def create_indicator(
     body: TherapyIndicatorCreate,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
-    return _svc(ctx).create(patient_id, body)
+    indicator = _svc(ctx).create(patient_id, body)
+    return TherapyIndicatorDetail.model_validate(indicator)
 
 
 @router.get("/indicators/{indicator_id}", response_model=TherapyIndicatorWithMeasurements)
@@ -64,7 +66,8 @@ def update_indicator(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
     try:
-        return _svc(ctx).update(indicator_id, body)
+        indicator = _svc(ctx).update(indicator_id, body)
+        return TherapyIndicatorDetail.model_validate(indicator)
     except IndicatorNotFoundError:
         raise HTTPException(status_code=404, detail="Indicator not found")
 
@@ -91,7 +94,8 @@ def add_measurement(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
     try:
-        return _svc(ctx).add_measurement(indicator_id, body)
+        measurement = _svc(ctx).add_measurement(indicator_id, body)
+        return TherapyMeasurementDetail.model_validate(measurement)
     except IndicatorNotFoundError:
         raise HTTPException(status_code=404, detail="Indicator not found")
 
@@ -102,6 +106,7 @@ def list_measurements(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
     try:
-        return _svc(ctx).list_measurements(indicator_id)
+        measurements = _svc(ctx).list_measurements(indicator_id)
+        return [TherapyMeasurementDetail.model_validate(measurement) for measurement in measurements]
     except IndicatorNotFoundError:
         raise HTTPException(status_code=404, detail="Indicator not found")

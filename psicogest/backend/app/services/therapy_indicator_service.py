@@ -25,7 +25,10 @@ class TherapyIndicatorService:
     def list_by_patient(self, patient_id: uuid.UUID) -> list[TherapyIndicator]:
         stmt = (
             select(TherapyIndicator)
-            .where(TherapyIndicator.patient_id == patient_id)
+            .where(
+                TherapyIndicator.patient_id == patient_id,
+                TherapyIndicator.tenant_id == self.tenant_id,
+            )
             .order_by(TherapyIndicator.created_at)
         )
         return list(self.db.scalars(stmt))

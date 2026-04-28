@@ -26,7 +26,8 @@ def create_referral(
     body: ReferralCreate,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
-    return _svc(ctx).create(patient_id, body)
+    referral = _svc(ctx).create(patient_id, body)
+    return ReferralDetail.model_validate(referral)
 
 
 @router.get(
@@ -37,7 +38,8 @@ def list_referrals(
     patient_id: uuid.UUID,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ):
-    return _svc(ctx).list_by_patient(patient_id)
+    referrals = _svc(ctx).list_by_patient(patient_id)
+    return [ReferralDetail.model_validate(referral) for referral in referrals]
 
 
 @router.get("/referrals/{referral_id}/pdf")

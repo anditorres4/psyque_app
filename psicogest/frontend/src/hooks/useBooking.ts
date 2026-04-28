@@ -6,7 +6,7 @@ export function useBookingRequests(status?: string) {
     queryKey: ["booking-requests", status ?? "all"],
     queryFn: () => api.bookingRequests.list(status),
     staleTime: 60_000,
-    retry: 2,
+    retry: false,
   });
 }
 
