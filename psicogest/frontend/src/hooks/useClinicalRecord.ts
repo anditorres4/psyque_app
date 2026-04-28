@@ -6,6 +6,7 @@ export function useClinicalRecord(patientId: string) {
     queryKey: ["clinical-record", patientId],
     queryFn: () => api.clinicalRecord.get(patientId),
     enabled: !!patientId,
+    retry: false,
   });
 }
 

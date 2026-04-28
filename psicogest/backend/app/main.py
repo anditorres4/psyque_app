@@ -62,7 +62,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_cors_origins = [settings.app_url]
+_cors_origins = settings.allowed_cors_origins
 if settings.is_development:
     _cors_origins += [
         "http://localhost:3000",

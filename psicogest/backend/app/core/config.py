@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # App
     app_url: str = "http://localhost:5173"
+    cors_origins: str = ""
     environment: str = "development"
 
     # Email (Resend)
@@ -34,6 +35,18 @@ class Settings(BaseSettings):
     def is_development(self) -> bool:
         """True when running in development environment."""
         return self.environment == "development"
+
+    @property
+    def allowed_cors_origins(self) -> list[str]:
+        """Return the normalized list of allowed CORS origins."""
+        origins = [self.app_url]
+        if self.cors_origins.strip():
+            origins.extend(
+                origin.strip()
+                for origin in self.cors_origins.split(",")
+                if origin.strip()
+            )
+        return list(dict.fromkeys(origins))
 
 
 settings = Settings()

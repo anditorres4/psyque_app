@@ -1,5 +1,6 @@
 """Patients router — RF-PAC-01, RF-PAC-02, RF-PAC-03 from PRD §7.1."""
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -239,6 +240,9 @@ def get_clinical_record(
             initial_diagnosis_description=None,
             treatment_plan=None,
             therapeutic_goals=None,
+            presenting_problems=None,
+            symptom_description=None,
+            mental_exam=None,
             created_at=datetime.now(tz=timezone.utc),
             updated_at=datetime.now(tz=timezone.utc),
         )
