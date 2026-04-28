@@ -2,41 +2,179 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+/* ────────────────────────────────────────────────
+   psyque app — design tokens · cálido-tech
+   Off-white + azul profundo + verde salvia
+   ──────────────────────────────────────────────── */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* shadcn HSL channels */
+    --background: 36 26% 94%;            /* #F4F1EC */
+    --foreground: 195 26% 14%;           /* #1B2A2E */
+    --card: 40 36% 97%;                  /* #FBF9F4 */
+    --card-foreground: 195 26% 14%;
+    --popover: 40 36% 97%;
+    --popover-foreground: 195 26% 14%;
+    --primary: 213 67% 18%;              /* #0F2A4A */
+    --primary-foreground: 36 26% 94%;
+    --secondary: 38 26% 91%;             /* #EFEBE3 */
+    --secondary-foreground: 195 26% 14%;
+    --muted: 38 26% 91%;
+    --muted-foreground: 197 6% 45%;      /* #6B7A7E */
+    --accent: 130 14% 54%;               /* #7C9885 sage */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 53% 46%;            /* #B0463A */
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 28% 87%;                /* #E5DFD3 */
+    --input: 40 28% 87%;
+    --ring: 130 14% 54%;
+    --radius: 0.625rem;
+
+    /* psyque tokens */
+    --psy-bg: #F4F1EC;
+    --psy-bg-soft: #EFEBE3;
+    --psy-surface: #FBF9F4;
+    --psy-surface-2: #FFFFFF;
+    --psy-line: #E5DFD3;
+    --psy-line-strong: #D6CFBF;
+
+    --psy-ink-1: #1B2A2E;
+    --psy-ink-2: #3A4A50;
+    --psy-ink-3: #6B7A7E;
+    --psy-ink-4: #9AA5A8;
+
+    --psy-primary: #0F2A4A;
+    --psy-primary-soft: #1E4070;
+    --psy-sage: #7C9885;
+    --psy-sage-soft: #A8BDA9;
+    --psy-sage-bg: #E4ECDF;
+    --psy-terracotta: #C25C4F;
+    --psy-amber: #D4A574;
+    --psy-gold: #E0B96B;
+
+    --psy-ok: #4F7F5A;
+    --psy-warn: #B8843A;
+    --psy-danger: #B0463A;
+    --psy-info: #2E5E8A;
+
+    --psy-font-sans: 'Geist', 'Inter', system-ui, sans-serif;
+    --psy-font-mono: 'Geist Mono', ui-monospace, monospace;
+    --psy-font-display: 'Instrument Serif', Georgia, serif;
+  }
+
+  .dark {
+    --background: 168 18% 8%;
+    --foreground: 60 7% 92%;
+    --card: 170 16% 12%;
+    --card-foreground: 60 7% 92%;
+    --popover: 170 16% 12%;
+    --popover-foreground: 60 7% 92%;
+    --primary: 210 75% 63%;
+    --primary-foreground: 168 18% 8%;
+    --secondary: 170 16% 12%;
+    --secondary-foreground: 60 7% 92%;
+    --muted: 168 12% 17%;
+    --muted-foreground: 165 4% 57%;
+    --accent: 130 18% 65%;
+    --accent-foreground: 168 18% 8%;
+    --border: 170 12% 18%;
+    --input: 170 12% 18%;
+    --ring: 130 18% 65%;
+
+    --psy-bg: #0F1614;
+    --psy-bg-soft: #131C1A;
+    --psy-surface: #182220;
+    --psy-surface-2: #1F2B28;
+    --psy-line: #2A3633;
+    --psy-line-strong: #364541;
+    --psy-ink-1: #ECECE6;
+    --psy-ink-2: #C5C9C3;
+    --psy-ink-3: #8E948D;
+    --psy-ink-4: #6A706A;
+    --psy-primary: #5BA0E5;
+    --psy-sage-bg: #1F2D24;
   }
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
+  * { border-color: hsl(var(--border)); }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: Inter, system-ui, sans-serif;
-    /* Mínimo 14px — PRD Sección 8.1 legibilidad bajo presión */
+    background-color: var(--psy-bg);
+    color: var(--psy-ink-1);
+    font-family: var(--psy-font-sans);
+    font-feature-settings: 'ss01', 'cv11';
     font-size: 14px;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+}
+
+@layer components {
+  .psy-mono { font-family: var(--psy-font-mono); font-feature-settings: 'tnum', 'zero'; }
+  .psy-serif { font-family: var(--psy-font-display); font-style: italic; font-weight: 400; }
+  .psy-tab-num { font-variant-numeric: tabular-nums; }
+
+  .psy-card {
+    background: var(--psy-surface);
+    border: 1px solid var(--psy-line);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+
+  .psy-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--psy-font-mono); font-size: 10.5px; font-weight: 500;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--psy-bg-soft); color: var(--psy-ink-2);
+    border: 1px solid var(--psy-line);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .psy-tag-sage    { background: var(--psy-sage-bg);  color: var(--psy-ok);     border-color: var(--psy-sage-soft); }
+  .psy-tag-amber   { background: #F5EBD8;              color: var(--psy-warn);   border-color: #E5D2A8; }
+  .psy-tag-danger  { background: #F5DDD9;              color: var(--psy-danger); border-color: #EAB7B0; }
+  .psy-tag-info    { background: #DDE8F1;              color: var(--psy-info);   border-color: #B7CCE0; }
+  .psy-tag-dark    { background: var(--psy-primary);   color: #fff;              border-color: var(--psy-primary); }
+
+  .psy-page-title {
+    font-family: var(--psy-font-display);
+    font-style: italic;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--psy-ink-1);
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+
+  .psy-live-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--psy-ok);
+    box-shadow: 0 0 0 2px rgba(79, 127, 90, 0.18);
+    animation: psy-pulse 2s infinite;
+  }
+  @keyframes psy-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+  .psy-ai-card {
+    background: linear-gradient(135deg, rgba(124, 152, 133, 0.08) 0%, rgba(15, 42, 74, 0.04) 100%);
+    border: 1px solid var(--psy-sage-soft);
+    border-radius: var(--radius);
+    padding: 16px;
+    position: relative;
+  }
+  .psy-ai-card::before {
+    content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px;
+    background: linear-gradient(180deg, var(--psy-sage), var(--psy-primary));
+    border-radius: 2px;
+  }
+  .psy-ai-spark {
+    width: 10px; height: 10px;
+    background: conic-gradient(from 0deg, var(--psy-sage), var(--psy-primary), var(--psy-sage));
+    border-radius: 50%;
+    animation: psy-spin 4s linear infinite;
+    display: inline-block;
+  }
+  @keyframes psy-spin { to { transform: rotate(360deg); } }
 }
