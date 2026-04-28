@@ -81,5 +81,7 @@ class Tenant(Base, UUIDPrimaryKey):
 
     # --- Feature flags (JSONB) ---
     features: Mapped[dict] = mapped_column(
-        JSONB(), nullable=False, server_default=sa.text("'{\"ai_diagnosis\": true, \"ai_summaries\": true, \"ai_documents\": true}'::jsonb")
+        JSONB(),
+        nullable=False,
+        server_default=sa.text('\'{"ai_diagnosis": true, "ai_summaries": true, "ai_documents": true}\''),
     )

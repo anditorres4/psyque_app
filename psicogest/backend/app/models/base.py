@@ -3,8 +3,19 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(_type, compiler, **kw) -> str:
+    return "JSON"
+
+
+@compiles(INET, "sqlite")
+def _compile_inet_sqlite(_type, compiler, **kw) -> str:
+    return "TEXT"
 
 
 class Base(DeclarativeBase):

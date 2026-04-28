@@ -1,6 +1,6 @@
 """Tests for RipsService — generation and ZIP download."""
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from zipfile import ZipFile
 
 import pytest
@@ -68,7 +68,7 @@ def _make_patient(db: Session, patient_id: str = PATIENT_ID) -> Patient:
         second_surname=None,
         first_name="Ana",
         second_name=None,
-        birth_date="1990-01-01",
+        birth_date=date(1990, 1, 1),
         biological_sex="F",
         marital_status="S",
         occupation="Profesora",

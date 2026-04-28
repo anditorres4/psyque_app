@@ -7,12 +7,17 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from app.models.appointment import Appointment
-from app.services.dashboard_service import DashboardService
+from app.services.dashboard_service import BOGOTA_TZ, DashboardService
 
 
 TENANT_ID = str(uuid.uuid4())
 OTHER_TENANT_ID = str(uuid.uuid4())
 PATIENT_ID = str(uuid.uuid4())
+
+
+def _today_at_bogota(hour: int) -> datetime:
+    now_bogota = datetime.now(tz=timezone.utc).astimezone(BOGOTA_TZ)
+    return now_bogota.replace(hour=hour, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
 
 
 @pytest.fixture(scope="session")
@@ -59,18 +64,16 @@ def _make_appt(db: Session, start: datetime, status: str = "scheduled", tenant_i
 
 
 def test_appointments_today_counts_scheduled_today(svc, db):
-    now = datetime.now(tz=timezone.utc)
-    _make_appt(db, start=now + timedelta(hours=2))  # today, future
+    _make_appt(db, start=_today_at_bogota(12))
     stats = svc.get_stats()
     assert stats["appointments_today"] >= 1
 
 
 def test_appointments_today_excludes_other_tenant(svc, db):
-    now = datetime.now(tz=timezone.utc)
-    _make_appt(db, start=now + timedelta(hours=3), tenant_id=OTHER_TENANT_ID)
+    _make_appt(db, start=_today_at_bogota(13), tenant_id=OTHER_TENANT_ID)
     before = svc.get_stats()["appointments_today"]
     # Add another for our tenant
-    _make_appt(db, start=now + timedelta(hours=4))
+    _make_appt(db, start=_today_at_bogota(14))
     after = svc.get_stats()["appointments_today"]
     assert after == before + 1
 

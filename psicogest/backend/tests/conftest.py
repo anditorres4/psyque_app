@@ -1,4 +1,5 @@
 """Pytest fixtures for psyque app backend tests."""
+import os
 import uuid
 from collections.abc import Generator
 
@@ -12,6 +13,8 @@ from app.core.config import settings
 @pytest.fixture(scope="session")
 def db_engine():
     """Engine connected to Supabase test database (session-scoped, reused across tests)."""
+    if os.getenv("RUN_INTEGRATION_TESTS") != "1":
+        pytest.skip("Live database integration tests require RUN_INTEGRATION_TESTS=1.")
     engine = create_engine(
         settings.supabase_database_url,
         pool_pre_ping=True,

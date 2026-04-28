@@ -80,6 +80,7 @@ def list_cartera(
         if pid not in patient_map:
             patient = ctx.db.query(Patient).filter(Patient.id == pid).first()
             patient_map[pid] = {
+                "id": pid,
                 "patient_id": pid,
                 "patient_name": patient.full_name if patient else "Unknown",
                 "payer_type": patient.payer_type if patient else "PA",
@@ -89,11 +90,13 @@ def list_cartera(
                 "total_pending": 0,
                 "last_activity": None,
                 "invoices_count": 0,
+                "invoice_ids": [],
             }
         patient_map[pid]["total_billed"] += inv.total_cop
         patient_map[pid]["total_paid"] += inv.amount_paid
         patient_map[pid]["total_pending"] += (inv.total_cop - inv.amount_paid)
         patient_map[pid]["invoices_count"] += 1
+        patient_map[pid]["invoice_ids"].append(inv.id)
         if inv.updated_at and (
             patient_map[pid]["last_activity"] is None
             or inv.updated_at > patient_map[pid]["last_activity"]
@@ -103,14 +106,17 @@ def list_cartera(
     items = [
         {
             "patient_id": v["patient_id"],
+            "id": v["id"],
             "patient_name": v["patient_name"],
             "payer_type": v["payer_type"],
             "eps_name": v["eps_name"],
             "total_billed": v["total_billed"],
             "total_paid": v["total_paid"],
+            "balance": v["total_pending"],
             "total_pending": v["total_pending"],
             "last_activity": v["last_activity"],
             "invoices_count": v["invoices_count"],
+            "invoice_ids": v["invoice_ids"],
         }
         for v in patient_map.values()
     ]
@@ -177,15 +183,19 @@ def register_payment(
     # Check for open session
     session = _get_open_session(ctx)
 
+    patient = ctx.db.query(Patient).filter(Patient.id == invoice.patient_id).first()
+    category = "particular" if patient and patient.payer_type == "PA" else "eps"
+
     tx = CashTransaction(
         tenant_id=ctx.tenant.tenant_id,
         session_id=session.id if session else None,
         type="income",
         amount=body.amount,
-        category="particular" if invoice.payment_status == "paid" else "particular",
+        category=category,
         description=body.description,
         invoice_id=invoice_id,
         patient_id=invoice.patient_id,
+        eps_name=patient.eps_name if category == "eps" and patient else None,
         created_at=datetime.utcnow(),
         created_by=ctx.tenant.user_id,
     )

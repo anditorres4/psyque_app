@@ -54,15 +54,18 @@ class CarteraInvoicePaymentCreate(BaseModel):
 
 
 class PatientCarteraSummary(BaseModel):
+    id: uuid.UUID
     patient_id: uuid.UUID
     patient_name: str
     payer_type: str
     eps_name: str | None
     total_billed: int
     total_paid: int
+    balance: int
     total_pending: int
     last_activity: datetime | None
     invoices_count: int
+    invoice_ids: list[uuid.UUID]
 
 
 class CarteraListResponse(BaseModel):

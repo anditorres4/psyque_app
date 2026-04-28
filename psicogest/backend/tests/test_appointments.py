@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.base import Base
 from app.models.appointment import Appointment
+from app.models.availability import AvailabilityBlock
 from app.services.appointment_service import (
     AppointmentService,
     AppointmentConflictError,
@@ -30,6 +31,7 @@ def engine():
     # Only create the appointments table — Patient model uses PostgreSQL-specific
     # INET type which SQLite does not support. Tests only need Appointment.
     Appointment.__table__.create(eng, checkfirst=True)
+    AvailabilityBlock.__table__.create(eng, checkfirst=True)
     return eng
 
 

@@ -179,6 +179,10 @@ class RipsService:
 
         validation = self.validate(year, month)
         if not validation["valid"]:
+            if validation.get("sessions_count") == 0:
+                raise RipsGenerationError(
+                    f"No hay sesiones firmadas en el período {year:04d}-{month:02d}."
+                )
             raise RipsGenerationError(
                 f"Hay errores de validación: {len(validation['errors'])} error(es). "
                 "Use /rips/validate para ver los detalles."

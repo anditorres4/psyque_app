@@ -7,7 +7,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.constants import DIAGNOSIS_TYPE
 
-_CIE11_RE = re.compile(r"^[0-9A-Z][0-9A-Z]{2,3}(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?$")
+_CIE11_RE = re.compile(
+    r"^(?:\d{3}|(?:\d[A-Z]\d{2}|[A-Z]{2}\d{2}|\d{2}[A-Z]\d)(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?)$"
+)
 _CUPS_RE = re.compile(r"^\d{6}$")
 
 

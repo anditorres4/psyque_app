@@ -121,7 +121,6 @@ class SessionService:
             sess.next_session_plan or "",
             str(sess.session_fee),
             sess.authorization_number or "",
-            sess.tipo_dx_principal,
         ])
         sess.session_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
         sess.signed_at = datetime.now(tz=timezone.utc)

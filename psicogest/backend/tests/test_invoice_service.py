@@ -1,6 +1,6 @@
 """Tests for InvoiceService and invoice PDF generation."""
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -70,7 +70,7 @@ def _make_patient(db: Session) -> Patient:
         second_surname=None,
         first_name="Ana",
         second_name=None,
-        birth_date="1990-01-01",
+        birth_date=date(1990, 1, 1),
         biological_sex="F",
         marital_status="S",
         occupation="Profesora",
@@ -185,7 +185,7 @@ def test_create_draft_rejects_wrong_tenant_patient(svc, db):
         doc_number="99999999",
         first_surname="Pérez",
         first_name="Juan",
-        birth_date="1985-05-15",
+            birth_date=date(1985, 5, 15),
         biological_sex="M",
         marital_status="S",
         occupation="Ingeniero",
