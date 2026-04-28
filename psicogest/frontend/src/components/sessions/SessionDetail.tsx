@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useSession, useSignSession, useSessionNotes, useAddSessionNote } from "@/hooks/useSessions";
+import { useAiFeatures } from "@/hooks/useAiFeatures";
+import { AiSessionSummarySection } from "@/components/patients/AiSessionSummarySection";
 import { ApiError, api } from "@/lib/api";
 
 interface Props {
@@ -41,6 +43,7 @@ export function SessionDetail({ sessionId, onBack }: Props) {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [invoiceError, setInvoiceError] = useState<string | null>(null);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
+  const { canSummarize } = useAiFeatures();
 
   const invoiceMutation = useMutation({
     mutationFn: () =>
@@ -221,6 +224,19 @@ export function SessionDetail({ sessionId, onBack }: Props) {
         ) : (
           <p className="text-sm text-muted-foreground">Sin notas aclaratorias.</p>
         )}
+      </div>
+
+      {/* ── Psyque IA · Resumen de sesión ── */}
+      <div
+        className="rounded-lg p-5 space-y-2"
+        style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      >
+        <AiSessionSummarySection
+          sessionId={sessionId}
+          canSummarize={canSummarize}
+          intervention={sess.intervention ?? ""}
+          evolution={sess.evolution ?? ""}
+        />
       </div>
     </div>
   );

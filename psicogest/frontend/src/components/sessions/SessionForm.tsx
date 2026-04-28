@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type { PatientSummary, SessionCreatePayload } from "@/lib/api";
 import { searchCie11, type Cie11Entry } from "@/data/cie11_codes";
+import { useAiFeatures } from "@/hooks/useAiFeatures";
+import { AiSessionSummarySection } from "@/components/patients/AiSessionSummarySection";
 
 interface Props {
   defaultAppointmentId?: string;
@@ -228,6 +230,7 @@ export function SessionForm({
   );
 
   const resolvedPatientId = selectedPatient?.id ?? defaultPatientId ?? "";
+  const { canSummarize } = useAiFeatures();
 
   const handleCie11Select = (entry: Cie11Entry) => {
     setCie11Code(entry.code);
@@ -423,6 +426,19 @@ export function SessionForm({
         >
           {isSubmitting ? "Guardando borrador..." : "Guardar borrador"}
         </Button>
+      </div>
+
+      {/* ── Psyque IA · Resumen (post-guardado) ── */}
+      <div
+        className="rounded-lg p-5 mt-4"
+        style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      >
+        <AiSessionSummarySection
+          sessionId={null}
+          canSummarize={canSummarize}
+          intervention={intervention}
+          evolution={evolution}
+        />
       </div>
     </form>
   );

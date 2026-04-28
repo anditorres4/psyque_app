@@ -26,6 +26,8 @@ from app.services import ai_service
 from app.services.session_service import SessionService, SessionNotFoundError
 from app.services.patient_service import PatientService, PatientNotFoundError
 from app.models.clinical_record import ClinicalRecord
+from app.models.session import Session as SessionModel
+from app.models.ai_session_summary import AiSessionSummary
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -270,20 +272,41 @@ def summarize_clinical_record(
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     clinical_record_text = ""
-    
+
     clinical_record = ctx.db.query(ClinicalRecord).filter(
         ClinicalRecord.patient_id == input_data.patient_id,
         ClinicalRecord.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
     ).first()
 
     if clinical_record:
-        clinical_record_text = f"Motivo de consulta: {clinical_record.chief_complaint or 'No registrado'}\n\n"
-        clinical_record_text += f"Problemas presentados: {clinical_record.presenting_problems or 'No registrado'}\n\n"
-        clinical_record_text += f"Descripción de síntomas: {clinical_record.symptom_description or 'No registrado'}\n\n"
-        clinical_record_text += f"Plan de tratamiento: {clinical_record.treatment_plan or 'No registrado'}\n\n"
-        clinical_record_text += f"Objetivos terapéuticos: {clinical_record.therapeutic_goals or 'No registrado'}"
+        clinical_record_text = (
+            f"Motivo de consulta: {clinical_record.chief_complaint or 'No registrado'}\n\n"
+            f"Problemas presentados: {clinical_record.presenting_problems or 'No registrado'}\n\n"
+            f"Descripción de síntomas: {clinical_record.symptom_description or 'No registrado'}\n\n"
+            f"Plan de tratamiento: {clinical_record.treatment_plan or 'No registrado'}\n\n"
+            f"Objetivos terapéuticos: {clinical_record.therapeutic_goals or 'No registrado'}"
+        )
     else:
         clinical_record_text = "Sin historia clínica registrada"
+
+    # Incluir los últimos 5 resúmenes de sesión para enriquecer el contexto
+    recent_summaries = (
+        ctx.db.query(AiSessionSummary)
+        .join(SessionModel, AiSessionSummary.session_id == SessionModel.id)
+        .filter(
+            AiSessionSummary.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
+            SessionModel.patient_id == input_data.patient_id,
+        )
+        .order_by(AiSessionSummary.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    if recent_summaries:
+        summaries_text = "\n\n".join(
+            f"Sesión {i + 1}: {s.summary}" for i, s in enumerate(reversed(recent_summaries))
+        )
+        clinical_record_text += f"\n\n---\nResúmenes de últimas {len(recent_summaries)} sesiones:\n{summaries_text}"
 
     return ai_service.generate_clinical_record_summary(
         ctx.db, tenant, input_data.patient_id, clinical_record_text

@@ -17,20 +17,16 @@ import { SessionForm } from "@/components/sessions/SessionForm";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import type { SessionCreatePayload } from "@/lib/api";
 import { ApiError, api } from "@/lib/api";
-import { useClinicalRecord } from "@/hooks/useClinicalRecord";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { ClinicalRecordSection } from "@/components/patients/ClinicalRecordSection";
 import { SessionTimeline } from "@/components/patients/SessionTimeline";
 import { IndicatorsTab } from "@/components/patients/IndicatorsTab";
 import { ReferralsTab } from "@/components/patients/ReferralsTab";
-import { AiDiagnosisPanel } from "@/components/patients/AiDiagnosisPanel";
-import { AiSummariesPanel } from "@/components/patients/AiSummariesPanel";
-import { AiDocumentsPanel } from "@/components/patients/AiDocumentsPanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
-type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips" | "seguimiento" | "remisiones" | "psyque-ia";
+type Tab = "info" | "historia" | "sesiones" | "documentos" | "rips" | "seguimiento" | "remisiones";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "info", label: "Información general" },
@@ -40,7 +36,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "rips", label: "RIPS" },
   { id: "seguimiento", label: "Seguimiento" },
   { id: "remisiones", label: "Remisiones" },
-  { id: "psyque-ia", label: "Psyque IA" },
 ];
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -85,7 +80,6 @@ export function PatientDetailPage() {
 
   const { data: patient, isLoading, isError } = usePatient(id ?? "");
   const updateMutation = useUpdatePatient(id ?? "");
-  const { data: clinicalRecord } = useClinicalRecord(id ?? "");
 
   if (isLoading) {
     return (
@@ -302,7 +296,10 @@ export function PatientDetailPage() {
 
       {activeTab === "historia" && id && (
         <div className="max-w-2xl space-y-8">
-          <ClinicalRecordSection patientId={id} />
+          <ClinicalRecordSection
+            patientId={id}
+            patientAge={patient.birth_date ? calcAge(patient.birth_date) : null}
+          />
           <div>
             <h3 className="text-sm font-semibold text-[#1E3A5F] mb-3">Evolución — Sesiones</h3>
             <SessionTimeline
@@ -338,18 +335,6 @@ export function PatientDetailPage() {
 
       {activeTab === "remisiones" && id && (
         <ReferralsTab patientId={id} />
-      )}
-
-      {activeTab === "psyque-ia" && id && patient && (
-        <div className="space-y-6">
-          <AiDiagnosisPanel
-            patientId={id}
-            clinicalRecord={clinicalRecord ?? null}
-            recentSessions={[]}
-          />
-          <AiSummariesPanel patientId={id} />
-          <AiDocumentsPanel patientId={id} />
-        </div>
       )}
     </div>
   );

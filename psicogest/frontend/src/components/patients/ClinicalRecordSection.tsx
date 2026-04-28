@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useClinicalRecord, useUpsertClinicalRecord } from "@/hooks/useClinicalRecord";
+import { useAiFeatures } from "@/hooks/useAiFeatures";
+import { AiDiagnosisSection } from "@/components/patients/AiDiagnosisSection";
+import { AiClinicalRecordSummarySection } from "@/components/patients/AiClinicalRecordSummarySection";
 import type { AntecedentesBlock, ClinicalRecordUpsert, MentalExamBlock } from "@/lib/api";
 
 interface AntecedenteItem {
@@ -114,11 +117,21 @@ function AntecedentesEditor({ title, items, checked, notas, readOnly, onChange }
 
 interface ClinicalRecordSectionProps {
   patientId: string;
+  patientAge?: number | null;
 }
 
-export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps) {
+export function ClinicalRecordSection({ patientId, patientAge = null }: ClinicalRecordSectionProps) {
   const { data: record, isLoading } = useClinicalRecord(patientId);
   const upsertMutation = useUpsertClinicalRecord(patientId);
+  const { canDiagnose, canSummarize } = useAiFeatures();
+
+  const handleDiagnosisAccepted = (code: string, description: string) => {
+    setDiagnosisCie11(code);
+    setDiagnosisDesc(description);
+    if (!editing) {
+      setEditing(true);
+    }
+  };
 
   const [editing, setEditing] = useState(false);
   const [chiefComplaint, setChiefComplaint] = useState("");
@@ -533,6 +546,24 @@ export function ClinicalRecordSection({ patientId }: ClinicalRecordSectionProps)
             notas={antPsicNotas}
             readOnly={!editing}
             onChange={(c, n) => { setAntPsic(c); setAntPsicNotas(n); }}
+          />
+        </div>
+
+        {/* ── Psyque IA ── */}
+        <div className="border-t pt-6 space-y-8" style={{ borderColor: "var(--psy-line)" }}>
+          <AiDiagnosisSection
+            patientId={patientId}
+            canDiagnose={canDiagnose}
+            chiefComplaint={chiefComplaint}
+            presentingProblems={presentingProblems}
+            symptomDescription={symptomDescription}
+            mentalExam={mentalExam}
+            patientAge={patientAge}
+            onAccept={handleDiagnosisAccepted}
+          />
+          <AiClinicalRecordSummarySection
+            patientId={patientId}
+            canSummarize={canSummarize}
           />
         </div>
       </div>

@@ -5,6 +5,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDocuments, useUploadDocument, useDeleteDocument } from "@/hooks/useDocuments";
+import { useAiFeatures } from "@/hooks/useAiFeatures";
+import { AiDocumentsPanel } from "@/components/patients/AiDocumentsPanel";
+import { AiFeatureBadge } from "@/components/ui/AiFeatureBadge";
 import { ClinicalDocument, API_BASE, getAuthHeader } from "@/lib/api";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -88,6 +91,7 @@ export function DocumentsTab({ patientId }: { patientId: string }) {
   const { data: documents, isLoading, isError } = useDocuments(patientId);
   const uploadMutation = useUploadDocument();
   const deleteMutation = useDeleteDocument();
+  const { canAnalyzeDocuments } = useAiFeatures();
 
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -195,6 +199,16 @@ export function DocumentsTab({ patientId }: { patientId: string }) {
           ))}
         </div>
       )}
+
+      {/* ── Psyque IA · Análisis de documentos ── */}
+      <div
+        className="rounded-lg p-5 mt-2"
+        style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      >
+        <AiFeatureBadge available={canAnalyzeDocuments} featureName="análisis de documentos">
+          <AiDocumentsPanel patientId={patientId} />
+        </AiFeatureBadge>
+      </div>
     </div>
   );
 }
