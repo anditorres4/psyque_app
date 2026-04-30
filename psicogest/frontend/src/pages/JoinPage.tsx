@@ -1,5 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import type { HMSPrebuiltRefType } from "@100mslive/roomkit-react";
+import type { Screens } from "@100mslive/types-prebuilt";
 
 const HMSPrebuilt = lazy(() =>
   import("@100mslive/roomkit-react").then((m) => ({ default: m.HMSPrebuilt }))
@@ -8,6 +10,17 @@ const HMSPrebuilt = lazy(() =>
 export function JoinPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("t");
+  const role = searchParams.get("role");
+  const peerName = searchParams.get("name") || (role === "psychologist" ? "Psicólogo" : "Paciente");
+  const prebuiltRef = useRef<HMSPrebuiltRefType | null>(null);
+  const screens = useMemo<Screens | undefined>(() => {
+    if (role !== "patient") return undefined;
+    return {
+      preview: {
+        skip_preview_screen: true,
+      },
+    };
+  }, [role]);
 
   if (!token) {
     return (
@@ -33,8 +46,16 @@ export function JoinPage() {
       >
         <div className="h-full w-full">
           <HMSPrebuilt
+            ref={prebuiltRef}
             authToken={token}
-            options={{ userName: "Paciente" }}
+            options={{ userName: peerName }}
+            screens={screens}
+            onJoin={() => {
+              if (role === "patient" && prebuiltRef.current) {
+                void prebuiltRef.current.hmsActions.setLocalAudioEnabled(true);
+                void prebuiltRef.current.hmsActions.setLocalVideoEnabled(true);
+              }
+            }}
           />
         </div>
       </Suspense>

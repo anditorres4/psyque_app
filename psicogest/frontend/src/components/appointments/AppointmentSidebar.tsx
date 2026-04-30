@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAppointment, useCancelAppointment } from "@/hooks/useAppointments";
+import { useProfile } from "@/hooks/useProfile";
 import { useCompleteAppointment, useNoshowAppointment } from "@/hooks/useSessions";
 import { useCreateVideoRoom, useRefreshVideoToken } from "@/hooks/useVideo";
 import type { CancelledBy, VideoRoomResponse } from "@/lib/api";
@@ -29,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
 export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const navigate = useNavigate();
   const { data: appt, isLoading } = useAppointment(appointmentId);
+  const { data: profile } = useProfile();
   const cancelMutation = useCancelAppointment(appointmentId);
   const completeMutation = useCompleteAppointment(appointmentId);
   const noshowMutation = useNoshowAppointment(appointmentId);
@@ -111,7 +113,8 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
         ? await refreshTokenMutation.mutateAsync()
         : await createRoomMutation.mutateAsync();
       setVideoRoom(room);
-      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=psychologist`;
+      const psychologistName = profile?.full_name?.trim() || "Psicólogo";
+      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=psychologist&name=${encodeURIComponent(psychologistName)}`;
       popup.location.href = hostJoinUrl;
       popup.focus();
     } catch {
