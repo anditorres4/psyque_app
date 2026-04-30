@@ -48,3 +48,4 @@ class Appointment(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     )
     notes: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     gcal_event_id: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
+    video_room_id: Mapped[str | None] = mapped_column(sa.String(100), nullable=True)

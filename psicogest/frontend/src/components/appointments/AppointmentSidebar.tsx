@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { VideoCallModal } from "@/components/video/VideoCallModal";
 import { useAppointment, useCancelAppointment } from "@/hooks/useAppointments";
 import { useCompleteAppointment, useNoshowAppointment } from "@/hooks/useSessions";
-import type { CancelledBy } from "@/lib/api";
+import { useCreateVideoRoom, useRefreshVideoToken } from "@/hooks/useVideo";
+import type { CancelledBy, VideoRoomResponse } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
 interface Props {
@@ -31,6 +33,11 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const cancelMutation = useCancelAppointment(appointmentId);
   const completeMutation = useCompleteAppointment(appointmentId);
   const noshowMutation = useNoshowAppointment(appointmentId);
+  const createRoomMutation = useCreateVideoRoom(appointmentId);
+  const refreshTokenMutation = useRefreshVideoToken(appointmentId);
+  const [videoRoom, setVideoRoom] = useState<VideoRoomResponse | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelledBy, setCancelledBy] = useState<CancelledBy>("psychologist");
@@ -73,6 +80,20 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
       await noshowMutation.mutateAsync();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Error al marcar como no asistió.");
+    }
+  };
+
+  const handleStartVideo = async () => {
+    setVideoError(null);
+    try {
+      const room = appt.video_room_id
+        ? await refreshTokenMutation.mutateAsync()
+        : await createRoomMutation.mutateAsync();
+      console.log("[VIDEO] API response:", JSON.stringify(room));
+      setVideoRoom(room);
+      setShowVideo(true);
+    } catch {
+      setVideoError("No se pudo iniciar la videollamada. Intenta de nuevo.");
     }
   };
 
@@ -123,6 +144,21 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
 
         {appt.status === "scheduled" && !showCancelForm && (
           <div className="flex flex-col gap-2">
+            {appt.modality === "virtual" && (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-[#2E86AB] hover:bg-[#1a6a8a] text-white"
+                  onClick={handleStartVideo}
+                  disabled={createRoomMutation.isPending || refreshTokenMutation.isPending}
+                >
+                  {createRoomMutation.isPending || refreshTokenMutation.isPending
+                    ? "Iniciando..."
+                    : "Iniciar videollamada"}
+                </Button>
+                {videoError && <p className="text-xs text-[#E74C3C]">{videoError}</p>}
+              </>
+            )}
             <Button
               size="sm"
               className="bg-[#27AE60] hover:bg-green-700 text-white"
@@ -186,6 +222,14 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
               </Button>
             </div>
           </form>
+        )}
+        {videoRoom && (
+          <VideoCallModal
+            open={showVideo}
+            onClose={() => setShowVideo(false)}
+            hostToken={videoRoom.host_token}
+            patientJoinUrl={videoRoom.patient_join_url}
+          />
         )}
       </div>
     </div>

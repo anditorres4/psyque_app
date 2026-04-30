@@ -184,6 +184,7 @@ export interface AppointmentDetail extends AppointmentSummary {
   reminder_sent_48h: boolean;
   reminder_sent_2h: boolean;
   updated_at: string;
+  video_room_id: string | null;
 }
 
 export interface PaginatedAppointments {
@@ -633,6 +634,15 @@ export interface GCalAuthUrl {
   auth_url: string;
 }
 
+// --- Video --------------------------------------------------------
+
+export interface VideoRoomResponse {
+  room_id: string;
+  host_token: string;
+  guest_token: string;
+  patient_join_url: string;
+}
+
 // --- Caja / Cash ----------------------------------------------------------
 
 export type CashSessionStatus = "open" | "closed";
@@ -1027,5 +1037,12 @@ referrals: {
       request<void>("POST", "/google-calendar/disconnect"),
     syncNow: (): Promise<void> =>
       request<void>("POST", "/google-calendar/sync"),
+  },
+  // --- Video -----------------------------------------------------------
+  video: {
+    createRoom: (appointmentId: string) =>
+      request<VideoRoomResponse>("POST", `/appointments/${appointmentId}/video-room`),
+    refreshToken: (appointmentId: string) =>
+      request<VideoRoomResponse>("GET", `/appointments/${appointmentId}/video-room/token`),
   },
 };

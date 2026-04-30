@@ -77,6 +77,7 @@ class AppointmentDetail(AppointmentSummary):
     reminder_sent_48h: bool
     reminder_sent_2h: bool
     updated_at: datetime
+    video_room_id: str | None = None
 
 
 class PaginatedAppointments(BaseModel):

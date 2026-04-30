@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/google-calendar/callback"
 
+    # --- 100ms Video ---
+    hms_app_key: str = ""
+    hms_app_secret: str = ""
+    hms_template_id: str = ""
+
     @property
     def is_development(self) -> bool:
         """True when running in development environment."""

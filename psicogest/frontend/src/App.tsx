@@ -20,6 +20,7 @@ const CarteraPage = lazy(() => import("@/pages/cartera/CarteraPage").then((m) =>
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const BookingPage = lazy(() => import("@/pages/booking/BookingPage").then((m) => ({ default: m.BookingPage })));
+const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m.JoinPage })));
 
 function PageLoader() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/book/:slug" element={<BookingPage />} />
+        <Route path="/join/:appointmentId" element={<JoinPage />} />
 
         <Route
           element={
