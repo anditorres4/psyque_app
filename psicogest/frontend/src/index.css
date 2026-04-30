@@ -178,3 +178,69 @@
   }
   @keyframes psy-spin { to { transform: rotate(360deg); } }
 }
+
+/* ────────────────────────────────────────────────
+   FullCalendar — psyque skin
+   ──────────────────────────────────────────────── */
+.psy-calendar-wrap .fc {
+  font-family: var(--psy-font-sans);
+  font-size: 13px;
+  color: var(--psy-ink-1);
+  height: 100%;
+}
+.psy-calendar-wrap .fc-toolbar-title {
+  font-family: var(--psy-font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--psy-ink-1);
+}
+.psy-calendar-wrap .fc-button {
+  background: var(--psy-surface) !important;
+  border: 1px solid var(--psy-line) !important;
+  color: var(--psy-ink-2) !important;
+  font-size: 12px !important;
+  font-family: var(--psy-font-mono) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: none !important;
+}
+.psy-calendar-wrap .fc-button:hover {
+  background: var(--psy-bg-soft) !important;
+  border-color: var(--psy-line-strong) !important;
+}
+.psy-calendar-wrap .fc-button-active,
+.psy-calendar-wrap .fc-button-primary:not(:disabled).fc-button-active {
+  background: var(--psy-primary) !important;
+  border-color: var(--psy-primary) !important;
+  color: #fff !important;
+}
+.psy-calendar-wrap .fc-col-header-cell {
+  background: var(--psy-bg-soft);
+  border-color: var(--psy-line) !important;
+  font-family: var(--psy-font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--psy-ink-3);
+  padding: 8px 0;
+}
+.psy-calendar-wrap .fc-timegrid-slot {
+  border-color: var(--psy-line) !important;
+  height: 40px;
+}
+.psy-calendar-wrap .fc-timegrid-slot-label {
+  font-family: var(--psy-font-mono);
+  font-size: 10px;
+  color: var(--psy-ink-3);
+}
+.psy-calendar-wrap .fc-scrollgrid {
+  border-color: transparent !important;
+}
+.psy-calendar-wrap .fc-scrollgrid-section > td {
+  border-color: var(--psy-line) !important;
+}
+.psy-calendar-wrap .fc-event {
+  border-radius: 5px;
+  border-left-width: 3px !important;
+  font-size: 11.5px;
+}
