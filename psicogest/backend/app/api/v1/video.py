@@ -57,7 +57,7 @@ def _build_response(
     patient_join_key: str,
     svc: HmsService,
 ) -> VideoRoomResponse:
-    host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "psychologist")
+    host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "host")
     guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "patient")
     patient_url = f"{settings.app_url}/join/{appointment_id}?k={patient_join_key}&role=patient"
     return VideoRoomResponse(

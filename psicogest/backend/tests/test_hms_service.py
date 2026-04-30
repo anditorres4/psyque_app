@@ -7,13 +7,13 @@ from app.services.hms_service import HmsService
 def test_create_app_token_includes_required_100ms_claims():
     svc = HmsService()
 
-    token = svc.create_app_token("room-123", "user-456", "psychologist")
+    token = svc.create_app_token("room-123", "user-456", "host")
     payload = jose_jwt.get_unverified_claims(token)
 
     assert payload["access_key"]
     assert payload["room_id"] == "room-123"
     assert payload["user_id"] == "user-456"
-    assert payload["role"] == "psychologist"
+    assert payload["role"] == "host"
     assert payload["type"] == "app"
     assert payload["version"] == 2
     assert isinstance(payload["jti"], str)
