@@ -35,8 +35,8 @@ def _get_appointment(appointment_id: str, ctx: TenantDB) -> Appointment:
 
 def _build_response(room_id: str, appointment_id: str, svc: HmsService) -> VideoRoomResponse:
     host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "psychologist")
-    guest_token = svc.create_app_token(room_id, f"guest-{uuid.uuid4()}", "guest")
-    patient_url = f"{settings.app_url}/join/{appointment_id}?t={guest_token}"
+    guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "patient")
+    patient_url = f"{settings.app_url}/join/{appointment_id}?t={guest_token}&role=patient"
     return VideoRoomResponse(
         room_id=room_id,
         host_token=host_token,

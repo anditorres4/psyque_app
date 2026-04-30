@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { VideoCallModal } from "@/components/video/VideoCallModal";
 import { useAppointment, useCancelAppointment } from "@/hooks/useAppointments";
 import { useCompleteAppointment, useNoshowAppointment } from "@/hooks/useSessions";
 import { useCreateVideoRoom, useRefreshVideoToken } from "@/hooks/useVideo";
@@ -36,8 +35,8 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const createRoomMutation = useCreateVideoRoom(appointmentId);
   const refreshTokenMutation = useRefreshVideoToken(appointmentId);
   const [videoRoom, setVideoRoom] = useState<VideoRoomResponse | null>(null);
-  const [showVideo, setShowVideo] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const videoPopupRef = useRef<Window | null>(null);
 
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelledBy, setCancelledBy] = useState<CancelledBy>("psychologist");
@@ -85,16 +84,46 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
 
   const handleStartVideo = async () => {
     setVideoError(null);
+    const popup = window.open(
+      "",
+      `video-call-${appointmentId}`,
+      "popup=yes,width=1400,height=900,resizable=yes,scrollbars=yes"
+    );
+
+    if (!popup) {
+      setVideoError("Tu navegador bloqueó la ventana emergente. Habilítala e intenta de nuevo.");
+      return;
+    }
+
+    popup.document.write(`
+      <html>
+        <head><title>Videollamada</title></head>
+        <body style="margin:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#0b0b0b;color:#fff;">
+          <div>Iniciando videollamada...</div>
+        </body>
+      </html>
+    `);
+    popup.document.close();
+    videoPopupRef.current = popup;
+
     try {
       const room = appt.video_room_id
         ? await refreshTokenMutation.mutateAsync()
         : await createRoomMutation.mutateAsync();
-      console.log("[VIDEO] API response:", JSON.stringify(room));
       setVideoRoom(room);
-      setShowVideo(true);
+      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=psychologist`;
+      popup.location.href = hostJoinUrl;
+      popup.focus();
     } catch {
+      popup.close();
+      videoPopupRef.current = null;
       setVideoError("No se pudo iniciar la videollamada. Intenta de nuevo.");
     }
+  };
+
+  const handleCopyPatientLink = async () => {
+    if (!videoRoom) return;
+    await navigator.clipboard.writeText(videoRoom.patient_join_url);
   };
 
   return (
@@ -156,6 +185,17 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
                     ? "Iniciando..."
                     : "Iniciar videollamada"}
                 </Button>
+                {videoRoom && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-[#2E86AB] border-[#2E86AB] hover:bg-[#2E86AB]/10"
+                    onClick={handleCopyPatientLink}
+                  >
+                    Copiar link del paciente
+                  </Button>
+                )}
                 {videoError && <p className="text-xs text-[#E74C3C]">{videoError}</p>}
               </>
             )}
@@ -222,14 +262,6 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
               </Button>
             </div>
           </form>
-        )}
-        {videoRoom && (
-          <VideoCallModal
-            open={showVideo}
-            onClose={() => setShowVideo(false)}
-            hostToken={videoRoom.host_token}
-            patientJoinUrl={videoRoom.patient_join_url}
-          />
         )}
       </div>
     </div>
