@@ -27,6 +27,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    dedupe: ["react", "react-dom", "@tldraw/state"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },

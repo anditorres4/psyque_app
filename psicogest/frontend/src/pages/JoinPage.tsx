@@ -23,18 +23,20 @@ export function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="h-screen w-screen overflow-hidden bg-black">
       <Suspense
         fallback={
-          <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+          <div className="h-screen w-screen flex items-center justify-center bg-[#F8FAFC]">
             <p className="text-sm text-muted-foreground">Iniciando videollamada...</p>
           </div>
         }
       >
-        <HMSPrebuilt
-          authToken={token}
-          options={{ userName: "Paciente" }}
-        />
+        <div className="h-full w-full">
+          <HMSPrebuilt
+            authToken={token}
+            options={{ userName: "Paciente" }}
+          />
+        </div>
       </Suspense>
     </div>
   );
