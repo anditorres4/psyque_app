@@ -114,7 +114,7 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
         : await createRoomMutation.mutateAsync();
       setVideoRoom(room);
       const psychologistName = profile?.full_name?.trim() || "Psicólogo";
-      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=host&name=${encodeURIComponent(psychologistName)}`;
+      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=session&name=${encodeURIComponent(psychologistName)}`;
       popup.location.href = hostJoinUrl;
       popup.focus();
     } catch {

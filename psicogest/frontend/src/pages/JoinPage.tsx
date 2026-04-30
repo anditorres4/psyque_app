@@ -15,7 +15,7 @@ export function JoinPage() {
   const joinKey = searchParams.get("k");
   const role = searchParams.get("role");
   const isStableLinkFlow = Boolean(joinKey);
-  const peerName = searchParams.get("name") || (role === "host" ? "Psicólogo" : "Paciente");
+  const peerName = searchParams.get("name") || (role === "session" ? "Participante" : "Paciente");
   const prebuiltRef = useRef<HMSPrebuiltRefType | null>(null);
   const [token, setToken] = useState(initialToken);
   const [tokenError, setTokenError] = useState<string | null>(null);

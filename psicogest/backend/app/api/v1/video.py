@@ -1,6 +1,7 @@
 """Video call endpoints — integración 100ms.live con auth tokens."""
 import uuid
 from typing import Annotated
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.core.deps import get_tenant_db, TenantDB
 from app.models.appointment import Appointment
+from app.models.patient import Patient
 from app.services.hms_service import HmsService
 
 router = APIRouter(prefix="/appointments", tags=["video"])
@@ -51,15 +53,24 @@ def _get_appointment(appointment_id: str, ctx: TenantDB) -> Appointment:
     return appt
 
 
+def _get_patient_name(patient_id, db: Session) -> str:
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    return patient.full_name if patient else "Paciente"
+
+
 def _build_response(
     room_id: str,
     appointment_id: str,
     patient_join_key: str,
+    patient_name: str,
     svc: HmsService,
 ) -> VideoRoomResponse:
-    host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "host")
-    guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "host")
-    patient_url = f"{settings.app_url}/join/{appointment_id}?k={patient_join_key}&role=host"
+    host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "session")
+    guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "session")
+    patient_url = (
+        f"{settings.app_url}/join/{appointment_id}"
+        f"?k={patient_join_key}&role=session&name={quote(patient_name)}"
+    )
     return VideoRoomResponse(
         room_id=room_id,
         host_token=host_token,
@@ -91,7 +102,8 @@ def create_video_room(
         room_id = appt.video_room_id
 
     patient_join_key = _ensure_patient_join_key(appt, ctx.db)
-    return _build_response(room_id, appointment_id, patient_join_key, svc)
+    patient_name = _get_patient_name(appt.patient_id, ctx.db)
+    return _build_response(room_id, appointment_id, patient_join_key, patient_name, svc)
 
 
 @router.get("/{appointment_id}/video-room/token", response_model=VideoRoomResponse)
@@ -109,7 +121,8 @@ def refresh_video_token(
 
     svc = HmsService()
     patient_join_key = _ensure_patient_join_key(appt, ctx.db)
-    return _build_response(appt.video_room_id, appointment_id, patient_join_key, svc)
+    patient_name = _get_patient_name(appt.patient_id, ctx.db)
+    return _build_response(appt.video_room_id, appointment_id, patient_join_key, patient_name, svc)
 
 
 @router.get("/public/{appointment_id}/video-room/token", response_model=PublicVideoTokenResponse)
@@ -133,5 +146,5 @@ def get_public_video_token(
         raise HTTPException(status_code=404, detail="La sala de video no ha sido creada")
 
     svc = HmsService()
-    token = svc.create_app_token(appt.video_room_id, f"patient-{uuid.uuid4()}", "host")
+    token = svc.create_app_token(appt.video_room_id, f"patient-{uuid.uuid4()}", "session")
     return PublicVideoTokenResponse(room_id=appt.video_room_id, token=token)
