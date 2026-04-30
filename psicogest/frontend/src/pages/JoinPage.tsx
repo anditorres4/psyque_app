@@ -14,22 +14,23 @@ export function JoinPage() {
   const initialToken = searchParams.get("t");
   const joinKey = searchParams.get("k");
   const role = searchParams.get("role");
+  const isStableLinkFlow = Boolean(joinKey);
   const peerName = searchParams.get("name") || (role === "host" ? "Psicólogo" : "Paciente");
   const prebuiltRef = useRef<HMSPrebuiltRefType | null>(null);
   const [token, setToken] = useState(initialToken);
   const [tokenError, setTokenError] = useState<string | null>(null);
 
   const screens = useMemo<Screens | undefined>(() => {
-    if (role !== "patient") return undefined;
+    if (!isStableLinkFlow) return undefined;
     return {
       preview: {
         skip_preview_screen: true,
       },
     };
-  }, [role]);
+  }, [isStableLinkFlow]);
 
   useEffect(() => {
-    if (initialToken || role !== "patient" || !joinKey || !appointmentId) return;
+    if (initialToken || !joinKey || !appointmentId) return;
 
     let active = true;
     void api.video.getPublicJoinToken(appointmentId, joinKey)
@@ -49,7 +50,7 @@ export function JoinPage() {
     return () => {
       active = false;
     };
-  }, [appointmentId, initialToken, joinKey, role]);
+  }, [appointmentId, initialToken, joinKey]);
 
   if (!token) {
     return (
@@ -82,7 +83,7 @@ export function JoinPage() {
             options={{ userName: peerName }}
             screens={screens}
             onJoin={() => {
-              if (role === "patient" && prebuiltRef.current) {
+              if (isStableLinkFlow && prebuiltRef.current) {
                 void prebuiltRef.current.hmsActions.setLocalAudioEnabled(true);
                 void prebuiltRef.current.hmsActions.setLocalVideoEnabled(true);
               }

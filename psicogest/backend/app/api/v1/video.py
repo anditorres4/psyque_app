@@ -58,8 +58,8 @@ def _build_response(
     svc: HmsService,
 ) -> VideoRoomResponse:
     host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "host")
-    guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "patient")
-    patient_url = f"{settings.app_url}/join/{appointment_id}?k={patient_join_key}&role=patient"
+    guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "host")
+    patient_url = f"{settings.app_url}/join/{appointment_id}?k={patient_join_key}&role=host"
     return VideoRoomResponse(
         room_id=room_id,
         host_token=host_token,
@@ -133,5 +133,5 @@ def get_public_video_token(
         raise HTTPException(status_code=404, detail="La sala de video no ha sido creada")
 
     svc = HmsService()
-    token = svc.create_app_token(appt.video_room_id, f"patient-{uuid.uuid4()}", "patient")
+    token = svc.create_app_token(appt.video_room_id, f"patient-{uuid.uuid4()}", "host")
     return PublicVideoTokenResponse(room_id=appt.video_room_id, token=token)
