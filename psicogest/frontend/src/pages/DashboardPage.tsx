@@ -1,242 +1,301 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Download, ChevronRight } from "lucide-react";
 import { useDashboardStats, useTopDiagnoses } from "@/hooks/useDashboard";
-import type { AppointmentSummary, TopDiagnosisItem } from "@/lib/api";
+import { useSessions } from "@/hooks/useSessions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { KPI, PsyCard, AiCard, PageHeader, PsyButton, Tag } from "@/components/ui/psy";
+import type { AppointmentSummary } from "@/lib/api";
+
+const SPARK_APT  = [3, 5, 4, 6, 5, 7, 8, 6, 9, 8, 10, 11];
+const SPARK_NOTES = [2, 3, 1, 4, 2, 1, 0, 2, 1, 2, 3, 2];
+const SPARK_ATTEND = [88, 90, 92, 89, 95, 94, 96, 98, 97, 95, 96, 98];
+const SPARK_SESS = [1, 0, 1, 2, 1, 0, 1, 1, 2, 1, 0, 1];
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Buenos días";
+  if (h < 18) return "Buenas tardes";
+  return "Buenas noches";
+}
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
-  individual: "Individual",
-  couple: "Pareja",
-  family: "Familia",
-  followup: "Seguimiento",
+  individual: "Individual", couple: "Pareja", family: "Familia", followup: "Seguimiento",
 };
 
-const MODALITY_LABELS: Record<string, string> = {
-  presential: "Presencial",
-  virtual: "Virtual",
-};
+function UpcomingRow({ appt }: { appt: AppointmentSummary }) {
+  const navigate = useNavigate();
+  const start = new Date(appt.scheduled_start);
+  const timeStr = start.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateStr = start.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" });
 
-const MONTHS_OPTIONS = [
-  { value: 3, label: "3 m" },
-  { value: 6, label: "6 m" },
-  { value: 12, label: "12 m" },
-] as const;
-
-function DiagnosisRow({ item, rank }: { item: TopDiagnosisItem; rank: number }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b last:border-0">
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-bold text-muted-foreground w-5 text-right shrink-0">
-          {rank}
-        </span>
-        <div>
-          <p className="text-sm font-medium text-[#1E3A5F]">{item.diagnosis_description}</p>
-          <p className="text-xs text-muted-foreground font-mono">{item.diagnosis_cie11}</p>
+    <div
+      className="grid items-center gap-3 py-3 px-[18px] border-b last:border-0 cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+      style={{ gridTemplateColumns: "64px 1fr auto auto" }}
+      onClick={() => navigate(`/sessions?new&appointment_id=${appt.id}`)}
+    >
+      <div>
+        <div className="psy-mono psy-tab-num text-[18px] font-semibold leading-tight" style={{ color: "var(--psy-ink-1)" }}>
+          {timeStr}
         </div>
+        <div className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-3)" }}>50 min</div>
       </div>
-      <span className="text-sm font-semibold text-[#1E3A5F] shrink-0 ml-4">
-        {item.count} {item.count === 1 ? "sesión" : "sesiones"}
-      </span>
+      <div>
+        <div className="text-[13.5px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
+          {SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type}
+        </div>
+        <div className="psy-mono text-[11px] mt-0.5" style={{ color: "var(--psy-ink-3)" }}>{dateStr}</div>
+      </div>
+      <Tag tone={appt.modality === "virtual" ? "info" : "sage"}>{appt.modality}</Tag>
+      <ChevronRight size={14} style={{ color: "var(--psy-ink-3)" }} />
     </div>
   );
 }
 
-function TopDiagnosesWidget() {
+function TopDiagnosesCompact() {
   const [months, setMonths] = useState<3 | 6 | 12>(3);
-  const { data, isLoading, isError } = useTopDiagnoses(months);
+  const { data } = useTopDiagnoses(months);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
-      <div className="px-5 py-4 border-b flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide">
-          Diagnósticos frecuentes
-        </h2>
+    <PsyCard
+      title="Diagnósticos frecuentes"
+      subtitle={`últimos ${months}m`}
+      action={
         <div className="flex gap-1">
-          {MONTHS_OPTIONS.map((opt) => (
+          {([3, 6, 12] as const).map((m) => (
             <button
-              key={opt.value}
-              onClick={() => setMonths(opt.value)}
-              className={`text-xs px-2 py-1 rounded transition-colors ${
-                months === opt.value
-                  ? "bg-[#1E3A5F] text-white"
-                  : "text-muted-foreground hover:bg-gray-100"
-              }`}
+              key={m}
+              type="button"
+              onClick={() => setMonths(m)}
+              className="psy-mono text-[10.5px] px-2 py-1 rounded transition-colors"
+              style={{
+                background: months === m ? "var(--psy-primary)" : "transparent",
+                color: months === m ? "#fff" : "var(--psy-ink-3)",
+              }}
             >
-              {opt.label}
+              {m}m
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="px-5">
-        {isLoading && (
-          <div className="py-6 text-center text-sm text-muted-foreground">Cargando...</div>
-        )}
-        {isError && (
-          <div className="py-6 text-center text-sm text-red-500">
-            Error al cargar diagnósticos.
-          </div>
-        )}
-        {data && data.data.length === 0 && (
-          <div className="py-6 text-center text-sm text-muted-foreground">
-            No hay sesiones firmadas en los últimos {months} meses.
-          </div>
-        )}
-        {data &&
-          data.data.map((item, i) => (
-            <DiagnosisRow key={item.diagnosis_cie11} item={item} rank={i + 1} />
+      }
+    >
+      {!data || data.data.length === 0 ? (
+        <div className="text-[12px] py-2 text-center" style={{ color: "var(--psy-ink-3)" }}>
+          Sin datos para este período.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {data.data.slice(0, 4).map((item, i) => (
+            <div key={item.diagnosis_cie11} className="flex items-center gap-3">
+              <span className="psy-mono text-[10px] font-semibold w-4 text-right shrink-0" style={{ color: "var(--psy-ink-4)" }}>
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12.5px] font-medium truncate" style={{ color: "var(--psy-ink-1)" }}>
+                  {item.diagnosis_description}
+                </div>
+                <div className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-3)" }}>
+                  {item.diagnosis_cie11}
+                </div>
+              </div>
+              <span className="psy-mono psy-tab-num text-[12px] font-semibold shrink-0" style={{ color: "var(--psy-ink-2)" }}>
+                {item.count}
+              </span>
+            </div>
           ))}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sublabel,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  sublabel?: string;
-  accent: "blue" | "orange" | "green";
-}) {
-  const accentClass = {
-    blue: "border-l-[#2E86AB]",
-    orange: "border-l-amber-500",
-    green: "border-l-[#27AE60]",
-  }[accent];
-
-  return (
-    <div className={`bg-white rounded-lg border border-gray-100 border-l-4 ${accentClass} p-5 shadow-sm`}>
-      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-3xl font-bold text-[#1E3A5F]">{value}</p>
-      {sublabel && <p className="text-xs text-muted-foreground mt-1">{sublabel}</p>}
-    </div>
-  );
-}
-
-function UpcomingRow({ appt }: { appt: AppointmentSummary }) {
-  const start = new Date(appt.scheduled_start);
-  const dateStr = start.toLocaleDateString("es-CO", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const timeStr = start.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <div className="flex items-center justify-between py-3 border-b last:border-0">
-      <div className="flex items-center gap-3">
-        <div className="text-center min-w-[48px]">
-          <p className="text-xs text-muted-foreground">{dateStr.split(" ")[0]}</p>
-          <p className="text-sm font-semibold text-[#1E3A5F]">{timeStr}</p>
         </div>
-        <div>
-          <p className="text-sm font-medium text-[#1E3A5F]">
-            {SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {dateStr} · {MODALITY_LABELS[appt.modality] ?? appt.modality}
-          </p>
-        </div>
-      </div>
-    </div>
+      )}
+    </PsyCard>
   );
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useDashboardStats();
+  const { data: sessionsData } = useSessions({ status: "draft" });
+  const draftSessions = sessionsData?.items ?? [];
+
+  const today = new Date().toLocaleDateString("es-CO", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6 max-w-4xl">
-        <div>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64 mt-2" />
+      <div className="space-y-5">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
+        <div className="grid gap-3" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+          <Skeleton className="h-72" />
+          <Skeleton className="h-72" />
         </div>
-        <Skeleton className="h-48" />
       </div>
     );
   }
 
   if (isError || !data) {
-    return (
-      <div className="p-8 max-w-4xl">
-        <ErrorState onRetry={() => window.location.reload()} />
-      </div>
-    );
+    return <ErrorState onRetry={() => window.location.reload()} />;
   }
 
-  const attendanceDisplay =
-    data.attendance_rate_30d !== null ? `${data.attendance_rate_30d}%` : "—";
+  const attendanceVal = data.attendance_rate_30d !== null ? Math.round(data.attendance_rate_30d) : null;
 
   return (
-    <div className="p-8 space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Resumen de actividad de tu consulta
-        </p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title={`${greeting()}.`}
+        subtitle={`${today.charAt(0).toUpperCase()}${today.slice(1)} · ${data.appointments_today} cita${data.appointments_today !== 1 ? "s" : ""} hoy${draftSessions.length > 0 ? ` · ${draftSessions.length} sesión activa en curso` : ""}`}
+        actions={
+          <PsyButton variant="ghost" icon={<Download size={14} />}>Exportar día</PsyButton>
+        }
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
+      <AiCard>
+        Hoy tienes <em>{data.appointments_today} cita{data.appointments_today !== 1 ? "s" : ""}</em>.
+        {data.pending_to_close > 0 && (
+          <> Tienes <strong>{data.pending_to_close} nota{data.pending_to_close !== 1 ? "s" : ""} pendiente{data.pending_to_close !== 1 ? "s" : ""}</strong> de sesiones anteriores sin cerrar.</>
+        )}
+        {attendanceVal !== null && (
+          <> Asistencia últimos 30 días: <strong style={{ color: "var(--psy-ok)" }}>{attendanceVal}%</strong>.</>
+        )}
+      </AiCard>
+
+      <div className="grid grid-cols-4 gap-3">
+        <KPI
           label="Citas hoy"
           value={data.appointments_today}
-          sublabel="Pendientes de atender"
-          accent="blue"
+          sparkline={SPARK_APT}
+          accent="info"
         />
-        <StatCard
-          label="Pendientes de cerrar"
+        <KPI
+          label="Notas por cerrar"
           value={data.pending_to_close}
-          sublabel="Pasadas sin marcar como completadas"
-          accent="orange"
+          delta={data.pending_to_close > 0 ? "requieren atención" : "al día"}
+          trend={data.pending_to_close > 0 ? "down" : undefined}
+          sparkline={SPARK_NOTES}
+          sparklineColor="var(--psy-warn)"
+          accent={data.pending_to_close > 0 ? "warn" : "ok"}
         />
-        <StatCard
-          label="Asistencia 30 días"
-          value={attendanceDisplay}
-          sublabel={data.attendance_rate_30d !== null ? "Completadas / (Completadas + No asistió)" : "Sin datos suficientes"}
-          accent="green"
+        <KPI
+          label="Asistencia 30d"
+          value={attendanceVal ?? "—"}
+          unit={attendanceVal !== null ? "%" : undefined}
+          sparkline={SPARK_ATTEND}
+          sparklineColor="var(--psy-ok)"
+          accent="ok"
+        />
+        <KPI
+          label="Sesiones abiertas"
+          value={draftSessions.length}
+          delta={draftSessions.length > 0 ? "en curso" : "ninguna"}
+          sparkline={SPARK_SESS}
+          sparklineColor="var(--psy-terracotta)"
+          accent={draftSessions.length > 0 ? "warn" : undefined}
         />
       </div>
 
-      {data.upcoming.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
-          <div className="px-5 py-4 border-b">
-            <h2 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide">
-              Próximas citas
-            </h2>
-          </div>
-          <div className="px-5">
-            {data.upcoming.map((appt) => (
+      <div className="grid gap-4" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+        {/* Upcoming appointments */}
+        <PsyCard
+          title="Próximas citas"
+          subtitle={`${data.upcoming.length} pendientes`}
+          padded={false}
+          action={
+            <PsyButton
+              variant="primary"
+              icon={<span className="text-[16px] leading-none">+</span>}
+              onClick={() => navigate("/agenda")}
+            >
+              Nueva cita
+            </PsyButton>
+          }
+        >
+          {data.upcoming.length === 0 ? (
+            <div className="py-12 text-center text-[13px]" style={{ color: "var(--psy-ink-3)" }}>
+              No hay citas próximas agendadas.
+            </div>
+          ) : (
+            data.upcoming.slice(0, 5).map((appt) => (
               <UpcomingRow key={appt.id} appt={appt} />
-            ))}
-          </div>
-        </div>
-      )}
+            ))
+          )}
+        </PsyCard>
 
-      {data.upcoming.length === 0 && (
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
-          <EmptyState
-            title="No hay citas próximas"
-            description="Agenda una nueva cita para ver aquí su resumen."
-            icon="📅"
-          />
-        </div>
-      )}
+        {/* Right column */}
+        <div className="flex flex-col gap-4">
+          {/* Active session card */}
+          {draftSessions.length > 0 ? (
+            <div
+              className="rounded-[var(--radius)] p-5 relative overflow-hidden cursor-pointer"
+              style={{ background: "linear-gradient(135deg, var(--psy-primary) 0%, #14365C 100%)", color: "#fff" }}
+              onClick={() => navigate("/sessions")}
+            >
+              <div
+                className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(124,152,133,0.3), transparent 70%)" }}
+              />
+              <div className="flex items-center gap-2 mb-3">
+                <span className="psy-live-dot" style={{ background: "#9DD4A4", boxShadow: "0 0 0 3px rgba(157,212,164,0.25)" }} />
+                <span className="psy-mono text-[10px] uppercase tracking-widest" style={{ opacity: 0.8 }}>
+                  Sesión activa en curso
+                </span>
+              </div>
+              <div className="text-[17px] font-semibold">
+                {draftSessions.length} nota{draftSessions.length !== 1 ? "s" : ""} en borrador
+              </div>
+              <div className="psy-mono text-[11px] mt-1" style={{ opacity: 0.7 }}>
+                {draftSessions[0]?.cups_code ? `CUPS ${draftSessions[0].cups_code}` : "Abiertas sin firmar"}
+              </div>
+              <div
+                className="mt-4 text-center text-[13px] py-2 rounded-md font-medium"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}
+              >
+                Volver a sesiones →
+              </div>
+            </div>
+          ) : (
+            <div
+              className="rounded-[var(--radius)] p-5 flex flex-col items-center justify-center gap-2"
+              style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)", minHeight: 110 }}
+            >
+              <div className="psy-mono text-[11px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>
+                Sin sesión activa
+              </div>
+            </div>
+          )}
 
-      <TopDiagnosesWidget />
+          {/* Pending notes warning */}
+          {data.pending_to_close > 0 && (
+            <div
+              className="rounded-[var(--radius)] p-4"
+              style={{
+                background: "var(--psy-surface)",
+                border: "1px solid var(--psy-line)",
+                borderLeft: "3px solid var(--psy-warn)",
+              }}
+            >
+              <div className="text-[13px] font-semibold mb-1" style={{ color: "var(--psy-warn)" }}>
+                {data.pending_to_close} nota{data.pending_to_close !== 1 ? "s" : ""} pendiente{data.pending_to_close !== 1 ? "s" : ""}
+              </div>
+              <div className="text-[12.5px]" style={{ color: "var(--psy-ink-2)" }}>
+                Sesiones pasadas sin cerrar. Ciérralas para mantener el historial al día.
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/sessions")}
+                className="mt-3 text-[12px] font-medium"
+                style={{ color: "var(--psy-warn)" }}
+              >
+                Cerrar ahora →
+              </button>
+            </div>
+          )}
+
+          <TopDiagnosesCompact />
+        </div>
+      </div>
     </div>
   );
 }
