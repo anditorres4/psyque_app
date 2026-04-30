@@ -5,11 +5,13 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from app.core.database import get_db
+from app.core.config import settings
 from app.core.deps import get_tenant_db, TenantDB
 from app.models.appointment import Appointment
 from app.services.hms_service import HmsService
-from app.core.config import settings
 
 router = APIRouter(prefix="/appointments", tags=["video"])
 
@@ -19,6 +21,22 @@ class VideoRoomResponse(BaseModel):
     host_token: str
     guest_token: str
     patient_join_url: str
+
+
+class PublicVideoTokenResponse(BaseModel):
+    room_id: str
+    token: str
+
+
+def _ensure_patient_join_key(appt: Appointment, db: Session) -> str:
+    if appt.patient_join_key:
+        return appt.patient_join_key
+
+    appt.patient_join_key = str(uuid.uuid4())
+    db.add(appt)
+    db.commit()
+    db.refresh(appt)
+    return appt.patient_join_key
 
 
 def _get_appointment(appointment_id: str, ctx: TenantDB) -> Appointment:
@@ -33,10 +51,15 @@ def _get_appointment(appointment_id: str, ctx: TenantDB) -> Appointment:
     return appt
 
 
-def _build_response(room_id: str, appointment_id: str, svc: HmsService) -> VideoRoomResponse:
+def _build_response(
+    room_id: str,
+    appointment_id: str,
+    patient_join_key: str,
+    svc: HmsService,
+) -> VideoRoomResponse:
     host_token = svc.create_app_token(room_id, f"host-{uuid.uuid4()}", "psychologist")
     guest_token = svc.create_app_token(room_id, f"patient-{uuid.uuid4()}", "patient")
-    patient_url = f"{settings.app_url}/join/{appointment_id}?t={guest_token}&role=patient"
+    patient_url = f"{settings.app_url}/join/{appointment_id}?k={patient_join_key}&role=patient"
     return VideoRoomResponse(
         room_id=room_id,
         host_token=host_token,
@@ -67,7 +90,8 @@ def create_video_room(
     else:
         room_id = appt.video_room_id
 
-    return _build_response(room_id, appointment_id, svc)
+    patient_join_key = _ensure_patient_join_key(appt, ctx.db)
+    return _build_response(room_id, appointment_id, patient_join_key, svc)
 
 
 @router.get("/{appointment_id}/video-room/token", response_model=VideoRoomResponse)
@@ -84,4 +108,30 @@ def refresh_video_token(
         raise HTTPException(status_code=404, detail="La sala de video no ha sido creada")
 
     svc = HmsService()
-    return _build_response(appt.video_room_id, appointment_id, svc)
+    patient_join_key = _ensure_patient_join_key(appt, ctx.db)
+    return _build_response(appt.video_room_id, appointment_id, patient_join_key, svc)
+
+
+@router.get("/public/{appointment_id}/video-room/token", response_model=PublicVideoTokenResponse)
+def get_public_video_token(
+    appointment_id: str,
+    join_key: str,
+    db: Annotated[Session, Depends(get_db)],
+) -> PublicVideoTokenResponse:
+    """Return a fresh patient token for a stable public join link."""
+    appt = db.query(Appointment).filter(
+        Appointment.id == appointment_id,
+        Appointment.patient_join_key == join_key,
+    ).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Enlace de videollamada no disponible")
+    if appt.modality != "virtual":
+        raise HTTPException(status_code=422, detail="La cita no es virtual")
+    if appt.status != "scheduled":
+        raise HTTPException(status_code=409, detail="La videollamada ya no está disponible")
+    if not appt.video_room_id:
+        raise HTTPException(status_code=404, detail="La sala de video no ha sido creada")
+
+    svc = HmsService()
+    token = svc.create_app_token(appt.video_room_id, f"patient-{uuid.uuid4()}", "patient")
+    return PublicVideoTokenResponse(room_id=appt.video_room_id, token=token)

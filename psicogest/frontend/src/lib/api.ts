@@ -643,6 +643,11 @@ export interface VideoRoomResponse {
   patient_join_url: string;
 }
 
+export interface PublicVideoTokenResponse {
+  room_id: string;
+  token: string;
+}
+
 // --- Caja / Cash ----------------------------------------------------------
 
 export type CashSessionStatus = "open" | "closed";
@@ -1044,5 +1049,10 @@ referrals: {
       request<VideoRoomResponse>("POST", `/appointments/${appointmentId}/video-room`),
     refreshToken: (appointmentId: string) =>
       request<VideoRoomResponse>("GET", `/appointments/${appointmentId}/video-room/token`),
+    getPublicJoinToken: (appointmentId: string, joinKey: string) =>
+      publicRequest<PublicVideoTokenResponse>(
+        "GET",
+        `/appointments/public/${appointmentId}/video-room/token?join_key=${encodeURIComponent(joinKey)}`
+      ),
   },
 };
