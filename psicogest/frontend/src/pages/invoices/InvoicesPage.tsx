@@ -1,13 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { api, InvoiceStatus, PatientSummary } from "@/lib/api";
+import { PageHeader, PsyButton, PsyCard, KPI, Tag } from "@/components/ui/psy";
+import { api, type InvoiceStatus, type PatientSummary } from "@/lib/api";
+import { Download, Send, CheckCircle } from "lucide-react";
+
+const SPARK_REVENUE = [8, 12, 11, 15, 14, 18, 20, 17, 22, 20, 25, 28];
+
+const STATUS_TONES: Record<InvoiceStatus, "amber" | "info" | "sage"> = {
+  draft: "amber",
+  issued: "info",
+  paid: "sage",
+};
+const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Borrador",
+  issued: "Emitida",
+  paid: "Pagada",
+};
+const STATUS_FILTERS: { value: string; label: string }[] = [
+  { value: "", label: "Todas" },
+  { value: "draft", label: "Borradores" },
+  { value: "issued", label: "Emitidas" },
+  { value: "paid", label: "Pagadas" },
+];
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -51,38 +68,54 @@ function PatientFilter({
   if (selectedPatient) {
     const surnames = [selectedPatient.first_surname, selectedPatient.second_surname].filter(Boolean).join(" ");
     return (
-      <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-slate-50 text-sm">
-        <span className="flex-1 truncate">{surnames}, {selectedPatient.first_name} — {selectedPatient.doc_type} {selectedPatient.doc_number}</span>
-        <button type="button" className="text-muted-foreground hover:text-foreground shrink-0" onClick={onClear}>✕</button>
+      <div
+        className="flex items-center gap-2 h-9 px-3 rounded-md text-[13px] psy-mono"
+        style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-line)", color: "var(--psy-ink-1)" }}
+      >
+        <span className="flex-1 truncate">{surnames}, {selectedPatient.first_name}</span>
+        <button type="button" className="shrink-0" onClick={onClear} style={{ color: "var(--psy-ink-3)" }}>✕</button>
       </div>
     );
   }
 
   return (
     <div ref={containerRef} className="relative">
-      <Input
+      <input
         value={searchQuery}
         onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
         onFocus={() => setShowResults(true)}
-        placeholder="Buscar por nombre o documento..."
+        placeholder="Buscar paciente…"
         autoComplete="off"
+        className="w-full h-9 px-3 rounded-md text-[13px] psy-mono"
+        style={{
+          background: "var(--psy-bg-soft)",
+          border: "1px solid var(--psy-line)",
+          color: "var(--psy-ink-1)",
+          outline: "none",
+        }}
       />
       {showResults && debouncedQuery.length >= 2 && (
-        <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-md shadow-lg max-h-52 overflow-y-auto">
-          {isFetching && <p className="text-xs text-muted-foreground p-3">Buscando...</p>}
+        <div
+          className="absolute z-10 top-full mt-1 w-full rounded-md shadow-lg max-h-52 overflow-y-auto"
+          style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+        >
+          {isFetching && <p className="psy-mono text-[11px] p-3" style={{ color: "var(--psy-ink-3)" }}>Buscando…</p>}
           {!isFetching && searchResults?.items.length === 0 && (
-            <p className="text-xs text-muted-foreground p-3">Sin resultados para "{debouncedQuery}"</p>
+            <p className="psy-mono text-[11px] p-3" style={{ color: "var(--psy-ink-3)" }}>Sin resultados</p>
           )}
           {searchResults?.items.map((p) => (
             <button
               key={p.id}
               type="button"
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 border-b last:border-b-0"
+              className="w-full text-left px-3 py-2.5 text-[13px] transition-colors"
+              style={{ borderBottom: "1px solid var(--psy-line)", color: "var(--psy-ink-1)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--psy-bg-soft)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onSelect(p); setSearchQuery(""); setShowResults(false); }}
             >
               <span className="font-medium">{[p.first_surname, p.second_surname].filter(Boolean).join(" ")}, {p.first_name}</span>
-              <span className="text-muted-foreground ml-2 text-xs">{p.doc_type} {p.doc_number}</span>
+              <span className="psy-mono text-[11px] ml-2" style={{ color: "var(--psy-ink-3)" }}>{p.doc_type} {p.doc_number}</span>
             </button>
           ))}
         </div>
@@ -106,161 +139,192 @@ export function InvoicesPage() {
 
   const issueMutation = useMutation({
     mutationFn: (id: string) => api.invoices.issue(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoices"] }),
   });
 
   const payMutation = useMutation({
     mutationFn: (id: string) => api.invoices.pay(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoices"] }),
   });
 
-  const handleDownload = async (id: string, _invoiceNumber: string) => {
+  const handleDownload = async (id: string, invoiceNumber: string) => {
     const { blob, filename } = await api.invoices.getPdf(id);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
+    a.download = filename || `${invoiceNumber}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP" }).format(value);
-
-  const formatDate = (dateStr: string | null) =>
-    dateStr ? new Date(dateStr).toLocaleDateString("es-CO") : "-";
-
-  const getStatusBadge = (status: InvoiceStatus) => {
-    const styles: Record<InvoiceStatus, string> = {
-      draft: "bg-yellow-100 text-yellow-800",
-      issued: "bg-blue-100 text-blue-800",
-      paid: "bg-green-100 text-green-800",
-    };
-    const labels: Record<InvoiceStatus, string> = {
-      draft: "Borrador",
-      issued: "Emitida",
-      paid: "Pagada",
-    };
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
-  };
+  const items = invoicesData?.items ?? [];
+  const draftCount = items.filter((i) => i.status === "draft").length;
+  const issuedCount = items.filter((i) => i.status === "issued").length;
+  const paidCount = items.filter((i) => i.status === "paid").length;
+  const totalPaid = items.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.total_cop), 0);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">Facturas</h1>
-        <p className="text-muted-foreground mt-1">
-          Liquidación de honorarios para pacientes particulares
-        </p>
+    <div className="space-y-5">
+      <PageHeader
+        title="Facturas"
+        subtitle="Liquidación de honorarios · particulares"
+      />
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-4 gap-3">
+        <KPI
+          label="Total cobrado"
+          value={`$${(totalPaid / 1_000_000).toFixed(1)}M`}
+          sparkline={SPARK_REVENUE}
+          sparklineColor="var(--psy-ok)"
+          accent="ok"
+        />
+        <KPI
+          label="Borradores"
+          value={draftCount}
+          delta={draftCount > 0 ? "por emitir" : "ninguno"}
+          trend={draftCount > 0 ? "down" : undefined}
+          accent={draftCount > 0 ? "warn" : undefined}
+        />
+        <KPI
+          label="Emitidas"
+          value={issuedCount}
+          delta={issuedCount > 0 ? "pendientes pago" : "al día"}
+          accent={issuedCount > 0 ? "info" : undefined}
+        />
+        <KPI
+          label="Pagadas"
+          value={paidCount}
+          accent="ok"
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Facturas</CardTitle>
-          <CardDescription>
-            Lista de facturas generadas para pacientes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1">
-              <Label>Filtrar por paciente</Label>
-              <PatientFilter
-                selectedPatient={selectedPatient}
-                onSelect={setSelectedPatient}
-                onClear={() => setSelectedPatient(null)}
-              />
-            </div>
-            <div className="w-48">
-              <Label>Estado</Label>
-              <select
-                className="w-full h-10 px-3 border rounded-md"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">Todos</option>
-                <option value="draft">Borrador</option>
-                <option value="issued">Emitida</option>
-                <option value="paid">Pagada</option>
-              </select>
-            </div>
-          </div>
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFilterStatus(f.value)}
+              className="psy-mono text-[11px] px-3 py-1.5 rounded-full transition-colors"
+              style={{
+                background: filterStatus === f.value ? "var(--psy-primary)" : "var(--psy-surface)",
+                color: filterStatus === f.value ? "#fff" : "var(--psy-ink-3)",
+                border: "1px solid var(--psy-line)",
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="w-60 ml-auto">
+          <PatientFilter
+            selectedPatient={selectedPatient}
+            onSelect={setSelectedPatient}
+            onClear={() => setSelectedPatient(null)}
+          />
+        </div>
+      </div>
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-24" />
-              ))}
-            </div>
-          ) : isError ? (
-            <ErrorState />
-          ) : invoicesData && invoicesData.items.length > 0 ? (
-            <div className="space-y-3">
-              {invoicesData.items.map((inv) => (
-                <div
+      {/* Table */}
+      {isLoading ? (
+        <PsyCard padded={false}>
+          <div className="p-4 space-y-3">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        </PsyCard>
+      ) : isError ? (
+        <PsyCard><ErrorState /></PsyCard>
+      ) : items.length === 0 ? (
+        <PsyCard>
+          <EmptyState
+            title="Sin facturas"
+            description={filterStatus ? "No hay facturas con ese estado." : "Genera facturas desde el detalle del paciente."}
+            icon="📄"
+          />
+        </PsyCard>
+      ) : (
+        <PsyCard padded={false}>
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                {["N° Factura", "Paciente", "Fecha", "Valor", "Estado", ""].map((h, i) => (
+                  <th
+                    key={i}
+                    className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
+                    style={{ color: "var(--psy-ink-3)" }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((inv) => (
+                <tr
                   key={inv.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="transition-colors hover:bg-[var(--psy-bg-soft)]"
+                  style={{ borderBottom: "1px solid var(--psy-line)" }}
                 >
-                  <div>
-                    <p className="font-medium">{inv.invoice_number}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Paciente: {inv.patient_id.slice(0, 8)}...
-                    </p>
-                    <p className="text-sm">
-                      {formatCurrency(inv.total_cop)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Creada: {formatDate(inv.created_at)}
-                      {inv.issue_date && ` • Emitida: ${formatDate(inv.issue_date)}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(inv.status)}
-                    {inv.status === "draft" && (
-                      <Button
-                        size="sm"
-                        onClick={() => issueMutation.mutate(inv.id)}
-                        disabled={issueMutation.isPending}
+                  <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+                    {inv.invoice_number}
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono text-[11px]" style={{ color: "var(--psy-ink-2)" }}>
+                    {inv.patient_id.slice(0, 8)}…
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
+                    {inv.issue_date
+                      ? new Date(inv.issue_date).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
+                      : new Date(inv.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
+                    }
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                    ${Number(inv.total_cop).toLocaleString("es-CO")}
+                  </td>
+                  <td className="px-[18px] py-3">
+                    <Tag tone={STATUS_TONES[inv.status]}>
+                      {STATUS_LABELS[inv.status]}
+                    </Tag>
+                  </td>
+                  <td className="px-[18px] py-3">
+                    <div className="flex items-center gap-2">
+                      {inv.status === "draft" && (
+                        <PsyButton
+                          variant="primary"
+                          icon={<Send size={11} />}
+                          onClick={() => issueMutation.mutate(inv.id)}
+                          className={issueMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
+                        >
+                          Emitir
+                        </PsyButton>
+                      )}
+                      {inv.status === "issued" && (
+                        <PsyButton
+                          variant="sage"
+                          icon={<CheckCircle size={11} />}
+                          onClick={() => payMutation.mutate(inv.id)}
+                          className={payMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
+                        >
+                          Pagada
+                        </PsyButton>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(inv.id, inv.invoice_number)}
+                        className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                        style={{ color: "var(--psy-ink-3)" }}
                       >
-                        Emitir
-                      </Button>
-                    )}
-                    {inv.status === "issued" && (
-                      <Button
-                        size="sm"
-                        onClick={() => payMutation.mutate(inv.id)}
-                        disabled={payMutation.isPending}
-                      >
-                        Marcar Pagada
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(inv.id, inv.invoice_number)}
-                    >
-                      Descargar
-                    </Button>
-                  </div>
-                </div>
+                        <Download size={12} /> PDF
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Sin facturas"
-              description="Genera facturas desde el detalle del paciente."
-              icon="📄"
-            />
-          )}
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </PsyCard>
+      )}
     </div>
   );
 }

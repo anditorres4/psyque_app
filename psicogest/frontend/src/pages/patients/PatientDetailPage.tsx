@@ -2,7 +2,7 @@
  * Patient profile page — RF-PAC-03
  * 5 tabs: Información general, Historia clínica, Sesiones, Documentos, RIPS
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
@@ -12,11 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientCreatePayload } from "@/lib/api";
-import { useSessions, useCreateSession } from "@/hooks/useSessions";
-import { SessionForm } from "@/components/sessions/SessionForm";
+import { useSessions } from "@/hooks/useSessions";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
-import type { SessionCreatePayload } from "@/lib/api";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { PsyButton, PsyCard, Tag } from "@/components/ui/psy";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { ClinicalRecordSection } from "@/components/patients/ClinicalRecordSection";
 import { SessionTimeline } from "@/components/patients/SessionTimeline";
@@ -53,12 +52,39 @@ const PAYER_LABELS: Record<string, string> = {
   PA: "Particular", CC: "Contributivo", SS: "Subsidiado", PE: "Especial", SE: "Excepción",
 };
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
+function PsyInfoCard({ title, badge, children }: { title: string; badge?: ReactNode; children: ReactNode }) {
+  return (
+    <div
+      className="rounded-[var(--radius)] overflow-hidden"
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1px solid var(--psy-line)" }}
+      >
+        <span className="psy-mono text-[10.5px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>
+          {title}
+        </span>
+        {badge}
+      </div>
+      <dl className="px-4 py-3 space-y-3">{children}</dl>
+    </div>
+  );
+}
+
+function PsyFieldRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   if (!value) return null;
   return (
-    <div className="py-2 border-b last:border-0">
-      <dt className="text-xs text-muted-foreground uppercase tracking-wide">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
+    <div>
+      <dt className="psy-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>
+        {label}
+      </dt>
+      <dd
+        className={`text-[13px] mt-0.5${mono ? " psy-mono" : ""}`}
+        style={{ color: "var(--psy-ink-1)" }}
+      >
+        {value}
+      </dd>
     </div>
   );
 }
@@ -129,38 +155,49 @@ export function PatientDetailPage() {
     }
   };
 
+  const initials = [patient.first_name, patient.first_surname]
+    .filter(Boolean)
+    .map((s) => s![0].toUpperCase())
+    .join("");
+
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/patients")}
-            className="text-muted-foreground hover:text-foreground text-sm"
+    <div className="space-y-5">
+      {/* Patient header */}
+      <div
+        className="rounded-[var(--radius)] p-5"
+        style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      >
+        <div className="grid items-center gap-5" style={{ gridTemplateColumns: "auto 1fr auto" }}>
+          {/* Avatar */}
+          <div
+            className="w-[68px] h-[68px] rounded-full grid place-items-center shrink-0"
+            style={{
+              background: "linear-gradient(135deg, var(--psy-sage-bg), var(--psy-surface))",
+              border: "1px solid var(--psy-sage-soft)",
+            }}
           >
-            ← Pacientes
-          </button>
+            <span className="psy-serif text-[30px]" style={{ color: "var(--psy-primary)" }}>{initials}</span>
+          </div>
+
+          {/* Identity */}
           <div>
-            <h1 className="text-2xl font-bold text-[#1E3A5F]">{fullName}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
-                {patient.hc_number}
-              </span>
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <span className="psy-mono text-[11px]" style={{ color: "var(--psy-ink-3)" }}>{patient.hc_number}</span>
+              <span className="psy-tag psy-tag-sage">{patient.is_active ? "activa" : "inactiva"}</span>
               {patient.current_diagnosis_cie11 && (
-                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-mono">
-                  {patient.current_diagnosis_cie11}
-                </span>
-              )}
-              {!patient.is_active && (
-                <span className="text-xs bg-red-50 text-[#E74C3C] px-2 py-0.5 rounded">
-                  Inactivo
-                </span>
+                <span className="psy-tag psy-tag-info">{patient.current_diagnosis_cie11}</span>
               )}
             </div>
+            <h1 className="psy-page-title" style={{ fontSize: 30 }}>{fullName}</h1>
+            {patient.birth_date && (
+              <div className="psy-mono text-[12px] mt-1" style={{ color: "var(--psy-ink-3)" }}>
+                {new Date(patient.birth_date).toLocaleDateString("es-CO")} · {Math.floor((Date.now() - new Date(patient.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}a
+              </div>
+            )}
           </div>
-        </div>
-        <div className="flex gap-2">
+
+          {/* Actions */}
+          <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={() => setIsEditing(!isEditing)}
@@ -237,21 +274,22 @@ export function PatientDetailPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+        </div>{/* close grid */}
+      </div>{/* close header card */}
 
       {/* Tabs */}
-      <div className="border-b mb-6">
-        <nav className="flex gap-1 -mb-px" aria-label="Pestañas del perfil">
+      <div style={{ borderBottom: "1px solid var(--psy-line)" }}>
+        <nav className="flex gap-0.5" aria-label="Pestañas del perfil">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => { setActiveTab(tab.id); setIsEditing(false); }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-[#2E86AB] text-[#2E86AB]"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className="px-4 py-2.5 text-[13px] font-medium transition-colors relative"
+              style={{
+                color: activeTab === tab.id ? "var(--psy-primary)" : "var(--psy-ink-3)",
+                borderBottom: activeTab === tab.id ? "2px solid var(--psy-sage)" : "2px solid transparent",
+              }}
             >
               {tab.label}
             </button>
@@ -271,25 +309,93 @@ export function PatientDetailPage() {
             />
           </div>
         ) : (
-          <div className="max-w-xl">
-            <dl className="divide-y">
-              <InfoRow label="Documento" value={`${DOC_TYPE_LABELS[patient.doc_type] ?? patient.doc_type} ${patient.doc_number}`} />
-              <InfoRow label="Fecha de nacimiento" value={`${patient.birth_date} (${calcAge(patient.birth_date)} años)`} />
-              <InfoRow label="Sexo biológico" value={SEX_LABELS[patient.biological_sex] ?? patient.biological_sex} />
-              <InfoRow label="Género de identidad" value={patient.gender_identity} />
-              <InfoRow label="Estado civil" value={MARITAL_LABELS[patient.marital_status] ?? patient.marital_status} />
-              <InfoRow label="Ocupación" value={patient.occupation} />
-              <InfoRow label="Dirección" value={patient.address} />
-              <InfoRow label="Municipio (DANE)" value={patient.municipality_dane} />
-              <InfoRow label="Zona" value={ZONE_LABELS[patient.zone] ?? patient.zone} />
-              <InfoRow label="Teléfono" value={patient.phone} />
-              <InfoRow label="Email" value={patient.email} />
-              <InfoRow label="Contacto de emergencia" value={patient.emergency_contact_name} />
-              <InfoRow label="Teléfono emergencia" value={patient.emergency_contact_phone} />
-              <InfoRow label="Vinculación" value={PAYER_LABELS[patient.payer_type] ?? patient.payer_type} />
-              <InfoRow label="EPS" value={patient.eps_name} />
-              <InfoRow label="Consentimiento" value={`Firmado el ${new Date(patient.consent_signed_at).toLocaleString("es-CO")}`} />
-            </dl>
+          <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1.4fr" }}>
+            {/* Left: grouped cards */}
+            <div className="flex flex-col gap-4">
+              <PsyInfoCard title="Identificación">
+                <PsyFieldRow label="Documento" value={`${DOC_TYPE_LABELS[patient.doc_type] ?? patient.doc_type} ${patient.doc_number}`} mono />
+                <PsyFieldRow label="Nacimiento" value={patient.birth_date ? `${patient.birth_date} · ${calcAge(patient.birth_date)}a` : undefined} mono />
+                <PsyFieldRow label="Sexo / Género" value={[SEX_LABELS[patient.biological_sex], patient.gender_identity].filter(Boolean).join(" / ")} />
+                <PsyFieldRow label="Estado civil" value={MARITAL_LABELS[patient.marital_status] ?? patient.marital_status} />
+                <PsyFieldRow label="Ocupación" value={patient.occupation} />
+              </PsyInfoCard>
+
+              <PsyInfoCard title="Contacto">
+                <PsyFieldRow label="Teléfono" value={patient.phone} mono />
+                <PsyFieldRow label="Email" value={patient.email} mono />
+                <PsyFieldRow label="Dirección" value={[patient.address, patient.municipality_dane, ZONE_LABELS[patient.zone]].filter(Boolean).join(" · ")} />
+                <PsyFieldRow label="Emergencia" value={[patient.emergency_contact_name, patient.emergency_contact_phone].filter(Boolean).join(" · ")} mono />
+              </PsyInfoCard>
+
+              <PsyInfoCard
+                title="Vinculación"
+                badge={patient.eps_name ? <span className="psy-tag psy-tag-info">{patient.eps_name}</span> : undefined}
+              >
+                <PsyFieldRow label="Régimen" value={PAYER_LABELS[patient.payer_type] ?? patient.payer_type} />
+                <PsyFieldRow label="EPS" value={patient.eps_name} />
+              </PsyInfoCard>
+            </div>
+
+            {/* Right: clinical summary + sessions */}
+            <div className="flex flex-col gap-4">
+              {patient.current_diagnosis_cie11 && (
+                <div
+                  className="rounded-[var(--radius)] p-4"
+                  style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+                >
+                  <div className="psy-mono text-[10.5px] uppercase tracking-wider mb-3" style={{ color: "var(--psy-ink-3)" }}>
+                    Diagnóstico activo · CIE-11
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="psy-mono text-[28px] font-semibold leading-none" style={{ color: "var(--psy-primary)" }}>
+                      {patient.current_diagnosis_cie11}
+                    </div>
+                    <span className="psy-tag psy-tag-sage">activo</span>
+                  </div>
+                </div>
+              )}
+
+              <div
+                className="rounded-[var(--radius)] p-4"
+                style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+              >
+                <div className="psy-mono text-[10.5px] uppercase tracking-wider mb-3" style={{ color: "var(--psy-ink-3)" }}>
+                  Historia clínica
+                </div>
+                {id && (
+                  <SessionTimeline
+                    patientId={id}
+                    onOpenSession={(sessionId) => {
+                      setInitialSessionId(sessionId);
+                      setActiveTab("sesiones");
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Habeas data */}
+              <div
+                className="flex items-center gap-3 p-4 rounded-[var(--radius)]"
+                style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-line)" }}
+              >
+                <div
+                  className="w-8 h-8 rounded-md grid place-items-center shrink-0"
+                  style={{ background: "var(--psy-surface)", color: "var(--psy-ok)", border: "1px solid var(--psy-sage-soft)" }}
+                >
+                  🔒
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium" style={{ color: "var(--psy-ink-1)" }}>
+                    Habeas data firmado · Ley 1581/2012
+                  </div>
+                  {patient.consent_signed_at && (
+                    <div className="psy-mono text-[10.5px] mt-0.5" style={{ color: "var(--psy-ink-3)" }}>
+                      {new Date(patient.consent_signed_at).toLocaleString("es-CO")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )
       )}
@@ -349,11 +455,9 @@ function PatientSessionsTab({
   initialSessionId: string | null;
   onInitialSessionConsumed: () => void;
 }) {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useSessions({ patient_id: patientId });
-  const createMutation = useCreateSession();
-  const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialSessionId && selectedId !== initialSessionId) {
@@ -362,89 +466,100 @@ function PatientSessionsTab({
     }
   }, [initialSessionId, onInitialSessionConsumed, selectedId]);
 
-  const handleCreate = async (payload: SessionCreatePayload) => {
-    setCreateError(null);
-    try {
-      const sess = await createMutation.mutateAsync(payload);
-      setSelectedId(sess.id);
-      setShowForm(false);
-    } catch (err) {
-      setCreateError(err instanceof ApiError ? err.message : "Error al crear sesión.");
-    }
-  };
-
   if (selectedId) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         <SessionDetail sessionId={selectedId} onBack={() => setSelectedId(null)} />
       </div>
     );
   }
 
-  if (showForm) {
-    return (
-      <div className="max-w-2xl">
-        <button type="button" onClick={() => setShowForm(false)} className="text-sm text-muted-foreground mb-4 block">← Volver</button>
-        <h3 className="text-lg font-semibold text-[#1E3A5F] mb-4">Nueva nota de sesión</h3>
-        <SessionForm
-          defaultPatientId={patientId}
-          onSubmit={handleCreate}
-          isSubmitting={createMutation.isPending}
-          error={createError}
-        />
-      </div>
-    );
-  }
-
-  const STATUS_COLORS: Record<string, string> = {
-    draft: "bg-amber-50 text-amber-700",
-    signed: "bg-green-50 text-green-700",
-  };
+  const STATUS_LABELS: Record<string, string> = { draft: "Borrador", signed: "Firmada" };
+  const STATUS_TONES: Record<string, "amber" | "sage"> = { draft: "amber", signed: "sage" };
+  const items = data?.items ?? [];
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-[#1E3A5F]">Historial de sesiones</h3>
-        <Button size="sm" className="bg-[#2E86AB] hover:bg-[#1E3A5F] text-white" onClick={() => setShowForm(true)}>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="psy-mono text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
+          {isLoading ? "Cargando…" : `${items.length} sesión${items.length !== 1 ? "es" : ""}`}
+        </div>
+        <PsyButton
+          variant="primary"
+          onClick={() => navigate(`/sessions?new&patient_id=${patientId}`)}
+        >
           + Nueva sesión
-        </Button>
+        </PsyButton>
       </div>
 
-      {isLoading && <Skeleton className="h-20" />}
+      {isLoading && (
+        <PsyCard padded={false}>
+          <div className="p-4 space-y-3">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10" />)}
+          </div>
+        </PsyCard>
+      )}
 
       {isError && !isLoading && <ErrorState message="Error al cargar sesiones." />}
 
-      {!isLoading && !isError && data && data.items.length === 0 && (
-        <EmptyState
-          title="Sin sesiones registradas"
-          description="Crea la primera nota de sesión para este paciente."
-          icon="📝"
-        />
+      {!isLoading && !isError && items.length === 0 && (
+        <PsyCard>
+          <EmptyState
+            title="Sin sesiones registradas"
+            description="Crea la primera nota de sesión para este paciente."
+            icon="📝"
+          />
+        </PsyCard>
       )}
 
-      {!isLoading && data && data.items.length > 0 && (
-        <div className="space-y-2">
-          {data.items.map((sess) => (
-            <button
-              key={sess.id}
-              type="button"
-              onClick={() => setSelectedId(sess.id)}
-              className="w-full text-left border rounded-lg p-4 hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#1E3A5F]">
-                  {new Date(sess.actual_start).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" })}
-                </span>
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[sess.status] ?? ""}`}>
-                  {sess.status === "signed" ? "Firmada" : "Borrador"}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                CIE-11: {sess.diagnosis_cie11} · CUPS: {sess.cups_code} · ${Number(sess.session_fee).toLocaleString("es-CO")} COP
-              </p>
-            </button>
-          ))}
-        </div>
+      {!isLoading && items.length > 0 && (
+        <PsyCard padded={false}>
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
+                    style={{ color: "var(--psy-ink-3)" }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((sess) => (
+                <tr
+                  key={sess.id}
+                  onClick={() => setSelectedId(sess.id)}
+                  className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+                  style={{ borderBottom: "1px solid var(--psy-line)" }}
+                >
+                  <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
+                    {new Date(sess.actual_start).toLocaleDateString("es-CO", {
+                      year: "numeric", month: "short", day: "numeric",
+                    })}
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+                    {sess.diagnosis_cie11}
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono" style={{ color: "var(--psy-ink-2)" }}>
+                    {sess.cups_code}
+                  </td>
+                  <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                    ${Number(sess.session_fee).toLocaleString("es-CO")}
+                  </td>
+                  <td className="px-[18px] py-3">
+                    <Tag tone={STATUS_TONES[sess.status] ?? "default"}>
+                      {STATUS_LABELS[sess.status] ?? sess.status}
+                    </Tag>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PsyCard>
       )}
     </div>
   );

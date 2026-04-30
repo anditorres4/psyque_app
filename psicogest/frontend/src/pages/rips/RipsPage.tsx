@@ -1,10 +1,27 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { api, type RipsValidateResponse } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader, PsyButton, PsyCard, Tag } from "@/components/ui/psy";
+import { Download, CheckCircle, AlertCircle } from "lucide-react";
+
+const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const MONTH_NAMES_LONG = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+const STATUS_TONES: Record<string, "amber" | "sage" | "info"> = {
+  pending: "amber",
+  generated: "sage",
+  submitted: "info",
+};
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  generated: "Generado",
+  submitted: "Enviado",
+};
 
 export function RipsPage() {
   const queryClient = useQueryClient();
@@ -37,15 +54,7 @@ export function RipsPage() {
     },
   });
 
-  const handleValidate = () => {
-    validateMutation.mutate({ year, month });
-  };
-
-  const handleGenerate = () => {
-    generateMutation.mutate({ year, month });
-  };
-
-  const handleDownload = async (id: string, _period: string) => {
+  const handleDownload = async (id: string) => {
     const { blob, filename } = await api.rips.download(id);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -55,200 +64,221 @@ export function RipsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP" }).format(value);
-
-  const formatDate = (dateStr: string | null) =>
-    dateStr ? new Date(dateStr).toLocaleDateString("es-CO") : "-";
-
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      generated: "bg-green-100 text-green-800",
-      submitted: "bg-blue-100 text-blue-800",
-    };
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-gray-100"}`}>
-        {status}
-      </span>
-    );
-  };
+  const selectedPeriod = `${MONTH_NAMES_LONG[month - 1]} ${year}`;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">RIPS</h1>
-        <p className="text-muted-foreground mt-1">
-          Exportación de	RIPS para EPS/aseguradoras (Res. 2275/2023)
-        </p>
+    <div className="space-y-5">
+      {/* Compliance band */}
+      <div
+        className="flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius)] psy-mono text-[11px]"
+        style={{ background: "var(--psy-primary)", color: "rgba(255,255,255,0.85)" }}
+      >
+        <span className="font-semibold text-white">Res. 2275/2023</span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>RIPS Colombia · Formato JSON v2.1</span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>Registro Individual de Prestación de Servicios de Salud</span>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Generar Exportación</CardTitle>
-            <CardDescription>
-              Seleccione el período para validar y generar el archivo RIPS
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <Label>Año</Label>
-                <Input
+      <PageHeader
+        title="RIPS"
+        subtitle="Exportación para EPS y aseguradoras"
+      />
+
+      <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 1.5fr" }}>
+        {/* Export form */}
+        <div className="flex flex-col gap-4">
+          <PsyCard title="Generar exportación">
+            <div className="mb-4">
+              <div className="psy-mono text-[10.5px] uppercase tracking-wider mb-3" style={{ color: "var(--psy-ink-3)" }}>
+                Período
+              </div>
+              <div className="flex items-center gap-3 mb-3">
+                <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(parseInt(e.target.value))}
                   min={2020}
                   max={2030}
+                  className="psy-mono text-[14px] w-[90px] px-3 py-2 rounded-md"
+                  style={{
+                    background: "var(--psy-bg-soft)",
+                    border: "1px solid var(--psy-line)",
+                    color: "var(--psy-ink-1)",
+                    outline: "none",
+                  }}
                 />
+                <div className="psy-serif text-[15px]" style={{ color: "var(--psy-ink-2)" }}>
+                  {MONTH_NAMES_LONG[month - 1]}
+                </div>
               </div>
-              <div className="flex-1">
-                <Label>Mes</Label>
-                <Input
-                  type="number"
-                  value={month}
-                  onChange={(e) => setMonth(parseInt(e.target.value))}
-                  min={1}
-                  max={12}
-                />
+              <div className="grid grid-cols-6 gap-1">
+                {MONTH_NAMES.map((m, i) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMonth(i + 1)}
+                    className="psy-mono text-[10px] py-1.5 rounded transition-colors text-center"
+                    style={{
+                      background: month === i + 1 ? "var(--psy-primary)" : "var(--psy-bg-soft)",
+                      color: month === i + 1 ? "#fff" : "var(--psy-ink-3)",
+                      border: "1px solid var(--psy-line)",
+                    }}
+                  >
+                    {m}
+                  </button>
+                ))}
               </div>
-              <Button
-                variant="outline"
-                onClick={handleValidate}
-                disabled={validateMutation.isPending}
-              >
-                {validateMutation.isPending ? "Validando..." : "Validar"}
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={generateMutation.isPending || (showValidation && !validation?.valid)}
-                title={showValidation && validation && !validation.valid ? "Corrija los errores antes de generar" : ""}
-              >
-                {generateMutation.isPending ? "Generando..." : "Generar"}
-              </Button>
             </div>
 
-            {validateMutation.isError && (
-              <p className="mt-4 text-sm text-red-600">
-                Error: {(validateMutation.error as Error).message}
-              </p>
-            )}
-
-            {generateMutation.isError && (
-              <p className="mt-4 text-sm text-red-600">
-                Error: {(generateMutation.error as Error).message}
-              </p>
-            )}
-
-            {generateMutation.isSuccess && (
-              <p className="mt-4 text-sm text-green-600">
-                {generateMutation.data.message}
-              </p>
-            )}
+            <div className="flex gap-2 mb-4">
+              <PsyButton
+                variant="ghost"
+                onClick={() => validateMutation.mutate({ year, month })}
+                className={validateMutation.isPending ? "opacity-50 pointer-events-none" : ""}
+              >
+                {validateMutation.isPending ? "Validando…" : "Validar"}
+              </PsyButton>
+              <PsyButton
+                variant="primary"
+                onClick={() => generateMutation.mutate({ year, month })}
+                className={(generateMutation.isPending || (showValidation && !validation?.valid)) ? "opacity-50 pointer-events-none" : ""}
+              >
+                {generateMutation.isPending ? "Generando…" : `Generar ${selectedPeriod}`}
+              </PsyButton>
+            </div>
 
             {showValidation && validation && (
-              <div className="mt-4 p-4 rounded-lg border">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-medium">
-                    {validation.valid ? (
-                      <span className="text-green-600">✓ Validación exitosa</span>
-                    ) : (
-                      <span className="text-red-600">✕ Errores de validación</span>
-                    )}
+              <div
+                className="rounded-[var(--radius)] p-4"
+                style={{
+                  background: validation.valid ? "var(--psy-sage-bg)" : "#FEF2F2",
+                  border: `1px solid ${validation.valid ? "var(--psy-sage-soft)" : "#FECACA"}`,
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  {validation.valid ? (
+                    <CheckCircle size={14} style={{ color: "var(--psy-ok)" }} />
+                  ) : (
+                    <AlertCircle size={14} style={{ color: "var(--psy-danger)" }} />
+                  )}
+                  <span
+                    className="text-[13px] font-medium"
+                    style={{ color: validation.valid ? "var(--psy-ok)" : "var(--psy-danger)" }}
+                  >
+                    {validation.valid ? "Validación exitosa" : "Errores de validación"}
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="ml-auto psy-mono text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
                     {validation.sessions_count} sesiones
                   </span>
                 </div>
-
                 {validation.errors.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-red-600">Errores:</p>
-                    <div className="max-h-48 overflow-y-auto border rounded">
-                      <table className="w-full text-sm">
-                        <thead className="bg-red-50 sticky top-0">
-                          <tr>
-                            <th className="text-left px-2 py-1">Campo</th>
-                            <th className="text-left px-2 py-1">Mensaje</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {validation.errors.map((err, idx) => (
-                            <tr key={idx} className="border-t">
-                              <td className="px-2 py-1 font-mono text-xs">{err.field}</td>
-                              <td className="px-2 py-1">{err.message}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 mt-2">
+                    {validation.errors.map((err, idx) => (
+                      <div key={idx} className="psy-mono text-[11px] flex gap-2">
+                        <span className="font-semibold shrink-0" style={{ color: "var(--psy-danger)" }}>{err.field}</span>
+                        <span style={{ color: "var(--psy-ink-2)" }}>{err.message}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-
                 {validation.warnings.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-sm font-medium text-yellow-600">Advertencias:</p>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground">
-                      {validation.warnings.map((warn, idx) => (
-                        <li key={idx}>{warn.message}</li>
-                      ))}
-                    </ul>
+                  <div className="mt-2 space-y-1">
+                    {validation.warnings.map((warn, idx) => (
+                      <div key={idx} className="psy-mono text-[11px]" style={{ color: "var(--psy-warn)" }}>
+                        ⚠ {warn.message}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Historial de Exportaciones</CardTitle>
-            <CardDescription>Últimas exportaciones generadas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-muted-foreground">Cargando...</p>
-            ) : exports && exports.length > 0 ? (
-              <div className="space-y-3">
-                {exports.map((exp) => (
-                  <div
-                    key={exp.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {String(exp.period_month).padStart(2, "0")}/{exp.period_year}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {exp.sessions_count} sesiones • {formatCurrency(exp.total_value_cop)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(exp.generated_at)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(exp.status)}
-                      {exp.status === "generated" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(exp.id, `${exp.period_year}${String(exp.period_month).padStart(2, "0")}`)}
-                        >
-                          Descargar ZIP
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {generateMutation.isSuccess && (
+              <div className="psy-mono text-[11px] mt-3" style={{ color: "var(--psy-ok)" }}>
+                ✓ {generateMutation.data.message}
               </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No hay exportaciones generadas.
-              </p>
             )}
-          </CardContent>
-        </Card>
+            {(validateMutation.isError || generateMutation.isError) && (
+              <div className="psy-mono text-[11px] mt-3" style={{ color: "var(--psy-danger)" }}>
+                {((validateMutation.error || generateMutation.error) as Error)?.message ?? "Error al procesar"}
+              </div>
+            )}
+          </PsyCard>
+        </div>
+
+        {/* History table */}
+        <PsyCard title="Historial de exportaciones" padded={false}>
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10" />)}
+            </div>
+          ) : !exports || exports.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                title="Sin exportaciones"
+                description="Genera tu primer RIPS para verlo aquí."
+                icon="📦"
+              />
+            </div>
+          ) : (
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                  {["Período", "Sesiones", "Valor", "Estado", ""].map((h, i) => (
+                    <th
+                      key={i}
+                      className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 2 ? "text-right" : "text-left"}`}
+                      style={{ color: "var(--psy-ink-3)" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {exports.map((exp) => (
+                  <tr
+                    key={exp.id}
+                    style={{ borderBottom: "1px solid var(--psy-line)" }}
+                  >
+                    <td className="px-[18px] py-3">
+                      <div className="psy-serif text-[15px]" style={{ color: "var(--psy-ink-1)" }}>
+                        {MONTH_NAMES_LONG[(exp.period_month ?? 1) - 1]}
+                      </div>
+                      <div className="psy-mono text-[10.5px]" style={{ color: "var(--psy-ink-3)" }}>
+                        {exp.period_year}
+                      </div>
+                    </td>
+                    <td className="px-[18px] py-3 psy-mono psy-tab-num" style={{ color: "var(--psy-ink-2)" }}>
+                      {exp.sessions_count}
+                    </td>
+                    <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                      ${Number(exp.total_value_cop).toLocaleString("es-CO")}
+                    </td>
+                    <td className="px-[18px] py-3">
+                      <Tag tone={STATUS_TONES[exp.status] ?? "default"}>
+                        {STATUS_LABELS[exp.status] ?? exp.status}
+                      </Tag>
+                    </td>
+                    <td className="px-[18px] py-3">
+                      {exp.status === "generated" && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(exp.id)}
+                          className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                          style={{ color: "var(--psy-primary)" }}
+                        >
+                          <Download size={12} /> ZIP
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </PsyCard>
       </div>
     </div>
   );
