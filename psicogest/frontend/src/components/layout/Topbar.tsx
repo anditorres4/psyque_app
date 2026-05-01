@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Menu } from "lucide-react";
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -27,16 +28,29 @@ function NowClock() {
   return <span className="psy-mono psy-tab-num">{t}</span>;
 }
 
-export function Topbar() {
+interface TopbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Topbar({ onMenuClick }: TopbarProps) {
   const location = useLocation();
   const segments = location.pathname.split("/").filter(Boolean);
   const crumbs = ["psyque", ...segments.map((s) => ROUTE_LABELS[s] ?? s)];
 
   return (
     <div
-      className="sticky top-0 z-10 flex items-center gap-3 px-7 py-3.5"
+      className="sticky top-0 z-10 flex items-center gap-3 px-4 md:px-7 py-3.5"
       style={{ background: "var(--psy-surface)", borderBottom: "1px solid var(--psy-line)" }}
     >
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="lg:hidden p-1.5 -ml-1 rounded-md hover:bg-[var(--psy-bg-soft)]"
+        style={{ color: "var(--psy-ink-2)" }}
+        aria-label="Abrir menú"
+      >
+        <Menu size={20} />
+      </button>
       <div
         className="psy-mono text-[11px] uppercase tracking-wide flex items-center gap-1.5"
         style={{ color: "var(--psy-ink-3)" }}

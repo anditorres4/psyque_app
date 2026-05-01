@@ -6,6 +6,7 @@ import { PatientSearch } from "@/components/patients/PatientSearch";
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -22,10 +23,20 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--psy-bg)" }}>
-      <Sidebar onSearchClick={() => setSearchOpen(true)} />
-      <div className="ml-60 min-h-screen flex flex-col">
-        <Topbar />
-        <main className="flex-1 px-8 py-7 max-w-[1400px] w-full">
+      <Sidebar 
+        onSearchClick={() => setSearchOpen(true)} 
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <div className="lg:ml-60 min-h-screen flex flex-col">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 px-4 py-5 md:px-8 md:py-7 max-w-[1400px] w-full">
           <Outlet />
         </main>
       </div>

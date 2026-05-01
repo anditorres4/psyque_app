@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, Users, Activity, FileText,
-  CreditCard, BarChart3, Settings, LogOut, Search, type LucideIcon,
+  CreditCard, BarChart3, Settings, LogOut, Search, X, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -29,9 +29,13 @@ const navItems: NavItem[] = [
   { to: "/settings",       label: "Configuración",    Icon: Settings,        group: "admin" },
 ];
 
-interface SidebarProps { onSearchClick?: () => void; }
+interface SidebarProps { 
+  onSearchClick?: () => void; 
+  isOpen?: boolean;
+  onClose?: () => void;
+}
 
-export function Sidebar({ onSearchClick }: SidebarProps) {
+export function Sidebar({ onSearchClick, isOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -51,7 +55,11 @@ export function Sidebar({ onSearchClick }: SidebarProps) {
 
   return (
     <aside
-      className="fixed left-0 top-0 h-full w-60 flex flex-col px-3.5 py-4 gap-3.5 z-40"
+      className={cn(
+        "fixed left-0 top-0 h-full w-60 flex flex-col px-3.5 py-4 gap-3.5 z-40",
+        "transition-transform duration-300 ease-in-out",
+        !isOpen && "-translate-x-full lg:translate-x-0"
+      )}
       style={{
         background: "var(--psy-surface)",
         borderRight: "1px solid var(--psy-line)",
@@ -59,6 +67,17 @@ export function Sidebar({ onSearchClick }: SidebarProps) {
       }}
       aria-label="Navegación principal"
     >
+      {/* Botón cerrar mobile */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 p-1 rounded-md hover:bg-[var(--psy-bg-soft)] lg:hidden"
+        style={{ color: "var(--psy-ink-3)" }}
+        aria-label="Cerrar menú"
+      >
+        <X size={18} />
+      </button>
+
       {/* Brand */}
       <div className="flex items-center gap-2.5 pb-3 border-b" style={{ borderColor: "var(--psy-line)" }}>
         <div
@@ -98,13 +117,13 @@ export function Sidebar({ onSearchClick }: SidebarProps) {
 
       <NavGroup label="Práctica">
         {practiceItems.map((it) => (
-          <NavItemLink key={it.to} item={it} linkClass={linkClass} />
+          <NavItemLink key={it.to} item={it} linkClass={linkClass} onNavigate={onClose} />
         ))}
       </NavGroup>
 
       <NavGroup label="Administración">
         {adminItems.map((it) => (
-          <NavItemLink key={it.to} item={it} linkClass={linkClass} />
+          <NavItemLink key={it.to} item={it} linkClass={linkClass} onNavigate={onClose} />
         ))}
       </NavGroup>
 
@@ -161,12 +180,16 @@ function NavGroup({ label, children }: { label: string; children: React.ReactNod
 }
 
 function NavItemLink({
-  item, linkClass,
+  item, linkClass, onNavigate,
 }: {
   item: NavItem;
   linkClass: (s: { isActive: boolean }, indent?: boolean) => string;
+  onNavigate?: () => void;
 }) {
   const Icon = item.Icon;
+  const handleClick = () => {
+    if (onNavigate) onNavigate();
+  };
   return (
     <NavLink
       to={item.to}
@@ -176,6 +199,7 @@ function NavItemLink({
         background: isActive ? "var(--psy-sage-bg)" : "transparent",
         color: isActive ? "var(--psy-primary)" : "var(--psy-ink-2)",
       })}
+      onClick={handleClick}
     >
       {({ isActive }) => (
         <>
