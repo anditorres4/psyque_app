@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader, PsyButton, PsyCard, KPI, Tag } from "@/components/ui/psy";
-import { api, type InvoiceStatus, type PatientSummary } from "@/lib/api";
+import { api, type InvoiceStatus, type InvoiceSummary, type PatientSummary } from "@/lib/api";
 import { Download, Send, CheckCircle } from "lucide-react";
 
 const SPARK_REVENUE = [8, 12, 11, 15, 14, 18, 20, 17, 22, 20, 25, 28];
@@ -25,6 +25,81 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: "issued", label: "Emitidas" },
   { value: "paid", label: "Pagadas" },
 ];
+
+function InvoiceCard({
+  invoice,
+  onDownload,
+  onIssue,
+  onPay,
+}: {
+  invoice: InvoiceSummary;
+  onDownload: (id: string, num: string) => void;
+  onIssue: { mutate: (id: string) => void; isPending: boolean };
+  onPay: { mutate: (id: string) => void; isPending: boolean };
+}) {
+  const issueDate = invoice.issue_date
+    ? new Date(invoice.issue_date).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
+    : new Date(invoice.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+
+  return (
+    <div
+      className="p-4 rounded-[var(--radius)]"
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+          {invoice.invoice_number}
+        </span>
+        <Tag tone={STATUS_TONES[invoice.status]}>
+          {STATUS_LABELS[invoice.status]}
+        </Tag>
+      </div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="psy-mono text-[11px]" style={{ color: "var(--psy-ink-2)" }}>
+          {invoice.patient_id.slice(0, 8)}…
+        </span>
+        <span className="psy-mono text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
+          {issueDate}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="psy-mono psy-tab-num text-[16px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
+          ${Number(invoice.total_cop).toLocaleString("es-CO")}
+        </span>
+        <div className="flex items-center gap-2">
+          {invoice.status === "draft" && (
+            <PsyButton
+              variant="primary"
+              icon={<Send size={11} />}
+              onClick={() => onIssue.mutate(invoice.id)}
+              className="text-[11px] px-2.5 py-1.5"
+            >
+              Emitir
+            </PsyButton>
+          )}
+          {invoice.status === "issued" && (
+            <PsyButton
+              variant="sage"
+              icon={<CheckCircle size={11} />}
+              onClick={() => onPay.mutate(invoice.id)}
+              className="text-[11px] px-2.5 py-1.5"
+            >
+              Pagada
+            </PsyButton>
+          )}
+          <button
+            type="button"
+            onClick={() => onDownload(invoice.id, invoice.invoice_number)}
+            className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+            style={{ color: "var(--psy-ink-3)" }}
+          >
+            <Download size={12} /> PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -171,7 +246,7 @@ export function InvoicesPage() {
       />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI
           label="Total cobrado"
           value={`$${(totalPaid / 1_000_000).toFixed(1)}M`}
@@ -200,7 +275,7 @@ export function InvoicesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-1.5">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -218,7 +293,7 @@ export function InvoicesPage() {
             </button>
           ))}
         </div>
-        <div className="w-60 ml-auto">
+        <div className="w-full md:w-60 ml-auto">
           <PatientFilter
             selectedPatient={selectedPatient}
             onSelect={setSelectedPatient}
@@ -245,85 +320,97 @@ export function InvoicesPage() {
           />
         </PsyCard>
       ) : (
-        <PsyCard padded={false}>
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
-                {["N° Factura", "Paciente", "Fecha", "Valor", "Estado", ""].map((h, i) => (
-                  <th
-                    key={i}
-                    className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
-                    style={{ color: "var(--psy-ink-3)" }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((inv) => (
-                <tr
-                  key={inv.id}
-                  className="transition-colors hover:bg-[var(--psy-bg-soft)]"
-                  style={{ borderBottom: "1px solid var(--psy-line)" }}
-                >
-                  <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
-                    {inv.invoice_number}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono text-[11px]" style={{ color: "var(--psy-ink-2)" }}>
-                    {inv.patient_id.slice(0, 8)}…
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
-                    {inv.issue_date
-                      ? new Date(inv.issue_date).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
-                      : new Date(inv.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
-                    }
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
-                    ${Number(inv.total_cop).toLocaleString("es-CO")}
-                  </td>
-                  <td className="px-[18px] py-3">
-                    <Tag tone={STATUS_TONES[inv.status]}>
-                      {STATUS_LABELS[inv.status]}
-                    </Tag>
-                  </td>
-                  <td className="px-[18px] py-3">
-                    <div className="flex items-center gap-2">
-                      {inv.status === "draft" && (
-                        <PsyButton
-                          variant="primary"
-                          icon={<Send size={11} />}
-                          onClick={() => issueMutation.mutate(inv.id)}
-                          className={issueMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
-                        >
-                          Emitir
-                        </PsyButton>
-                      )}
-                      {inv.status === "issued" && (
-                        <PsyButton
-                          variant="sage"
-                          icon={<CheckCircle size={11} />}
-                          onClick={() => payMutation.mutate(inv.id)}
-                          className={payMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
-                        >
-                          Pagada
-                        </PsyButton>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(inv.id, inv.invoice_number)}
-                        className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+        <>
+          {/* Tabla — md+ */}
+          <div className="hidden md:block">
+            <PsyCard padded={false}>
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                    {["N° Factura", "Paciente", "Fecha", "Valor", "Estado", ""].map((h, i) => (
+                      <th
+                        key={i}
+                        className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
                         style={{ color: "var(--psy-ink-3)" }}
                       >
-                        <Download size={12} /> PDF
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </PsyCard>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="transition-colors hover:bg-[var(--psy-bg-soft)]"
+                      style={{ borderBottom: "1px solid var(--psy-line)" }}
+                    >
+                      <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+                        {inv.invoice_number}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono text-[11px]" style={{ color: "var(--psy-ink-2)" }}>
+                        {inv.patient_id.slice(0, 8)}…
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
+                        {inv.issue_date
+                          ? new Date(inv.issue_date).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
+                          : new Date(inv.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
+                        }
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                        ${Number(inv.total_cop).toLocaleString("es-CO")}
+                      </td>
+                      <td className="px-[18px] py-3">
+                        <Tag tone={STATUS_TONES[inv.status]}>
+                          {STATUS_LABELS[inv.status]}
+                        </Tag>
+                      </td>
+                      <td className="px-[18px] py-3">
+                        <div className="flex items-center gap-2">
+                          {inv.status === "draft" && (
+                            <PsyButton
+                              variant="primary"
+                              icon={<Send size={11} />}
+                              onClick={() => issueMutation.mutate(inv.id)}
+                              className={issueMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
+                            >
+                              Emitir
+                            </PsyButton>
+                          )}
+                          {inv.status === "issued" && (
+                            <PsyButton
+                              variant="sage"
+                              icon={<CheckCircle size={11} />}
+                              onClick={() => payMutation.mutate(inv.id)}
+                              className={payMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
+                            >
+                              Pagada
+                            </PsyButton>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(inv.id, inv.invoice_number)}
+                            className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                            style={{ color: "var(--psy-ink-3)" }}
+                          >
+                            <Download size={12} /> PDF
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </PsyCard>
+          </div>
+
+          {/* Cards — mobile */}
+          <div className="md:hidden space-y-3">
+            {items.map((inv) => (
+              <InvoiceCard key={inv.id} invoice={inv} onDownload={handleDownload} onIssue={issueMutation} onPay={payMutation} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

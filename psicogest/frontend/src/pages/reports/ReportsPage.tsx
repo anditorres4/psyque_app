@@ -100,11 +100,11 @@ export function ReportsPage() {
 
       {/* KPIs */}
       {isLoading ? (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KPI
             label="Ingresos del período"
             value={summary ? `$${(summary.total_revenue / 1_000_000).toFixed(1)}M` : "—"}
@@ -136,7 +136,7 @@ export function ReportsPage() {
       )}
 
       {/* Charts grid */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: "1.2fr 1fr" }}>
+      <div className="psy-grid-split-reports">
         {/* Revenue bar chart */}
         <PsyCard title="Ingresos por mes">
           <ResponsiveContainer width="100%" height={220}>

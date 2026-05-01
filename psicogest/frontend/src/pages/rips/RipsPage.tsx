@@ -85,7 +85,7 @@ export function RipsPage() {
         subtitle="Exportación para EPS y aseguradoras"
       />
 
-      <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 1.5fr" }}>
+      <div className="psy-grid-split-rips">
         {/* Export form */}
         <div className="flex flex-col gap-4">
           <PsyCard title="Generar exportación">
