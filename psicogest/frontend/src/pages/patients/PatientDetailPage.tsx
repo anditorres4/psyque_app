@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
-import type { PatientCreatePayload } from "@/lib/api";
+import type { PatientCreatePayload, SessionSummary } from "@/lib/api";
 import { useSessions } from "@/hooks/useSessions";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import { api } from "@/lib/api";
@@ -109,7 +109,7 @@ export function PatientDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-4 max-w-xl">
+      <div className="space-y-4 max-w-xl">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-48" />
@@ -119,7 +119,7 @@ export function PatientDetailPage() {
   }
   if (isError || !patient) {
     return (
-      <div className="p-8 max-w-xl">
+      <div className="max-w-xl">
         <ErrorState onRetry={() => window.location.reload()} />
         <Button variant="outline" className="mt-4" onClick={() => navigate("/patients")}>
           ← Volver a pacientes
@@ -167,7 +167,7 @@ export function PatientDetailPage() {
         className="rounded-[var(--radius)] p-5"
         style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
       >
-        <div className="grid items-center gap-5" style={{ gridTemplateColumns: "auto 1fr auto" }}>
+        <div className="grid gap-4 md:grid-cols-[auto_1fr_auto]">
           {/* Avatar */}
           <div
             className="w-[68px] h-[68px] rounded-full grid place-items-center shrink-0"
@@ -279,7 +279,7 @@ export function PatientDetailPage() {
 
       {/* Tabs */}
       <div style={{ borderBottom: "1px solid var(--psy-line)" }}>
-        <nav className="flex gap-0.5" aria-label="Pestañas del perfil">
+        <nav className="flex gap-0.5 overflow-x-auto pb-1 psy-no-scrollbar" aria-label="Pestañas del perfil">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -309,7 +309,7 @@ export function PatientDetailPage() {
             />
           </div>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1.4fr" }}>
+          <div className="psy-grid-split-info">
             {/* Left: grouped cards */}
             <div className="flex flex-col gap-4">
               <PsyInfoCard title="Identificación">
@@ -478,6 +478,37 @@ function PatientSessionsTab({
   const STATUS_TONES: Record<string, "amber" | "sage"> = { draft: "amber", signed: "sage" };
   const items = data?.items ?? [];
 
+  function SessionCard({ session, onClick }: { session: SessionSummary; onClick: () => void }) {
+    const start = new Date(session.actual_start);
+    return (
+      <div
+        className="p-4 rounded-[var(--radius)] cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+        style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+        onClick={onClick}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span className="psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
+            {start.toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" })}
+          </span>
+          <Tag tone={STATUS_TONES[session.status] ?? "default"}>
+            {STATUS_LABELS[session.status] ?? session.status}
+          </Tag>
+        </div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+            {session.diagnosis_cie11}
+          </span>
+          <span className="psy-mono text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
+            {session.cups_code}
+          </span>
+        </div>
+        <span className="psy-mono psy-tab-num text-[14px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
+          ${Number(session.session_fee).toLocaleString("es-CO")}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -513,53 +544,65 @@ function PatientSessionsTab({
       )}
 
       {!isLoading && items.length > 0 && (
-        <PsyCard padded={false}>
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
-                {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
-                  <th
-                    key={h}
-                    className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
-                    style={{ color: "var(--psy-ink-3)" }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((sess) => (
-                <tr
-                  key={sess.id}
-                  onClick={() => setSelectedId(sess.id)}
-                  className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
-                  style={{ borderBottom: "1px solid var(--psy-line)" }}
-                >
-                  <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
-                    {new Date(sess.actual_start).toLocaleDateString("es-CO", {
-                      year: "numeric", month: "short", day: "numeric",
-                    })}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
-                    {sess.diagnosis_cie11}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono" style={{ color: "var(--psy-ink-2)" }}>
-                    {sess.cups_code}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
-                    ${Number(sess.session_fee).toLocaleString("es-CO")}
-                  </td>
-                  <td className="px-[18px] py-3">
-                    <Tag tone={STATUS_TONES[sess.status] ?? "default"}>
-                      {STATUS_LABELS[sess.status] ?? sess.status}
-                    </Tag>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </PsyCard>
+        <>
+          {/* Tabla — md+ */}
+          <div className="hidden md:block">
+            <PsyCard padded={false}>
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                    {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
+                        style={{ color: "var(--psy-ink-3)" }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((sess) => (
+                    <tr
+                      key={sess.id}
+                      onClick={() => setSelectedId(sess.id)}
+                      className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+                      style={{ borderBottom: "1px solid var(--psy-line)" }}
+                    >
+                      <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
+                        {new Date(sess.actual_start).toLocaleDateString("es-CO", {
+                          year: "numeric", month: "short", day: "numeric",
+                        })}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+                        {sess.diagnosis_cie11}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono" style={{ color: "var(--psy-ink-2)" }}>
+                        {sess.cups_code}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                        ${Number(sess.session_fee).toLocaleString("es-CO")}
+                      </td>
+                      <td className="px-[18px] py-3">
+                        <Tag tone={STATUS_TONES[sess.status] ?? "default"}>
+                          {STATUS_LABELS[sess.status] ?? sess.status}
+                        </Tag>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </PsyCard>
+          </div>
+
+          {/* Cards — mobile */}
+          <div className="md:hidden space-y-3">
+            {items.map((sess) => (
+              <SessionCard key={sess.id} session={sess} onClick={() => setSelectedId(sess.id)} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

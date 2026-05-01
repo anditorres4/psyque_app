@@ -64,7 +64,7 @@ export function PatientsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="px-4 py-5 md:px-8 md:py-7">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -112,7 +112,7 @@ export function PatientsPage() {
       )}
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4">
         <Input
           placeholder="Buscar por nombre, apellido o documento..."
           value={search}

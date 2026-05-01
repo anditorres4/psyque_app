@@ -125,10 +125,10 @@ export function DashboardPage() {
     return (
       <div className="space-y-5">
         <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-4 gap-3">
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
-        <div className="grid gap-3" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+        <div className="psy-grid-split">
           <Skeleton className="h-72" />
           <Skeleton className="h-72" />
         </div>
@@ -162,7 +162,7 @@ export function DashboardPage() {
         )}
       </AiCard>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI
           label="Citas hoy"
           value={data.appointments_today}
@@ -196,7 +196,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
         {/* Upcoming appointments */}
         <PsyCard
           title="Próximas citas"

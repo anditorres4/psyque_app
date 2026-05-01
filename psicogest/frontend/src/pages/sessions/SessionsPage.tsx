@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSessions, useCreateSession } from "@/hooks/useSessions";
 import { SessionForm } from "@/components/sessions/SessionForm";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
-import type { SessionCreatePayload } from "@/lib/api";
+import type { SessionCreatePayload, SessionSummary } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,6 +20,37 @@ const STATUS_TONES: Record<string, "amber" | "sage"> = {
   draft: "amber",
   signed: "sage",
 };
+
+function SessionCard({ session, onClick }: { session: SessionSummary; onClick: () => void }) {
+  const start = new Date(session.actual_start);
+  return (
+    <div
+      className="p-4 rounded-[var(--radius)] cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
+          {start.toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" })}
+        </span>
+        <Tag tone={STATUS_TONES[session.status] ?? "default"}>
+          {STATUS_LABELS[session.status] ?? session.status}
+        </Tag>
+      </div>
+      <div className="flex items-center gap-3 mb-2">
+        <span className="psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+          {session.diagnosis_cie11}
+        </span>
+        <span className="psy-mono text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
+          {session.cups_code}
+        </span>
+      </div>
+      <span className="psy-mono psy-tab-num text-[14px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
+        ${Number(session.session_fee).toLocaleString("es-CO")}
+      </span>
+    </div>
+  );
+}
 
 export function SessionsPage() {
   const [searchParams] = useSearchParams();
@@ -158,62 +189,87 @@ export function SessionsPage() {
       )}
 
       {!isLoading && items.length > 0 && (
-        <PsyCard padded={false}>
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
-                {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
-                  <th
-                    key={h}
-                    className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
-                    style={{ color: "var(--psy-ink-3)" }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((sess) => (
-                <tr
-                  key={sess.id}
-                  onClick={() => setSelectedSessionId(sess.id)}
-                  className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
-                  style={{ borderBottom: "1px solid var(--psy-line)" }}
+        <>
+          {/* Tabla — md+ */}
+          <div className="hidden md:block">
+            <PsyCard padded={false}>
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
+                    {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
+                        style={{ color: "var(--psy-ink-3)" }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((sess) => (
+                    <tr
+                      key={sess.id}
+                      onClick={() => setSelectedSessionId(sess.id)}
+                      className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+                      style={{ borderBottom: "1px solid var(--psy-line)" }}
+                    >
+                      <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
+                        {new Date(sess.actual_start).toLocaleDateString("es-CO", {
+                          year: "numeric", month: "short", day: "numeric",
+                        })}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
+                        {sess.diagnosis_cie11}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono" style={{ color: "var(--psy-ink-2)" }}>
+                        {sess.cups_code}
+                      </td>
+                      <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
+                        ${Number(sess.session_fee).toLocaleString("es-CO")}
+                      </td>
+                      <td className="px-[18px] py-3">
+                        <Tag tone={STATUS_TONES[sess.status] ?? "default"}>
+                          {STATUS_LABELS[sess.status] ?? sess.status}
+                        </Tag>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {signedCount > 0 && (
+                <div
+                  className="px-[18px] py-2.5 psy-mono text-[11px] flex justify-between"
+                  style={{ borderTop: "1px solid var(--psy-line)", color: "var(--psy-ink-3)" }}
                 >
-                  <td className="px-[18px] py-3 psy-mono text-[12px]" style={{ color: "var(--psy-ink-2)" }}>
-                    {new Date(sess.actual_start).toLocaleDateString("es-CO", {
-                      year: "numeric", month: "short", day: "numeric",
-                    })}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
-                    {sess.diagnosis_cie11}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono" style={{ color: "var(--psy-ink-2)" }}>
-                    {sess.cups_code}
-                  </td>
-                  <td className="px-[18px] py-3 psy-mono psy-tab-num text-right" style={{ color: "var(--psy-ink-1)" }}>
-                    ${Number(sess.session_fee).toLocaleString("es-CO")}
-                  </td>
-                  <td className="px-[18px] py-3">
-                    <Tag tone={STATUS_TONES[sess.status] ?? "default"}>
-                      {STATUS_LABELS[sess.status] ?? sess.status}
-                    </Tag>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {signedCount > 0 && (
-            <div
-              className="px-[18px] py-2.5 psy-mono text-[11px] flex justify-between"
-              style={{ borderTop: "1px solid var(--psy-line)", color: "var(--psy-ink-3)" }}
-            >
-              <span>{signedCount} firmada{signedCount !== 1 ? "s" : ""}</span>
-              <span>{draftCount} borrador{draftCount !== 1 ? "es" : ""}</span>
-            </div>
-          )}
-        </PsyCard>
+                  <span>{signedCount} firma{signedCount !== 1 ? "s" : ""}</span>
+                  <span>{draftCount} borrador{draftCount !== 1 ? "es" : ""}</span>
+                </div>
+              )}
+            </PsyCard>
+          </div>
+
+          {/* Cards — mobile */}
+          <div className="md:hidden space-y-3">
+            {items.map((sess) => (
+              <SessionCard
+                key={sess.id}
+                session={sess}
+                onClick={() => setSelectedSessionId(sess.id)}
+              />
+            ))}
+            {signedCount > 0 && (
+              <div
+                className="px-4 py-2.5 psy-mono text-[11px] flex justify-between"
+                style={{ color: "var(--psy-ink-3)" }}
+              >
+                <span>{signedCount} firma{signedCount !== 1 ? "s" : ""}</span>
+                <span>{draftCount} borrador{draftCount !== 1 ? "es" : ""}</span>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
