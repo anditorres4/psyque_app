@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { request } from "@/lib/api";
 
@@ -133,13 +131,13 @@ export function PatientRegistrationsAdminPage() {
                 <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data?.motivo_consulta as string}</p>
               </div>
 
-              {detail.intake_data?.antecedentes_medicos && (
+              {(detail.intake_data?.antecedentes_medicos as string | undefined) && (
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes médicos</p>
                   <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_medicos as string}</p>
                 </div>
               )}
-              {detail.intake_data?.antecedentes_psicologicos && (
+              {(detail.intake_data?.antecedentes_psicologicos as string | undefined) && (
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes psicológicos</p>
                   <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_psicologicos as string}</p>

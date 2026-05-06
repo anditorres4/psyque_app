@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/api";
-import { MUNICIPIOS } from "@/data/municipios";
-import { EPS_COLOMBIA } from "@/lib/eps-colombia";
 
 interface PsychInfo {
   psychologist_name: string;
