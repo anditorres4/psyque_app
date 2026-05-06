@@ -63,6 +63,7 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.Boolean(), nullable=False, server_default=sa.text("false")
     )
     homework_assigned: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    ai_context_summary: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
 
 
 class SessionNote(Base, UUIDPrimaryKey, TenantMixin):

@@ -92,7 +92,7 @@ class SessionService:
             "actual_start", "actual_end", "diagnosis_cie11", "diagnosis_description",
             "cups_code", "consultation_reason", "intervention", "evolution",
             "next_session_plan", "homework_assigned", "session_fee", "authorization_number",
-            "tipo_dx_principal", "mental_exam", "is_emergency",
+            "tipo_dx_principal", "mental_exam", "is_emergency", "ai_context_summary",
         }
         for key, value in data.items():
             if key in allowed:
@@ -194,20 +194,22 @@ class SessionService:
             Session.tenant_id == self._tenant_uuid(),
             Session.patient_id == pid,
         )
-        first = (
-            base_q.order_by(Session.actual_start.asc()).first()
-        )
-        last = (
-            base_q.order_by(Session.actual_start.desc()).first()
+        first = base_q.order_by(Session.actual_start.asc()).first()
+        # Use only SIGNED sessions for carry-forward data so draft sessions
+        # don't pollute the context when the form is re-opened.
+        last_signed = (
+            base_q.filter(Session.status == "signed")
+            .order_by(Session.actual_start.desc())
+            .first()
         )
         count = base_q.filter(Session.status == "signed").count()
         return {
             "consultation_reason": first.consultation_reason if first else None,
-            "last_mental_exam": last.mental_exam if last else None,
-            "last_diagnosis_cie11": last.diagnosis_cie11 if last else None,
-            "last_diagnosis_description": last.diagnosis_description if last else None,
-            "last_homework_assigned": last.homework_assigned if last else None,
-            "last_next_session_plan": last.next_session_plan if last else None,
+            "last_mental_exam": last_signed.mental_exam if last_signed else None,
+            "last_diagnosis_cie11": last_signed.diagnosis_cie11 if last_signed else None,
+            "last_diagnosis_description": last_signed.diagnosis_description if last_signed else None,
+            "last_homework_assigned": last_signed.homework_assigned if last_signed else None,
+            "last_next_session_plan": last_signed.next_session_plan if last_signed else None,
             "session_count": count,
             "is_first_session": first is None,
         }

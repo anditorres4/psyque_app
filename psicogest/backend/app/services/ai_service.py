@@ -93,6 +93,17 @@ INSTRUCCIONES:
 """
 
 
+def _strip_json_markdown(content: str) -> str:
+    """Strip ```json ... ``` or ``` ... ``` wrappers that LLMs sometimes add."""
+    content = content.strip()
+    if content.startswith("```"):
+        lines = content.splitlines()
+        # Remove first line (``` or ```json) and last line (```)
+        end = len(lines) - 1 if lines[-1].strip() == "```" else len(lines)
+        content = "\n".join(lines[1:end])
+    return content.strip()
+
+
 def check_feature_enabled(tenant: Tenant, feature: str) -> bool:
     """Check if a feature is enabled for the tenant."""
     features = tenant.features or {}
@@ -191,7 +202,7 @@ def generate_diagnosis_suggestion(
     response = provider.generate(prompt, config["model"])
     
     try:
-        data = json.loads(response.content)
+        data = json.loads(_strip_json_markdown(response.content))
         suggestions = data.get("suggestions", [])
     except json.JSONDecodeError:
         suggestions = [{"code": "ERROR", "description": response.content[:200], "confidence": 0}]
@@ -294,7 +305,7 @@ def generate_session_summary(
     response = provider.generate(prompt, config["model"])
     
     try:
-        data = json.loads(response.content)
+        data = json.loads(_strip_json_markdown(response.content))
         summary = data.get("summary", "")
         key_topics = data.get("key_topics", [])
     except json.JSONDecodeError:
@@ -337,7 +348,7 @@ def generate_clinical_record_summary(
     response = provider.generate(prompt, config["model"])
     
     try:
-        data = json.loads(response.content)
+        data = json.loads(_strip_json_markdown(response.content))
         summary = data.get("summary", "")
         key_aspects = data.get("key_aspects", [])
         recommendations = data.get("recommendations", [])

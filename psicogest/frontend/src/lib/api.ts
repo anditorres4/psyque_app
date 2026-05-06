@@ -270,6 +270,7 @@ export interface SessionDetail extends SessionSummary {
   mental_exam: Record<string, string> | null;
   is_emergency: boolean;
   tipo_dx_principal: string;
+  ai_context_summary: string | null;
   updated_at: string;
 }
 
@@ -947,6 +948,8 @@ export const api = {
       request<SessionDetail>("PUT", `/sessions/${id}`, body),
     sign: (id: string) =>
       request<SessionDetail>("POST", `/sessions/${id}/sign`),
+    generateContextSummary: (id: string) =>
+      request<SessionDetail>("POST", `/sessions/${id}/ai-context-summary`),
     addNote: (id: string, content: string) =>
       request<SessionNoteDetail>("POST", `/sessions/${id}/notes`, { content }),
     listNotes: (id: string) =>

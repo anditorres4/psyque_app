@@ -131,6 +131,7 @@ class SessionDetail(SessionSummary):
     rips_included: bool
     mental_exam: dict | None
     is_emergency: bool
+    ai_context_summary: str | None
     updated_at: datetime
 
 

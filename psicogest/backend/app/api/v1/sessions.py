@@ -149,6 +149,75 @@ def _post_sign_notifications(tenant, sess) -> None:
         pass
 
 
+@router.post("/{session_id}/ai-context-summary", response_model=SessionDetail)
+def generate_ai_context_summary(
+    session_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> SessionDetail:
+    """Generate AI summary of previous signed sessions and store in the session."""
+    import uuid as _uuid
+    from app.models.session import Session as SessionModel
+    from app.models.tenant import Tenant
+    from app.services.ai_service import check_feature_enabled, get_ai_config
+    from app.services.ai.providers import get_provider
+
+    svc = _service(ctx)
+    try:
+        sess = svc.get_by_id(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada.")
+
+    tenant = ctx.db.query(Tenant).filter(Tenant.id == _uuid.UUID(ctx.tenant.tenant_id)).first()
+    if not tenant or not tenant.ai_provider or not tenant.ai_api_key:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Configuración IA no completada.")
+    if not check_feature_enabled(tenant, "ai_summaries"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Feature de resúmenes IA no habilitada.")
+
+    prev = (
+        ctx.db.query(SessionModel)
+        .filter(
+            SessionModel.tenant_id == _uuid.UUID(ctx.tenant.tenant_id),
+            SessionModel.patient_id == sess.patient_id,
+            SessionModel.status == "signed",
+            SessionModel.id != sess.id,
+        )
+        .order_by(SessionModel.actual_start.desc())
+        .limit(6)
+        .all()
+    )
+    if not prev:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Sin sesiones anteriores para resumir.")
+
+    sessions_text = "\n\n---\n\n".join(
+        f"Sesión {i + 1} ({s.actual_start.strftime('%Y-%m-%d')}):\n"
+        f"Diagnóstico: {s.diagnosis_cie11} — {s.diagnosis_description}\n"
+        f"Motivo: {s.consultation_reason}\n"
+        f"Intervención: {s.intervention}\n"
+        f"Evolución: {s.evolution or 'No registrada'}\n"
+        f"Plan siguiente: {s.next_session_plan or 'No registrado'}\n"
+        f"Tareas asignadas: {s.homework_assigned or 'Ninguna'}"
+        for i, s in enumerate(reversed(prev))
+    )
+
+    config = get_ai_config(tenant)
+    provider = get_provider(config["provider"], config["api_key"])
+    prompt = (
+        "Eres un asistente clínico psicológico. Resume las siguientes sesiones previas del paciente "
+        "en un párrafo conciso (máximo 220 palabras) orientado a dar contexto al psicólogo antes de "
+        "iniciar una nueva sesión. Incluye: estado del paciente, progreso terapéutico, temas recurrentes, "
+        "tareas asignadas y pendientes. Usa lenguaje clínico accesible. "
+        "Responde SOLO con el texto del resumen, sin JSON ni formato adicional.\n\n"
+        f"SESIONES PREVIAS:\n{sessions_text}"
+    )
+    response = provider.generate(prompt, config["model"])
+    summary_text = response.content.strip()
+
+    sess.ai_context_summary = summary_text
+    ctx.db.commit()
+    ctx.db.refresh(sess)
+    return SessionDetail.model_validate(sess)
+
+
 @router.post("/{session_id}/notes", response_model=SessionNoteDetail, status_code=status.HTTP_201_CREATED)
 def add_note(
     session_id: str,
