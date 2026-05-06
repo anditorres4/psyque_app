@@ -26,6 +26,8 @@ from app.api.v1.booking_requests import router as booking_requests_router
 from app.api.v1.google_calendar import router as gcal_router
 from app.api.v1.ai import router as ai_router
 from app.api.v1.video import router as video_router
+from app.api.v1.nps import router as nps_router
+from app.api.v1.patient_portal import router as patient_portal_router
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.jobs.reminders import run_reminder_check
@@ -101,3 +103,5 @@ app.include_router(booking_requests_router, prefix="/api/v1")
 app.include_router(gcal_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
 app.include_router(video_router, prefix="/api/v1")
+app.include_router(nps_router, prefix="/api/v1")
+app.include_router(patient_portal_router, prefix="/api/v1")

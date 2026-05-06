@@ -26,6 +26,7 @@ from app.services.patient_service import (
     PatientService,
 )
 from app.services.history_pdf_service import HistoryPDFService, PDFOptions
+from app.services.certificate_service import CertificateService
 from app.services.session_service import SessionService
 from app.services.appointment_service import AppointmentService
 
@@ -205,6 +206,74 @@ def export_patient_history(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     filename = f"HC_{patient_id}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d_%H%M')}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+
+@router.get("/{patient_id}/export-history-protected")
+def export_history_protected(
+    patient_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    include_diagnosis: bool = Query(True),
+    include_treatment: bool = Query(True),
+    include_evolution: bool = Query(True),
+    patient_profile: Literal["adulto", "infante", "familiar"] = Query("adulto"),
+) -> StreamingResponse:
+    """Download clinical history PDF encrypted with patient's document number."""
+    try:
+        _service(ctx).get_by_id(patient_id)
+    except PatientNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
+
+    opts = PDFOptions(
+        include_diagnosis=include_diagnosis,
+        include_treatment=include_treatment,
+        include_evolution=include_evolution,
+        patient_profile=patient_profile,
+    )
+    try:
+        pdf_bytes = HistoryPDFService(ctx.db, ctx.tenant.tenant_id).generate_protected(patient_id, opts)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    filename = f"HC_{patient_id}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d_%H%M')}_protegido.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+
+@router.get("/{patient_id}/certificate-attendance")
+def export_attendance_certificate(
+    patient_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    include_session_count: bool = Query(True),
+    include_dates: bool = Query(True),
+) -> StreamingResponse:
+    """Generate attendance certificate PDF for a patient."""
+    try:
+        _service(ctx).get_by_id(patient_id)
+    except PatientNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
+
+    try:
+        pdf_bytes = CertificateService(ctx.db, ctx.tenant.tenant_id).generate_attendance(
+            patient_id,
+            include_session_count=include_session_count,
+            include_dates=include_dates,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    filename = f"constancia_{patient_id}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         iter([pdf_bytes]),
         headers={

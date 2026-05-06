@@ -262,11 +262,26 @@ export interface SessionDetail extends SessionSummary {
   intervention: string;
   evolution: string | null;
   next_session_plan: string | null;
+  homework_assigned: string | null;
   authorization_number: string | null;
   session_hash: string | null;
   signed_at: string | null;
   rips_included: boolean;
+  mental_exam: Record<string, string> | null;
+  is_emergency: boolean;
+  tipo_dx_principal: string;
   updated_at: string;
+}
+
+export interface SessionContext {
+  consultation_reason: string | null;
+  last_mental_exam: Record<string, string> | null;
+  last_diagnosis_cie11: string | null;
+  last_diagnosis_description: string | null;
+  last_homework_assigned: string | null;
+  last_next_session_plan: string | null;
+  session_count: number;
+  is_first_session: boolean;
 }
 
 export interface PaginatedSessions {
@@ -289,9 +304,12 @@ export interface SessionCreatePayload {
   intervention: string;
   evolution?: string;
   next_session_plan?: string;
+  homework_assigned?: string;
   session_fee: number;
   authorization_number?: string;
   tipo_dx_principal?: string;
+  mental_exam?: Record<string, string>;
+  is_emergency?: boolean;
 }
 
 export interface SessionUpdatePayload {
@@ -304,9 +322,12 @@ export interface SessionUpdatePayload {
   intervention?: string;
   evolution?: string;
   next_session_plan?: string;
+  homework_assigned?: string;
   session_fee?: number;
   authorization_number?: string;
   tipo_dx_principal?: string;
+  mental_exam?: Record<string, string>;
+  is_emergency?: boolean;
 }
 
 export interface SessionNoteDetail {
@@ -864,6 +885,25 @@ export const api = {
       const qs = params.toString();
       return downloadBlob("GET", `/patients/${id}/history-export${qs ? `?${qs}` : ""}`);
     },
+    exportHistoryProtected: async (id: string, opts: HistoryExportOptions = {}) => {
+      const params = new URLSearchParams();
+      if (opts.include_diagnosis !== undefined) params.set("include_diagnosis", String(opts.include_diagnosis));
+      if (opts.include_treatment !== undefined) params.set("include_treatment", String(opts.include_treatment));
+      if (opts.include_evolution !== undefined) params.set("include_evolution", String(opts.include_evolution));
+      if (opts.patient_profile) params.set("patient_profile", opts.patient_profile);
+      const qs = params.toString();
+      return downloadBlob("GET", `/patients/${id}/export-history-protected${qs ? `?${qs}` : ""}`);
+    },
+    exportAttendanceCertificate: async (
+      id: string,
+      opts: { include_session_count?: boolean; include_dates?: boolean } = {},
+    ) => {
+      const params = new URLSearchParams();
+      if (opts.include_session_count !== undefined) params.set("include_session_count", String(opts.include_session_count));
+      if (opts.include_dates !== undefined) params.set("include_dates", String(opts.include_dates));
+      const qs = params.toString();
+      return downloadBlob("GET", `/patients/${id}/certificate-attendance${qs ? `?${qs}` : ""}`);
+    },
   },
   appointments: {
     listByRange: (start: string, end: string) =>
@@ -897,6 +937,8 @@ export const api = {
       if (params?.status) q.set("status", params.status);
       return request<PaginatedSessions>("GET", `/sessions?${q}`);
     },
+    context: (patientId: string) =>
+      request<SessionContext>("GET", `/sessions/context/${patientId}`),
     create: (body: SessionCreatePayload) =>
       request<SessionDetail>("POST", "/sessions", body),
     get: (id: string) =>

@@ -25,9 +25,12 @@ class SessionCreate(BaseModel):
     intervention: str = Field(..., min_length=10)
     evolution: str | None = None
     next_session_plan: str | None = None
+    homework_assigned: str | None = None
     session_fee: int = Field(..., ge=0)
     authorization_number: str | None = Field(None, max_length=30)
     tipo_dx_principal: str = Field(default="1", max_length=1)
+    mental_exam: dict | None = None
+    is_emergency: bool = False
 
     @field_validator("tipo_dx_principal")
     @classmethod
@@ -65,9 +68,12 @@ class SessionUpdate(BaseModel):
     intervention: str | None = Field(None, min_length=10)
     evolution: str | None = None
     next_session_plan: str | None = None
+    homework_assigned: str | None = None
     session_fee: int | None = Field(None, ge=0)
     authorization_number: str | None = Field(None, max_length=30)
     tipo_dx_principal: str | None = Field(None, max_length=1)
+    mental_exam: dict | None = None
+    is_emergency: bool | None = None
 
     @field_validator("tipo_dx_principal")
     @classmethod
@@ -118,11 +124,25 @@ class SessionDetail(SessionSummary):
     intervention: str
     evolution: str | None
     next_session_plan: str | None
+    homework_assigned: str | None
     authorization_number: str | None
     session_hash: str | None
     signed_at: datetime | None
     rips_included: bool
+    mental_exam: dict | None
+    is_emergency: bool
     updated_at: datetime
+
+
+class SessionContextOut(BaseModel):
+    consultation_reason: str | None
+    last_mental_exam: dict | None
+    last_diagnosis_cie11: str | None
+    last_diagnosis_description: str | None
+    last_homework_assigned: str | None
+    last_next_session_plan: str | None
+    session_count: int
+    is_first_session: bool
 
 
 class PaginatedSessions(BaseModel):

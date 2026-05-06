@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, func
 
@@ -58,6 +58,11 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     tipo_dx_principal: Mapped[str] = mapped_column(
         sa.String(1), nullable=False, server_default=sa.text("'1'")
     )
+    mental_exam: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
+    is_emergency: Mapped[bool] = mapped_column(
+        sa.Boolean(), nullable=False, server_default=sa.text("false")
+    )
+    homework_assigned: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
 
 
 class SessionNote(Base, UUIDPrimaryKey, TenantMixin):

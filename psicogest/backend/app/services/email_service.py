@@ -1,4 +1,4 @@
-"""Thin wrapper around Resend REST API for sending reminder emails."""
+"""Thin wrapper around Resend REST API for sending transactional emails."""
 import base64
 from datetime import datetime
 
@@ -50,6 +50,145 @@ class EmailService:
         )
         response.raise_for_status()
         return True
+
+    def _post(self, payload: dict) -> bool:
+        response = httpx.post(
+            self.RESEND_URL, json=payload,
+            headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
+        )
+        response.raise_for_status()
+        return True
+
+    def send_welcome(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        registration_link: str | None = None,
+    ) -> bool:
+        """Welcome email sent after a patient is registered in the system."""
+        if not settings.resend_api_key:
+            return False
+        registration_section = (
+            f"<p>Para completar tu registro y acceder a tu portal de paciente, haz clic aquí:<br>"
+            f"<a href='{registration_link}' style='color:#2E86AB'>Completar registro</a></p>"
+        ) if registration_link else ""
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Bienvenido/a a tu proceso terapéutico — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Nos complace darte la bienvenida al proceso terapéutico con <strong>{psychologist_name}</strong>. "
+                f"Tu bienestar es nuestra prioridad.</p>"
+                f"{registration_section}"
+                f"<p>Si tienes alguna pregunta antes de tu primera sesión, no dudes en escribirnos.</p>"
+                f"<p>Con apoyo,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })
+
+    def send_appointment_confirmation(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        appointment_start: datetime,
+        join_url: str | None = None,
+        modality: str = "virtual",
+        location: str | None = None,
+    ) -> bool:
+        """Appointment confirmation with video join link (virtual) or address (presencial)."""
+        if not settings.resend_api_key:
+            return False
+        date_str = appointment_start.strftime("%A %d de %B de %Y")
+        time_str = appointment_start.strftime("%H:%M")
+        if modality == "virtual" and join_url:
+            modality_section = (
+                f"<p><strong>Modalidad:</strong> Videoconsulta<br>"
+                f"<strong>Enlace de acceso:</strong> <a href='{join_url}' style='color:#2E86AB'>{join_url}</a><br>"
+                f"<em>Ingresa 5 minutos antes desde un lugar tranquilo con buena conexión.</em></p>"
+                f"<p style='background:#f0f9ff;padding:12px;border-radius:8px;font-size:13px;'>"
+                f"🔒 <strong>Seguridad:</strong> Este enlace es personal e intransferible.</p>"
+            )
+        elif modality == "presencial" and location:
+            modality_section = f"<p><strong>Modalidad:</strong> Presencial<br><strong>Lugar:</strong> {location}</p>"
+        else:
+            modality_section = ""
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Confirmación de cita — {date_str} {time_str}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Tu cita con <strong>{psychologist_name}</strong> ha sido confirmada:</p>"
+                f"<p><strong>Fecha:</strong> {date_str}<br><strong>Hora:</strong> {time_str}</p>"
+                f"{modality_section}"
+                f"<p><strong>Recomendaciones:</strong></p><ul>"
+                f"<li>Busca un espacio privado y sin interrupciones.</li>"
+                f"<li>Si necesitas cancelar, avisa con al menos 24 horas de anticipación.</li>"
+                f"<li>Llega o conéctate puntualmente.</li></ul>"
+                f"<p>Para confirmar tu asistencia, responde este correo o contáctanos.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })
+
+    def send_homework(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        homework_text: str,
+        next_session_plan: str | None = None,
+    ) -> bool:
+        """Send assigned tasks/homework to the patient after a session is signed."""
+        if not settings.resend_api_key:
+            return False
+        plan_section = (
+            f"<p><strong>Enfoque de la próxima sesión:</strong><br>{next_session_plan}</p>"
+        ) if next_session_plan else ""
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Tareas de tu sesión — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Gracias por tu sesión de hoy. Actividades para trabajar entre sesiones:</p>"
+                f"<div style='background:#f0f9ff;padding:16px;border-radius:8px;border-left:4px solid #2E86AB;'>"
+                f"<p style='margin:0;white-space:pre-wrap;'>{homework_text}</p></div>"
+                f"{plan_section}"
+                f"<p>Hazlas a tu ritmo y anota cualquier reflexión que quieras compartir.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })
+
+    def send_nps_survey(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        survey_url: str,
+    ) -> bool:
+        """Send NPS satisfaction survey link after session is signed."""
+        if not settings.resend_api_key:
+            return False
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"¿Cómo fue tu sesión? — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Gracias por tu sesión con <strong>{psychologist_name}</strong>. "
+                f"Tu opinión nos ayuda a mejorar.</p>"
+                f"<p><a href='{survey_url}' "
+                f"style='display:inline-block;background:#2E86AB;color:white;padding:12px 24px;"
+                f"border-radius:8px;text-decoration:none;font-weight:bold;'>Calificar mi sesión</a></p>"
+                f"<p style='font-size:12px;color:#666;'>Tu respuesta es completamente confidencial.</p>"
+            ),
+        })
 
     def send_booking_notification(
         self, *, to_email: str, tenant_name: str, patient_name: str,

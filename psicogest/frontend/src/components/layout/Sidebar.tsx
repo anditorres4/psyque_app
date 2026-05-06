@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, Users, Activity, FileText,
-  CreditCard, BarChart3, Settings, LogOut, Search, X, type LucideIcon,
+  CreditCard, BarChart3, Settings, LogOut, Search, X, ClipboardList, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { to: "/agenda",         label: "Agenda",           Icon: Calendar,        group: "practice" },
   { to: "/patients",       label: "Pacientes",        Icon: Users,           group: "practice" },
   { to: "/sessions",       label: "Sesiones activas", Icon: Activity,        group: "practice", live: true },
+  { to: "/patient-registrations", label: "Registros pacientes", Icon: ClipboardList, group: "practice" },
   { to: "/rips",           label: "RIPS",             Icon: FileText,        group: "admin" },
   { to: "/invoices",       label: "Facturas",         Icon: CreditCard,      group: "admin" },
   { to: "/invoices/bulk",  label: "Facturación masa", Icon: CreditCard,      group: "admin", indent: true },

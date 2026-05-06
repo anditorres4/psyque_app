@@ -17,6 +17,8 @@ from app.models.ai_suggestion import AiDiagnosisSuggestion
 from app.models.ai_session_summary import AiSessionSummary
 from app.models.ai_clinical_record_summary import AiClinicalRecordSummary
 from app.models.ai_document_analysis import AiDocumentAnalysis
+from app.models.nps_survey import NpsSurvey
+from app.models.patient_registration import PatientRegistration
 
 __all__ = [
     "Base",
@@ -40,4 +42,6 @@ __all__ = [
     "AiSessionSummary",
     "AiClinicalRecordSummary",
     "AiDocumentAnalysis",
+    "NpsSurvey",
+    "PatientRegistration",
 ]

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -7,6 +8,7 @@ import type { PatientSummary, SessionCreatePayload } from "@/lib/api";
 import { searchCie11, type Cie11Entry } from "@/data/cie11_codes";
 import { useAiFeatures } from "@/hooks/useAiFeatures";
 import { AiSessionSummarySection } from "@/components/patients/AiSessionSummarySection";
+import { MentalExamDropdowns, type MentalExamData } from "./MentalExamDropdowns";
 
 interface Props {
   defaultAppointmentId?: string;
@@ -212,6 +214,8 @@ export function SessionForm({
   const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
   const [patientError, setPatientError] = useState<string | null>(null);
 
+  const [tipoDxPrincipal, setTipoDxPrincipal] = useState("1");
+  const [isEmergency, setIsEmergency] = useState(false);
   const [cie11Code, setCie11Code] = useState("");
   const [cie11Desc, setCie11Desc] = useState("");
   const [cupsCode, setCupsCode] = useState("890403");
@@ -219,9 +223,10 @@ export function SessionForm({
   const [intervention, setIntervention] = useState("");
   const [evolution, setEvolution] = useState("");
   const [nextPlan, setNextPlan] = useState("");
+  const [homeworkAssigned, setHomeworkAssigned] = useState("");
   const [fee, setFee] = useState("150000");
   const [authNumber, setAuthNumber] = useState("");
-  const [tipoDxPrincipal, setTipoDxPrincipal] = useState("1");
+  const [mentalExam, setMentalExam] = useState<MentalExamData>({});
   const [actualStart, setActualStart] = useState(
     defaultStart ? toLocalDatetimeValue(defaultStart) : ""
   );
@@ -231,6 +236,30 @@ export function SessionForm({
 
   const resolvedPatientId = selectedPatient?.id ?? defaultPatientId ?? "";
   const { canSummarize } = useAiFeatures();
+
+  // ── Auto-carry: pre-fill context from previous sessions ──────────────────
+  const { data: sessionCtx } = useQuery({
+    queryKey: ["session-context", resolvedPatientId],
+    queryFn: () => api.sessions.context(resolvedPatientId),
+    enabled: !!resolvedPatientId,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (!sessionCtx) return;
+    // Auto-fill consultation reason from first session (unless emergency)
+    if (sessionCtx.consultation_reason && !sessionCtx.is_first_session && !isEmergency) {
+      setReason(sessionCtx.consultation_reason);
+    }
+    // Auto-fill mental exam from last session
+    if (sessionCtx.last_mental_exam) {
+      setMentalExam(sessionCtx.last_mental_exam as MentalExamData);
+    }
+    // First session → default to "Impresión diagnóstica"
+    if (sessionCtx.is_first_session) {
+      setTipoDxPrincipal("1");
+    }
+  }, [sessionCtx, isEmergency]);
 
   const handleCie11Select = (entry: Cie11Entry) => {
     setCie11Code(entry.code);
@@ -256,11 +285,16 @@ export function SessionForm({
       intervention,
       evolution: evolution || undefined,
       next_session_plan: nextPlan || undefined,
+      homework_assigned: homeworkAssigned || undefined,
       session_fee: parseInt(fee, 10),
       authorization_number: authNumber || undefined,
       tipo_dx_principal: tipoDxPrincipal,
+      mental_exam: Object.keys(mentalExam).length > 0 ? mentalExam as Record<string, string> : undefined,
+      is_emergency: isEmergency,
     });
   };
+
+  const isFollowUp = sessionCtx && !sessionCtx.is_first_session;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -270,7 +304,7 @@ export function SessionForm({
         </div>
       )}
 
-      {/* Patient picker — only shown when not pre-filled (e.g. from patient detail) */}
+      {/* Patient picker */}
       {!defaultPatientId && (
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -285,6 +319,48 @@ export function SessionForm({
         </div>
       )}
 
+      {/* ── Tipo de diagnóstico — al inicio para primera sesión ── */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            Tipo de diagnóstico principal <span className="text-[#E74C3C]">*</span>
+          </label>
+          <select
+            className="h-10 w-full rounded-md border border-input px-3 text-sm bg-white"
+            value={tipoDxPrincipal}
+            onChange={(e) => setTipoDxPrincipal(e.target.value)}
+          >
+            <option value="1">1 — Impresión diagnóstica</option>
+            <option value="2">2 — Diagnóstico confirmado</option>
+            <option value="3">3 — Diagnóstico descartado</option>
+          </select>
+          {sessionCtx?.is_first_session && (
+            <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
+              <Info size={12} /> Primera sesión: se recomienda "Impresión diagnóstica" para cumplimiento ético en RIPS.
+            </p>
+          )}
+        </div>
+
+        {isFollowUp && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_emergency"
+              checked={isEmergency}
+              onChange={(e) => {
+                setIsEmergency(e.target.checked);
+                if (e.target.checked) setReason("");
+              }}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <label htmlFor="is_emergency" className="text-sm flex items-center gap-1 text-amber-700 cursor-pointer">
+              <AlertTriangle size={14} /> Sesión de emergencia (requiere nuevo motivo de consulta)
+            </label>
+          </div>
+        )}
+      </div>
+
+      {/* Fechas */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">Inicio real</label>
@@ -296,6 +372,7 @@ export function SessionForm({
         </div>
       </div>
 
+      {/* CIE-11 */}
       <div className="grid grid-cols-2 gap-3">
         <Cie11Autocomplete
           label="Código CIE-11"
@@ -330,9 +407,15 @@ export function SessionForm({
         required
       />
 
+      {/* Motivo de consulta */}
       <div>
         <label className="block text-sm font-medium mb-1">
           Motivo de consulta <span className="text-[#E74C3C]">*</span>
+          {isFollowUp && !isEmergency && (
+            <span className="ml-2 text-xs font-normal text-[#2E86AB] bg-blue-50 px-2 py-0.5 rounded-full">
+              Auto-cargado de primera sesión
+            </span>
+          )}
         </label>
         <textarea
           className="w-full rounded-md border border-input px-3 py-2 text-sm min-h-[80px]"
@@ -340,10 +423,18 @@ export function SessionForm({
           onChange={(e) => setReason(e.target.value)}
           required
           minLength={10}
-          placeholder="Descripción del motivo de la consulta..."
+          placeholder={isEmergency ? "Describe el motivo de emergencia..." : "Descripción del motivo de la consulta..."}
         />
       </div>
 
+      {/* ── Examen Mental — visible y colapsable ── */}
+      <MentalExamDropdowns
+        value={mentalExam}
+        onChange={setMentalExam}
+        collapsed={false}
+      />
+
+      {/* Intervención */}
       <div>
         <label className="block text-sm font-medium mb-1">
           Intervención realizada <span className="text-[#E74C3C]">*</span>
@@ -358,6 +449,7 @@ export function SessionForm({
         />
       </div>
 
+      {/* Evolución */}
       <div>
         <label className="block text-sm font-medium mb-1">Evolución (opcional)</label>
         <textarea
@@ -368,16 +460,31 @@ export function SessionForm({
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Plan próxima sesión (opcional)</label>
-        <textarea
-          className="w-full rounded-md border border-input px-3 py-2 text-sm min-h-[60px]"
-          value={nextPlan}
-          onChange={(e) => setNextPlan(e.target.value)}
-          placeholder="Objetivos y actividades para la próxima sesión..."
-        />
+      {/* Plan próxima sesión + Tareas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Plan próxima sesión (opcional)</label>
+          <textarea
+            className="w-full rounded-md border border-input px-3 py-2 text-sm min-h-[80px]"
+            value={nextPlan}
+            onChange={(e) => setNextPlan(e.target.value)}
+            placeholder="Objetivos y enfoque de la próxima sesión..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Tareas asignadas al paciente (opcional)
+          </label>
+          <textarea
+            className="w-full rounded-md border border-input px-3 py-2 text-sm min-h-[80px]"
+            value={homeworkAssigned}
+            onChange={(e) => setHomeworkAssigned(e.target.value)}
+            placeholder="Actividades y tareas para realizar entre sesiones..."
+          />
+        </div>
       </div>
 
+      {/* Valor + autorización */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -401,21 +508,6 @@ export function SessionForm({
             maxLength={30}
           />
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Tipo de diagnóstico principal <span className="text-[#E74C3C]">*</span>
-        </label>
-        <select
-          className="h-10 w-full rounded-md border border-input px-3 text-sm"
-          value={tipoDxPrincipal}
-          onChange={(e) => setTipoDxPrincipal(e.target.value)}
-        >
-          <option value="1">1 — Impresión diagnóstica</option>
-          <option value="2">2 — Diagnóstico confirmado</option>
-          <option value="3">3 — Diagnóstico descartado</option>
-        </select>
       </div>
 
       <div className="pt-2">

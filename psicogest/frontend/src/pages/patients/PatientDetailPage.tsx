@@ -5,6 +5,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ClipboardList } from "lucide-react";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
@@ -101,8 +102,11 @@ export function PatientDetailPage() {
     include_treatment: true,
     include_evolution: true,
     patient_profile: "adulto" as "adulto" | "infante" | "familiar",
+    protected: false,
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [isCertExporting, setIsCertExporting] = useState(false);
+  const [certIncludeCount, setCertIncludeCount] = useState(true);
 
   const { data: patient, isLoading, isError } = usePatient(id ?? "");
   const updateMutation = useUpdatePatient(id ?? "");
@@ -136,22 +140,43 @@ export function PatientDetailPage() {
     setIsEditing(false);
   };
 
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportHistory = async () => {
     if (!id) return;
     setIsExporting(true);
     try {
-      const result = await api.patients.exportHistory(id, exportOptions);
-      const url = URL.createObjectURL(result.blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      const fn = exportOptions.protected ? api.patients.exportHistoryProtected : api.patients.exportHistory;
+      const result = await fn(id, exportOptions);
+      triggerDownload(result.blob, result.filename);
       setExportModalOpen(false);
     } catch (err) {
       console.error("Error exporting history:", err);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportCertificate = async () => {
+    if (!id) return;
+    setIsCertExporting(true);
+    try {
+      const result = await api.patients.exportAttendanceCertificate(id, {
+        include_session_count: certIncludeCount,
+        include_dates: true,
+      });
+      triggerDownload(result.blob, result.filename);
+    } catch (err) {
+      console.error("Error exporting certificate:", err);
+    } finally {
+      setIsCertExporting(false);
     }
   };
 
@@ -261,6 +286,44 @@ export function PatientDetailPage() {
                     </div>
                   ))}
                 </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <p className="text-sm font-medium">Opciones de seguridad</p>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="protected_pdf"
+                      checked={exportOptions.protected}
+                      onCheckedChange={(checked) =>
+                        setExportOptions((o) => ({ ...o, protected: !!checked }))
+                      }
+                    />
+                    <Label htmlFor="protected_pdf" className="text-sm font-normal cursor-pointer">
+                      PDF con contraseña (N° documento del paciente)
+                    </Label>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <p className="text-sm font-medium">Constancia de asistencia</p>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="cert_count"
+                      checked={certIncludeCount}
+                      onCheckedChange={(c) => setCertIncludeCount(!!c)}
+                    />
+                    <Label htmlFor="cert_count" className="text-sm font-normal cursor-pointer">
+                      Incluir número de sesiones
+                    </Label>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleExportCertificate}
+                    disabled={isCertExporting}
+                  >
+                    {isCertExporting ? "Generando..." : "Descargar constancia"}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -268,7 +331,7 @@ export function PatientDetailPage() {
                   Cancelar
                 </Button>
                 <Button onClick={handleExportHistory} disabled={isExporting}>
-                  {isExporting ? "Generando..." : "Descargar PDF"}
+                  {isExporting ? "Generando..." : `Descargar HC${exportOptions.protected ? " (protegido)" : ""}`}
                 </Button>
               </div>
             </DialogContent>
@@ -395,6 +458,9 @@ export function PatientDetailPage() {
                   )}
                 </div>
               </div>
+
+              {/* Tareas pendientes */}
+              {id && <PatientTasksCard patientId={id} />}
             </div>
           </div>
         )
@@ -670,6 +736,55 @@ function RipsTab() {
           </Button>
         </div>
       ))}
+    </div>
+  );
+}
+
+function PatientTasksCard({ patientId }: { patientId: string }) {
+  const { data: ctx } = useQuery({
+    queryKey: ["session-context", patientId],
+    queryFn: () => api.sessions.context(patientId),
+    staleTime: 60_000,
+  });
+
+  if (!ctx || ctx.is_first_session) return null;
+  if (!ctx.last_homework_assigned && !ctx.last_next_session_plan) return null;
+
+  const homework = ctx.last_homework_assigned;
+  const nextPlan = ctx.last_next_session_plan;
+
+  return (
+    <div
+      className="rounded-[var(--radius)] overflow-hidden"
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-sage-soft)" }}
+    >
+      <div
+        className="flex items-center gap-2 px-4 py-3"
+        style={{ borderBottom: "1px solid var(--psy-line)", background: "var(--psy-sage-bg)" }}
+      >
+        <ClipboardList size={14} style={{ color: "var(--psy-sage)" }} />
+        <span className="psy-mono text-[10.5px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>
+          Pendientes · Última sesión
+        </span>
+      </div>
+      <div className="px-4 py-3 space-y-3">
+        {homework && (
+          <div>
+            <dt className="psy-mono text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--psy-ink-3)" }}>
+              Tareas asignadas al paciente
+            </dt>
+            <dd className="text-[13px] whitespace-pre-wrap" style={{ color: "var(--psy-ink-1)" }}>{homework}</dd>
+          </div>
+        )}
+        {nextPlan && (
+          <div>
+            <dt className="psy-mono text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--psy-ink-3)" }}>
+              Plan próxima sesión
+            </dt>
+            <dd className="text-[13px] whitespace-pre-wrap" style={{ color: "var(--psy-ink-1)" }}>{nextPlan}</dd>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

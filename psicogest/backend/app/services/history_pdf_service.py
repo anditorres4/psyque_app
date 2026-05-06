@@ -386,3 +386,26 @@ class HistoryPDFService:
         _build_pdf(buffer, tenant, patient, sessions, all_notes, opts)
         buffer.seek(0)
         return buffer.read()
+
+    def generate_protected(self, patient_id: str, opts: PDFOptions | None = None) -> bytes:
+        """Generate PDF encrypted with patient's doc_number as password (Ley 1581/2012)."""
+        import io
+        from pypdf import PdfReader, PdfWriter
+
+        pdf_bytes = self.generate(patient_id, opts)
+        patient = self.db.get(Patient, uuid.UUID(patient_id))
+        if not patient:
+            return pdf_bytes
+
+        password = patient.doc_number  # patient uses their ID number to open
+
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        writer.encrypt(user_password=password, owner_password=None, use_128bit=True)
+
+        out = io.BytesIO()
+        writer.write(out)
+        out.seek(0)
+        return out.read()

@@ -1,0 +1,203 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { request } from "@/lib/api";
+
+interface RegistrationSummary {
+  id: string;
+  status: string;
+  created_at: string;
+  first_name: string | null;
+  first_surname: string | null;
+  email: string;
+}
+
+interface RegistrationDetail {
+  id: string;
+  status: string;
+  email: string;
+  intake_data: Record<string, unknown>;
+  consent_signed_at: string | null;
+  created_at: string;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  approved: "Aprobado",
+  rejected: "Rechazado",
+};
+const STATUS_COLORS: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-700",
+  approved: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+};
+
+export function PatientRegistrationsAdminPage() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { data: regs = [], isLoading } = useQuery({
+    queryKey: ["patient-registrations"],
+    queryFn: () => request<RegistrationSummary[]>("GET", "/patient-registrations"),
+  });
+
+  const { data: detail } = useQuery({
+    queryKey: ["patient-registration-detail", selectedId],
+    queryFn: () => request<RegistrationDetail>("GET", `/patient-registrations/${selectedId}`),
+    enabled: !!selectedId,
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => request<{ ok: boolean; patient_id: string }>("POST", `/patient-registrations/${id}/approve`),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["patient-registrations"] });
+      setSelectedId(null);
+      navigate(`/patients/${data.patient_id}`);
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => request<{ ok: boolean }>("POST", `/patient-registrations/${id}/reject`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-registrations"] });
+      setSelectedId(null);
+    },
+  });
+
+  const pending = regs.filter((r) => r.status === "pending");
+  const processed = regs.filter((r) => r.status !== "pending");
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="psy-page-title">Registros de pacientes</h1>
+        <p className="psy-page-sub">Solicitudes de inscripción enviadas por pacientes a través del portal público</p>
+      </div>
+
+      {isLoading && <div className="text-sm text-slate-500">Cargando...</div>}
+
+      {pending.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-600 mb-3">Pendientes de revisión ({pending.length})</h2>
+          <div className="space-y-2">
+            {pending.map((r) => (
+              <RegistrationRow key={r.id} r={r} onView={() => setSelectedId(r.id)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {pending.length === 0 && !isLoading && (
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-sm text-slate-500">
+          Sin solicitudes pendientes
+        </div>
+      )}
+
+      {processed.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-600 mb-3">Procesados</h2>
+          <div className="space-y-2">
+            {processed.map((r) => (
+              <RegistrationRow key={r.id} r={r} onView={() => setSelectedId(r.id)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedId} onOpenChange={(o) => !o && setSelectedId(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Datos del registro</DialogTitle>
+          </DialogHeader>
+          {detail && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <InfoField label="Nombre" value={`${detail.intake_data?.first_name ?? ""} ${detail.intake_data?.first_surname ?? ""}`} />
+                <InfoField label="Email" value={detail.email} />
+                <InfoField label="Documento" value={`${detail.intake_data?.doc_type} ${detail.intake_data?.doc_number}`} />
+                <InfoField label="Fecha nacimiento" value={detail.intake_data?.birth_date as string} />
+                <InfoField label="Teléfono" value={detail.intake_data?.phone as string} />
+                <InfoField label="Régimen" value={detail.intake_data?.payer_type as string} />
+                <InfoField label="Ocupación" value={detail.intake_data?.occupation as string} />
+                <InfoField label="Consentimiento" value={detail.consent_signed_at ? new Date(detail.consent_signed_at).toLocaleString("es-CO") : "—"} />
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Motivo de consulta</p>
+                <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data?.motivo_consulta as string}</p>
+              </div>
+
+              {detail.intake_data?.antecedentes_medicos && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes médicos</p>
+                  <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_medicos as string}</p>
+                </div>
+              )}
+              {detail.intake_data?.antecedentes_psicologicos && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes psicológicos</p>
+                  <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_psicologicos as string}</p>
+                </div>
+              )}
+
+              {detail.status === "pending" && (
+                <div className="flex gap-3 pt-3 border-t">
+                  <Button
+                    className="flex-1 bg-[#2E86AB] hover:bg-[#1E3A5F]"
+                    onClick={() => approveMutation.mutate(detail.id)}
+                    disabled={approveMutation.isPending}
+                  >
+                    {approveMutation.isPending ? "Creando paciente..." : "Aprobar → crear paciente"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={() => rejectMutation.mutate(detail.id)}
+                    disabled={rejectMutation.isPending}
+                  >
+                    Rechazar
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function RegistrationRow({ r, onView }: { r: RegistrationSummary; onView: () => void }) {
+  const name = r.first_name && r.first_surname ? `${r.first_surname}, ${r.first_name}` : r.email;
+  return (
+    <button
+      type="button"
+      className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors text-left"
+      onClick={onView}
+    >
+      <div>
+        <div className="font-medium text-slate-700 text-sm">{name}</div>
+        <div className="text-xs text-slate-400 mt-0.5">{r.email} · {new Date(r.created_at).toLocaleDateString("es-CO")}</div>
+      </div>
+      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[r.status] ?? "bg-slate-100 text-slate-600"}`}>
+        {STATUS_LABELS[r.status] ?? r.status}
+      </span>
+    </button>
+  );
+}
+
+function InfoField({ label, value }: { label: string; value: string | undefined | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-slate-700">{value}</p>
+    </div>
+  );
+}

@@ -68,9 +68,12 @@ class SessionService:
             intervention=data["intervention"],
             evolution=data.get("evolution"),
             next_session_plan=data.get("next_session_plan"),
+            homework_assigned=data.get("homework_assigned"),
             session_fee=data["session_fee"],
             authorization_number=data.get("authorization_number"),
             tipo_dx_principal=data.get("tipo_dx_principal", "1"),
+            mental_exam=data.get("mental_exam"),
+            is_emergency=data.get("is_emergency", False),
             status="draft",
         )
         self.db.add(sess)
@@ -88,8 +91,8 @@ class SessionService:
         allowed = {
             "actual_start", "actual_end", "diagnosis_cie11", "diagnosis_description",
             "cups_code", "consultation_reason", "intervention", "evolution",
-            "next_session_plan", "session_fee", "authorization_number",
-            "tipo_dx_principal",
+            "next_session_plan", "homework_assigned", "session_fee", "authorization_number",
+            "tipo_dx_principal", "mental_exam", "is_emergency",
         }
         for key, value in data.items():
             if key in allowed:
@@ -179,6 +182,35 @@ class SessionService:
             page_size=page_size,
             pages=math.ceil(total / page_size) if total > 0 else 1,
         )
+
+    def get_session_context(self, patient_id: str) -> dict:
+        """Return pre-fill context for a new session:
+        - consultation_reason from the first (oldest) session
+        - mental_exam from the most recent session
+        - session_count total signed sessions for this patient
+        """
+        pid = uuid.UUID(patient_id)
+        base_q = self.db.query(Session).filter(
+            Session.tenant_id == self._tenant_uuid(),
+            Session.patient_id == pid,
+        )
+        first = (
+            base_q.order_by(Session.actual_start.asc()).first()
+        )
+        last = (
+            base_q.order_by(Session.actual_start.desc()).first()
+        )
+        count = base_q.filter(Session.status == "signed").count()
+        return {
+            "consultation_reason": first.consultation_reason if first else None,
+            "last_mental_exam": last.mental_exam if last else None,
+            "last_diagnosis_cie11": last.diagnosis_cie11 if last else None,
+            "last_diagnosis_description": last.diagnosis_description if last else None,
+            "last_homework_assigned": last.homework_assigned if last else None,
+            "last_next_session_plan": last.next_session_plan if last else None,
+            "session_count": count,
+            "is_first_session": first is None,
+        }
 
     def add_note(self, session_id: str, content: str) -> SessionNote:
         """Append a clarification note to a session (allowed on draft and signed)."""

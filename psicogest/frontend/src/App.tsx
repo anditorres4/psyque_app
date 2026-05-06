@@ -21,6 +21,9 @@ const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage").then((m)
 const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const BookingPage = lazy(() => import("@/pages/booking/BookingPage").then((m) => ({ default: m.BookingPage })));
 const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m.JoinPage })));
+const NpsPage = lazy(() => import("@/pages/NpsPage").then((m) => ({ default: m.NpsPage })));
+const PatientRegistrationPage = lazy(() => import("@/pages/PatientRegistrationPage").then((m) => ({ default: m.PatientRegistrationPage })));
+const PatientRegistrationsAdminPage = lazy(() => import("@/pages/patients/PatientRegistrationsAdminPage").then((m) => ({ default: m.PatientRegistrationsAdminPage })));
 
 function PageLoader() {
   return (
@@ -49,6 +52,8 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/book/:slug" element={<BookingPage />} />
         <Route path="/join/:appointmentId" element={<JoinPage />} />
+        <Route path="/nps/:token" element={<NpsPage />} />
+        <Route path="/registro/:slug" element={<PatientRegistrationPage />} />
 
         <Route
           element={
@@ -70,6 +75,7 @@ export default function App() {
           <Route path="/cartera" element={<CarteraPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/patient-registrations" element={<PatientRegistrationsAdminPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
 
