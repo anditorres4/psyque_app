@@ -5,8 +5,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader, PsyButton, PsyCard, KPI, Tag } from "@/components/ui/psy";
 import { api, type InvoiceStatus, type InvoiceSummary, type PatientSummary } from "@/lib/api";
-import { Download, Send, CheckCircle, FileMinus } from "lucide-react";
+import { Download, Send, CheckCircle, FileMinus, Layers } from "lucide-react";
 import { InvoiceNoteDialog } from "./InvoiceNoteDialog";
+import { BulkInvoiceDialog } from "./BulkInvoiceDialog";
 
 const SPARK_REVENUE = [8, 12, 11, 15, 14, 18, 20, 17, 22, 20, 25, 28];
 
@@ -218,6 +219,7 @@ export function InvoicesPage() {
   const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [noteDialog, setNoteDialog] = useState<{ id: string; number: string } | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const { data: invoicesData, isLoading, isError } = useQuery({
     queryKey: ["invoices", selectedPatient?.id, filterStatus],
@@ -259,6 +261,15 @@ export function InvoicesPage() {
       <PageHeader
         title="Facturas"
         subtitle="Liquidación de honorarios · particulares"
+        actions={
+          <PsyButton
+            variant="ghost"
+            icon={<Layers size={14} />}
+            onClick={() => setBulkOpen(true)}
+          >
+            Facturar período
+          </PsyButton>
+        }
       />
 
       {/* KPI strip */}
@@ -455,6 +466,7 @@ export function InvoicesPage() {
         onClose={() => setNoteDialog(null)}
       />
     )}
+    {bulkOpen && <BulkInvoiceDialog onClose={() => setBulkOpen(false)} />}
     </>
   );
 }
