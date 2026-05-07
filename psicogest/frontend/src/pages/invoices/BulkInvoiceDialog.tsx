@@ -89,7 +89,8 @@ function PatientSearch({
         ref={inputRef}
         value={q}
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
+        onFocus={(e) => { setOpen(true); e.currentTarget.style.borderColor = "var(--psy-sage)"; }}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--psy-line)")}
         placeholder="Buscar por nombre o documento…"
         autoComplete="off"
         className="w-full h-9 px-3 rounded-md text-[13px] psy-mono transition-[border-color] focus:outline-none"
@@ -98,8 +99,6 @@ function PatientSearch({
           border: "1px solid var(--psy-line)",
           color: "var(--psy-ink-1)",
         }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--psy-sage)")}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--psy-line)")}
       />
       {open && q.length >= 2 && (
         <div
