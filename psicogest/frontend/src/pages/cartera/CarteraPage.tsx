@@ -91,7 +91,7 @@ function PaymentModal({ open, onClose, carteraItem }: { open: boolean; onClose: 
 function SummaryCards({ summary, isLoading }: { summary: CarteraPortfolioSummary | undefined; isLoading: boolean }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Skeleton className="h-24" />
         <Skeleton className="h-24" />
         <Skeleton className="h-24" />
@@ -100,17 +100,17 @@ function SummaryCards({ summary, isLoading }: { summary: CarteraPortfolioSummary
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Cartera Particular</CardTitle></CardHeader>
-        <CardContent><p className="text-2xl font-bold text-[#1E3A5F]">{summary ? formatCurrency(summary.total_particular) : "$0"}</p></CardContent>
+        <CardContent><p className="text-2xl font-bold text-[var(--psy-primary)]">{summary ? formatCurrency(summary.total_particular) : "$0"}</p></CardContent>
       </Card>
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Cartera EPS</CardTitle></CardHeader>
-        <CardContent><p className="text-2xl font-bold text-[#1E3A5F]">{summary ? formatCurrency(summary.total_eps) : "$0"}</p></CardContent>
+        <CardContent><p className="text-2xl font-bold text-[var(--psy-primary)]">{summary ? formatCurrency(summary.total_eps) : "$0"}</p></CardContent>
       </Card>
-      <Card className="bg-[#1E3A5F] text-white">
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-white/70">Gran Total</CardTitle></CardHeader>
+      <Card style={{ background: "var(--psy-primary)", color: "var(--psy-surface)" }}>
+        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium opacity-70">Gran Total</CardTitle></CardHeader>
         <CardContent><p className="text-2xl font-bold">{summary ? formatCurrency(summary.grand_total) : "$0"}</p></CardContent>
       </Card>
     </div>
@@ -137,7 +137,7 @@ export function CarteraPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">Cartera</h1>
+        <h1 className="psy-page-title">Cartera</h1>
         <p className="text-muted-foreground mt-1">Facturas pendientes de pago por paciente</p>
       </div>
 
@@ -183,8 +183,8 @@ export function CarteraPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{formatCurrency(item.total_billed)}</TableCell>
-                        <TableCell className="text-sm text-green-700">{formatCurrency(item.total_paid)}</TableCell>
-                        <TableCell className="text-sm font-medium text-red-700">{formatCurrency(item.balance)}</TableCell>
+                        <TableCell className="text-sm text-[var(--psy-ok)]">{formatCurrency(item.total_paid)}</TableCell>
+                        <TableCell className="text-sm font-medium text-[var(--psy-danger)]">{formatCurrency(item.balance)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatDate(item.last_activity)}</TableCell>
                         <TableCell>
                           <Button size="sm" onClick={() => setPaymentTarget(item)}>Abonar</Button>

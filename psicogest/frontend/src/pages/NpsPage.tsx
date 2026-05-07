@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type React from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/api";
@@ -62,7 +63,7 @@ export function NpsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F0F4F8]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)]">
         <div className="text-slate-500 text-sm">Cargando encuesta...</div>
       </div>
     );
@@ -70,7 +71,7 @@ export function NpsPage() {
 
   if (isError || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F0F4F8]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)]">
         <div className="max-w-sm text-center p-8">
           <div className="text-4xl mb-4">🔍</div>
           <h2 className="text-xl font-semibold text-slate-700 mb-2">Encuesta no encontrada</h2>
@@ -82,15 +83,15 @@ export function NpsPage() {
 
   if (data.already_responded || submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F0F4F8]">
-        <div className="max-w-sm text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)]">
+        <div className="max-w-sm text-center p-8 rounded-2xl shadow-sm" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
           <div className="text-5xl mb-4">💚</div>
           <h2 className="text-xl font-semibold text-slate-700 mb-2">¡Gracias por tu respuesta!</h2>
           <p className="text-sm text-slate-500">
             Tu opinión es muy valiosa para seguir mejorando el servicio.
           </p>
           {data.score !== null && (
-            <div className="mt-4 inline-block bg-[#2E86AB] text-white rounded-full px-4 py-1.5 text-sm font-semibold">
+            <div className="mt-4 inline-block bg-[var(--psy-primary)] text-white rounded-full px-4 py-1.5 text-sm font-semibold">
               Tu puntuación: {data.score}/10
             </div>
           )}
@@ -100,8 +101,8 @@ export function NpsPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F0F4F8] p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] p-4">
+      <div className="w-full max-w-md rounded-2xl shadow-sm p-8" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
         <div className="text-center mb-6">
           <div className="text-4xl mb-3">🌿</div>
           <h2 className="text-xl font-semibold text-slate-700">¿Cómo fue tu sesión?</h2>
@@ -123,18 +124,21 @@ export function NpsPage() {
                   key={n}
                   type="button"
                   onClick={() => setScore(n)}
+                  aria-label={`${n} — ${SCORE_LABELS[n]}`}
+                  aria-pressed={score === n}
                   className={`h-10 rounded-lg text-sm font-semibold transition-all ${
                     score === n
-                      ? "bg-[#2E86AB] text-white shadow-md scale-110"
+                      ? "text-white shadow-md scale-110"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
+                  style={score === n ? { background: "var(--psy-primary)" } : undefined}
                 >
                   {n}
                 </button>
               ))}
             </div>
             {score !== null && (
-              <p className="text-center text-sm text-[#2E86AB] font-medium mt-2">
+              <p className="text-center text-sm font-medium mt-2" style={{ color: "var(--psy-primary)" }}>
                 {SCORE_LABELS[score]}
               </p>
             )}
@@ -146,7 +150,7 @@ export function NpsPage() {
               Comentario (opcional)
             </label>
             <textarea
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#2E86AB]/30"
+              className="w-full rounded-xl border px-3 py-2.5 text-sm min-h-[80px] focus:outline-none focus-visible:ring-2" style={{ borderColor: "var(--psy-line)", background: "var(--psy-bg-soft)", "--tw-ring-color": "var(--psy-sage)" } as React.CSSProperties}
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="¿Qué podría mejorar? ¿Qué te gustó?"
@@ -158,7 +162,7 @@ export function NpsPage() {
             type="button"
             disabled={score === null || mutation.isPending}
             onClick={() => mutation.mutate()}
-            className="w-full py-3 rounded-xl bg-[#2E86AB] text-white font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1E3A5F] transition-colors"
+            className="w-full py-3 rounded-xl bg-[var(--psy-primary)] text-white font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1E3A5F] transition-colors"
           >
             {mutation.isPending ? "Enviando..." : "Enviar calificación"}
           </button>

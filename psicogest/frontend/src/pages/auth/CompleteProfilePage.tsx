@@ -89,10 +89,10 @@ export function CompleteProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#1E3A5F]">
+          <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">
             Completa tu perfil
           </CardTitle>
           <CardDescription>
@@ -113,7 +113,7 @@ export function CompleteProfilePage() {
                 {...register("fullName")}
               />
               {errors.fullName && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.fullName.message}
                 </p>
               )}
@@ -121,7 +121,7 @@ export function CompleteProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="colpsicNumber">
-                Tarjeta profesional Colpsic <span className="text-[#E74C3C]">*</span>
+                Tarjeta profesional Colpsic <span className="text-[var(--psy-danger)]">*</span>
               </Label>
               <Input
                 id="colpsicNumber"
@@ -131,7 +131,7 @@ export function CompleteProfilePage() {
                 {...register("colpsicNumber")}
               />
               {errors.colpsicNumber && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.colpsicNumber.message}
                 </p>
               )}
@@ -150,7 +150,7 @@ export function CompleteProfilePage() {
                 {...register("repsCode")}
               />
               {errors.repsCode && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.repsCode.message}
                 </p>
               )}
@@ -166,21 +166,21 @@ export function CompleteProfilePage() {
                 {...register("city")}
               />
               {errors.city && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.city.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--psy-danger)]" role="alert">
                 {serverError}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Activando cuenta..." : "Activar cuenta"}

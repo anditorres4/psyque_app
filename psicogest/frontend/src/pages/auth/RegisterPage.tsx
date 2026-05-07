@@ -72,11 +72,11 @@ export function RegisterPage() {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <div className="text-4xl mb-2">📬</div>
-            <CardTitle className="text-[#27AE60]">¡Revisa tu email!</CardTitle>
+            <CardTitle className="text-[var(--psy-ok)]">¡Revisa tu email!</CardTitle>
             <CardDescription>
               Enviamos un enlace de verificación a <strong>{registeredEmail}</strong>. Haz clic en el enlace para activar tu cuenta. Si no lo ves, revisa la carpeta de spam.
             </CardDescription>
@@ -99,10 +99,10 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#1E3A5F]">
+          <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">
             Crea tu cuenta
           </CardTitle>
           <CardDescription>
@@ -121,7 +121,7 @@ export function RegisterPage() {
                 {...register("fullName")}
               />
               {errors.fullName && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.fullName.message}
                 </p>
               )}
@@ -138,7 +138,7 @@ export function RegisterPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.email.message}
                 </p>
               )}
@@ -155,7 +155,7 @@ export function RegisterPage() {
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.password.message}
                 </p>
               )}
@@ -164,7 +164,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="colpsicNumber">
                 Tarjeta profesional Colpsic{" "}
-                <span className="text-[#E74C3C]" aria-label="requerido">*</span>
+                <span className="text-[var(--psy-danger)]" aria-label="requerido">*</span>
               </Label>
               <Input
                 id="colpsicNumber"
@@ -173,7 +173,7 @@ export function RegisterPage() {
                 {...register("colpsicNumber")}
               />
               {errors.colpsicNumber && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.colpsicNumber.message}
                 </p>
               )}
@@ -200,21 +200,21 @@ export function RegisterPage() {
                 {...register("city")}
               />
               {errors.city && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.city.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--psy-danger)]" role="alert">
                 {serverError}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Creando cuenta..." : "Crear cuenta — 30 días gratis"}
@@ -223,7 +223,7 @@ export function RegisterPage() {
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="text-[#2E86AB] hover:underline font-medium">
+            <Link to="/login" className="text-[var(--psy-info)] hover:underline font-medium">
               Inicia sesión
             </Link>
           </p>

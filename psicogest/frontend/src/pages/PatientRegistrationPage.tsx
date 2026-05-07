@@ -62,8 +62,8 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
-const inputCls = "w-full h-10 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E86AB]/30";
-const textareaCls = "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#2E86AB]/30";
+const inputCls = "w-full h-10 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--psy-sage)]";
+const textareaCls = "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[80px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--psy-sage)]";
 
 export function PatientRegistrationPage() {
   const { slug } = useParams<{ slug: string }>();

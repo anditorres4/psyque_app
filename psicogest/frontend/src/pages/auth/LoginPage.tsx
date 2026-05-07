@@ -61,10 +61,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#1E3A5F]">
+          <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">
             psyque app
           </CardTitle>
           <CardDescription>Ingresa a tu cuenta para continuar</CardDescription>
@@ -82,7 +82,7 @@ export function LoginPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.email.message}
                 </p>
               )}
@@ -99,21 +99,21 @@ export function LoginPage() {
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.password.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--psy-danger)]" role="alert">
                 {serverError}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Ingresando..." : "Ingresar"}
@@ -147,12 +147,12 @@ export function LoginPage() {
           <div className="text-center space-y-1">
             <p className="text-sm text-muted-foreground">
               ¿No tienes cuenta?{" "}
-              <Link to="/register" className="text-[#2E86AB] hover:underline font-medium">
+              <Link to="/register" className="text-[var(--psy-info)] hover:underline font-medium">
                 Regístrate aquí
               </Link>
             </p>
             <p className="text-xs">
-              <Link to="/forgot-password" className="text-[#2E86AB] hover:underline">
+              <Link to="/forgot-password" className="text-[var(--psy-info)] hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
             </p>

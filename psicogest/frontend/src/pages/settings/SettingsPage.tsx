@@ -35,28 +35,28 @@ export function SettingsPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
-      <h1 className="text-xl font-semibold text-[#1E3A5F]">Configuración</h1>
+      <h1 className="psy-page-title">Configuración</h1>
 
       {gcalConnected && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "var(--psy-sage-bg)", border: "1px solid var(--psy-sage-soft)", color: "var(--psy-ok)" }}>
           ✓ Google Calendar conectado correctamente. Las citas se sincronizarán automáticamente.
         </div>
       )}
       {gcalParam === "error" && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", border: "1px solid color-mix(in srgb, var(--psy-danger) 25%, var(--psy-line))", color: "var(--psy-danger)" }}>
           No se pudo conectar con Google Calendar. Intenta de nuevo.
         </div>
       )}
 
-      <div className="flex border-b gap-6">
+      <div className="flex border-b gap-6 overflow-x-auto psy-no-scrollbar">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActive(tab.id)}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`shrink-0 pb-2 text-sm font-medium border-b-2 transition-colors ${
               active === tab.id
-                ? "border-[#2E86AB] text-[#1E3A5F]"
+                ? "border-[var(--psy-sage)] text-[var(--psy-primary)]"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -85,8 +85,8 @@ export function SettingsPage() {
 
       {active === "recordatorios" && (
         <section className="space-y-4">
-          <div className="rounded-lg border p-4 bg-white space-y-2">
-            <h3 className="text-sm font-semibold text-[#1E3A5F]">Recordatorios automáticos por email</h3>
+          <div className="rounded-[var(--radius)] p-4 space-y-2" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
+            <h3 className="text-sm font-semibold text-[var(--psy-ink-1)]">Recordatorios automáticos por email</h3>
             <p className="text-sm text-muted-foreground">
               El sistema envía automáticamente dos recordatorios por cita:
             </p>
@@ -97,7 +97,7 @@ export function SettingsPage() {
             <p className="text-sm text-muted-foreground">
               Los recordatorios se envían al email registrado del paciente. Si el paciente no tiene email, se omiten.
             </p>
-            <div className="rounded-md bg-green-50 border border-green-200 p-3 text-xs text-green-800 mt-2">
+            <div className="rounded-md p-3 text-xs mt-2" style={{ background: "var(--psy-sage-bg)", border: "1px solid var(--psy-sage-soft)", color: "var(--psy-ok)" }}>
               ✓ Recordatorios activos — el sistema revisa citas pendientes cada 15 minutos.
             </div>
           </div>

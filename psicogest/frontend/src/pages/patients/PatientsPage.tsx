@@ -68,7 +68,7 @@ export function PatientsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1E3A5F]">Pacientes</h1>
+          <h1 className="psy-page-title">Pacientes</h1>
           {data && (
             <p className="text-sm text-muted-foreground mt-0.5">
               {data.total} paciente{data.total !== 1 ? "s" : ""} registrado{data.total !== 1 ? "s" : ""}
@@ -76,7 +76,7 @@ export function PatientsPage() {
           )}
         </div>
         <Button
-          className="bg-[#2E86AB] hover:bg-[#1E3A5F]"
+          className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]"
           onClick={() => { setShowForm(true); setFormError(null); }}
         >
           + Nuevo paciente
@@ -86,9 +86,9 @@ export function PatientsPage() {
       {/* New patient form (inline modal) */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 p-6">
+          <div className="bg-[var(--psy-surface)] rounded-xl shadow-xl w-full max-w-2xl my-8 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-[#1E3A5F]">Registrar nuevo paciente</h2>
+              <h2 className="text-xl font-semibold text-[var(--psy-ink-1)]">Registrar nuevo paciente</h2>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
@@ -99,7 +99,7 @@ export function PatientsPage() {
               </button>
             </div>
             {formError && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-[var(--psy-danger)]" role="alert">
                 {formError}
               </div>
             )}
@@ -157,12 +157,12 @@ export function PatientsPage() {
         <div className="text-center py-12">
           {error instanceof ApiError && error.status === 401 ? (
             <div className="max-w-sm mx-auto space-y-3">
-              <p className="text-[#1E3A5F] font-medium">Tu cuenta aún no está configurada</p>
+              <p className="text-[var(--psy-primary)] font-medium">Tu cuenta aún no está configurada</p>
               <p className="text-sm text-muted-foreground">
                 Necesitas activar tu perfil profesional para empezar a registrar pacientes.
               </p>
               <Button
-                className="bg-[#2E86AB] hover:bg-[#1E3A5F]"
+                className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]"
                 onClick={handleSetup}
                 disabled={settingUp || setupDone}
               >

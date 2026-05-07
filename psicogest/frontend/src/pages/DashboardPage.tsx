@@ -31,8 +31,9 @@ function UpcomingRow({ appt }: { appt: AppointmentSummary }) {
   const dateStr = start.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" });
 
   return (
-    <div
-      className="grid items-center gap-3 py-3 px-[18px] border-b last:border-0 cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+    <button
+      type="button"
+      className="grid w-full items-center gap-3 py-3 px-[18px] border-b last:border-0 transition-colors hover:bg-[var(--psy-bg-soft)] text-left"
       style={{ gridTemplateColumns: "64px 1fr auto auto" }}
       onClick={() => navigate(`/sessions?new&appointment_id=${appt.id}`)}
     >
@@ -50,7 +51,7 @@ function UpcomingRow({ appt }: { appt: AppointmentSummary }) {
       </div>
       <Tag tone={appt.modality === "virtual" ? "info" : "sage"}>{appt.modality}</Tag>
       <ChevronRight size={14} style={{ color: "var(--psy-ink-3)" }} />
-    </div>
+    </button>
   );
 }
 
@@ -271,9 +272,8 @@ export function DashboardPage() {
             <div
               className="rounded-[var(--radius)] p-4"
               style={{
-                background: "var(--psy-surface)",
-                border: "1px solid var(--psy-line)",
-                borderLeft: "3px solid var(--psy-warn)",
+                background: "color-mix(in srgb, var(--psy-warn) 8%, var(--psy-surface))",
+                border: "1px solid color-mix(in srgb, var(--psy-warn) 30%, var(--psy-line))",
               }}
             >
               <div className="text-[13px] font-semibold mb-1" style={{ color: "var(--psy-warn)" }}>

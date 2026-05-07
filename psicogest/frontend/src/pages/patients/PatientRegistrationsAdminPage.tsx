@@ -29,9 +29,9 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Rechazado",
 };
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  approved: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
+  pending: "bg-amber-50 text-[var(--psy-warn)]",
+  approved: "bg-[var(--psy-sage-bg)] text-[var(--psy-ok)]",
+  rejected: "bg-red-50 text-[var(--psy-danger)]",
 };
 
 export function PatientRegistrationsAdminPage() {
@@ -77,11 +77,11 @@ export function PatientRegistrationsAdminPage() {
         <p className="psy-page-sub">Solicitudes de inscripción enviadas por pacientes a través del portal público</p>
       </div>
 
-      {isLoading && <div className="text-sm text-slate-500">Cargando...</div>}
+      {isLoading && <div className="text-sm text-[var(--psy-ink-3)]">Cargando...</div>}
 
       {pending.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-600 mb-3">Pendientes de revisión ({pending.length})</h2>
+          <h2 className="text-sm font-semibold text-[var(--psy-ink-2)] mb-3">Pendientes de revisión ({pending.length})</h2>
           <div className="space-y-2">
             {pending.map((r) => (
               <RegistrationRow key={r.id} r={r} onView={() => setSelectedId(r.id)} />
@@ -91,14 +91,14 @@ export function PatientRegistrationsAdminPage() {
       )}
 
       {pending.length === 0 && !isLoading && (
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl p-8 text-center text-sm" style={{ border: "1px solid var(--psy-line)", background: "var(--psy-bg-soft)", color: "var(--psy-ink-3)" }}>
           Sin solicitudes pendientes
         </div>
       )}
 
       {processed.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-600 mb-3">Procesados</h2>
+          <h2 className="text-sm font-semibold text-[var(--psy-ink-2)] mb-3">Procesados</h2>
           <div className="space-y-2">
             {processed.map((r) => (
               <RegistrationRow key={r.id} r={r} onView={() => setSelectedId(r.id)} />
@@ -127,27 +127,27 @@ export function PatientRegistrationsAdminPage() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Motivo de consulta</p>
-                <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data?.motivo_consulta as string}</p>
+                <p className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide text-[var(--psy-ink-3)] mb-1">Motivo de consulta</p>
+                <p className="whitespace-pre-wrap text-[var(--psy-ink-1)]">{detail.intake_data?.motivo_consulta as string}</p>
               </div>
 
               {(detail.intake_data?.antecedentes_medicos as string | undefined) && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes médicos</p>
-                  <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_medicos as string}</p>
+                  <p className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide text-[var(--psy-ink-3)] mb-1">Antecedentes médicos</p>
+                  <p className="whitespace-pre-wrap text-[var(--psy-ink-1)]">{detail.intake_data.antecedentes_medicos as string}</p>
                 </div>
               )}
               {(detail.intake_data?.antecedentes_psicologicos as string | undefined) && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Antecedentes psicológicos</p>
-                  <p className="whitespace-pre-wrap text-slate-700">{detail.intake_data.antecedentes_psicologicos as string}</p>
+                  <p className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide text-[var(--psy-ink-3)] mb-1">Antecedentes psicológicos</p>
+                  <p className="whitespace-pre-wrap text-[var(--psy-ink-1)]">{detail.intake_data.antecedentes_psicologicos as string}</p>
                 </div>
               )}
 
               {detail.status === "pending" && (
                 <div className="flex gap-3 pt-3 border-t">
                   <Button
-                    className="flex-1 bg-[#2E86AB] hover:bg-[#1E3A5F]"
+                    className="flex-1"
                     onClick={() => approveMutation.mutate(detail.id)}
                     disabled={approveMutation.isPending}
                   >
@@ -176,12 +176,12 @@ function RegistrationRow({ r, onView }: { r: RegistrationSummary; onView: () => 
   return (
     <button
       type="button"
-      className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors text-left"
+      className="w-full flex items-center justify-between p-4 rounded-xl transition-colors text-left" style={{ border: "1px solid var(--psy-line)", background: "var(--psy-surface)" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--psy-bg-soft)")} onMouseLeave={e => (e.currentTarget.style.background = "var(--psy-surface)")}
       onClick={onView}
     >
       <div>
-        <div className="font-medium text-slate-700 text-sm">{name}</div>
-        <div className="text-xs text-slate-400 mt-0.5">{r.email} · {new Date(r.created_at).toLocaleDateString("es-CO")}</div>
+        <div className="font-medium text-sm" style={{ color: "var(--psy-ink-1)" }}>{name}</div>
+        <div className="text-xs mt-0.5" style={{ color: "var(--psy-ink-3)" }}>{r.email} · {new Date(r.created_at).toLocaleDateString("es-CO")}</div>
       </div>
       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[r.status] ?? "bg-slate-100 text-slate-600"}`}>
         {STATUS_LABELS[r.status] ?? r.status}
@@ -194,8 +194,8 @@ function InfoField({ label, value }: { label: string; value: string | undefined 
   if (!value) return null;
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className="text-slate-700">{value}</p>
+      <p className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--psy-ink-3)" }}>{label}</p>
+      <p style={{ color: "var(--psy-ink-1)" }}>{value}</p>
     </div>
   );
 }

@@ -24,8 +24,9 @@ const STATUS_TONES: Record<string, "amber" | "sage"> = {
 function SessionCard({ session, onClick }: { session: SessionSummary; onClick: () => void }) {
   const start = new Date(session.actual_start);
   return (
-    <div
-      className="p-4 rounded-[var(--radius)] cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
+    <button
+      type="button"
+      className="w-full p-4 rounded-[var(--radius)] transition-colors hover:bg-[var(--psy-bg-soft)] text-left"
       style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
       onClick={onClick}
     >
@@ -48,7 +49,7 @@ function SessionCard({ session, onClick }: { session: SessionSummary; onClick: (
       <span className="psy-mono psy-tab-num text-[14px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
         ${Number(session.session_fee).toLocaleString("es-CO")}
       </span>
-    </div>
+    </button>
   );
 }
 

@@ -131,7 +131,7 @@ export function InvoiceBulkPage() {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1E3A5F]">Facturación en masa</h1>
+        <h1 className="psy-page-title">Facturación en masa</h1>
         <p className="text-muted-foreground mt-1">
           Genera una factura automáticamente desde sesiones firmadas en un rango de fechas
         </p>
@@ -184,7 +184,7 @@ export function InvoiceBulkPage() {
 
             <Button
               type="submit"
-              className="bg-[#2E86AB] hover:bg-[#1E3A5F] w-full"
+              className="w-full"
               disabled={bulkMutation.isPending}
             >
               {bulkMutation.isPending ? "Generando..." : "Generar factura"}

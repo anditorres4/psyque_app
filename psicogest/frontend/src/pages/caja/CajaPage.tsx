@@ -125,15 +125,15 @@ function TransactionRow({ tx, onEdit, onDelete }: { tx: CashTransactionSummary; 
 
   return (
     <TableRow>
-      <TableCell><Badge className={isIncome ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>{isIncome ? "Ingreso" : "Gasto"}</Badge></TableCell>
+      <TableCell><Badge className={isIncome ? "bg-[var(--psy-sage-bg)] text-[var(--psy-ok)]" : "bg-red-50 text-[var(--psy-danger)]"}>{isIncome ? "Ingreso" : "Gasto"}</Badge></TableCell>
       <TableCell><span className="text-sm">{categoryLabels[tx.category] ?? tx.category}</span></TableCell>
       <TableCell><span className="text-sm text-muted-foreground">{tx.description || "-"}</span></TableCell>
-      <TableCell className={isIncome ? "text-green-700 font-medium" : "text-red-700 font-medium"}>{formatCurrency(tx.amount)}</TableCell>
+      <TableCell className="font-medium" style={{ color: isIncome ? "var(--psy-ok)" : "var(--psy-danger)" }}>{formatCurrency(tx.amount)}</TableCell>
       <TableCell className="text-xs text-muted-foreground">{formatTime(tx.created_at)}</TableCell>
       <TableCell>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={onEdit}>Editar</Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={onDelete}>Eliminar</Button>
+          <Button variant="ghost" size="sm" className="text-[var(--psy-danger)] hover:text-[var(--psy-danger)]" onClick={onDelete}>Eliminar</Button>
         </div>
       </TableCell>
     </TableRow>
@@ -439,7 +439,7 @@ export function CajaPage() {
     return (
       <div className="p-8 max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#1E3A5F]">Caja</h1>
+          <h1 className="psy-page-title">Caja</h1>
           <p className="text-muted-foreground mt-1">Control de turno y movimientos de caja</p>
         </div>
         <Card>
@@ -455,7 +455,7 @@ export function CajaPage() {
           </CardContent>
         </Card>
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-[#1E3A5F] mb-4">Historial de turnos</h2>
+          <h2 className="text-base font-semibold mb-4" style={{ color: "var(--psy-ink-1)" }}>Historial de turnos</h2>
           {loadingHistory ? (
             <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
           ) : sessions && sessions.items.length > 0 ? (
@@ -474,9 +474,9 @@ export function CajaPage() {
                   {sessions.items.map(s => (
                     <TableRow key={s.id}>
                       <TableCell className="text-sm">{formatDate(s.opened_at)}</TableCell>
-                      <TableCell><Badge className={s.status === "open" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>{s.status === "open" ? "Abierto" : "Cerrado"}</Badge></TableCell>
-                      <TableCell className="text-green-700">{formatCurrency(s.total_income)}</TableCell>
-                      <TableCell className="text-red-700">{formatCurrency(s.total_expense)}</TableCell>
+                      <TableCell><Badge className={s.status === "open" ? "bg-[var(--psy-sage-bg)] text-[var(--psy-ok)]" : "bg-[var(--psy-bg-soft)] text-[var(--psy-ink-3)]"}>{s.status === "open" ? "Abierto" : "Cerrado"}</Badge></TableCell>
+                      <TableCell style={{ color: "var(--psy-ok)" }}>{formatCurrency(s.total_income)}</TableCell>
+                      <TableCell style={{ color: "var(--psy-danger)" }}>{formatCurrency(s.total_expense)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{s.notes || "-"}</TableCell>
                     </TableRow>
                   ))}
@@ -495,7 +495,7 @@ export function CajaPage() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1E3A5F]">Caja</h1>
+          <h1 className="psy-page-title">Caja</h1>
           <p className="text-muted-foreground mt-1">Turno abierto desde {formatDateTime(currentSession.opened_at)}</p>
         </div>
         <Button variant="destructive" onClick={() => setShowClose(true)}>Cerrar turno</Button>
@@ -503,11 +503,11 @@ export function CajaPage() {
 
       <div className="grid grid-cols-2 gap-6 mb-6">
         <Card>
-          <CardHeader><CardTitle className="text-green-700">Ingresos del día</CardTitle></CardHeader>
+          <CardHeader><CardTitle style={{ color: "var(--psy-ok)" }}>Ingresos del día</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{formatCurrency(incomeTotal)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-red-700">Egresos del día</CardTitle></CardHeader>
+          <CardHeader><CardTitle style={{ color: "var(--psy-danger)" }}>Egresos del día</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{formatCurrency(expenseTotal)}</p></CardContent>
         </Card>
       </div>
