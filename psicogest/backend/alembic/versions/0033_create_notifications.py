@@ -5,8 +5,6 @@ Revises: 0032
 Create Date: 2026-05-07
 """
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision = "0033"
 down_revision = "0032"
@@ -15,37 +13,68 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "notifications",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        # References auth.users(id) directly — used by Supabase Realtime RLS
-        sa.Column("psychologist_id", UUID(as_uuid=True), nullable=False),
-        sa.Column("type", sa.String(50), nullable=False),
-        sa.Column("title", sa.String(200), nullable=False),
-        sa.Column("body", sa.Text(), nullable=True),
-        sa.Column("read_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("metadata", JSONB(), nullable=False, server_default=sa.text("'{}'")),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()")),
-    )
-
-    op.create_index("ix_notifications_psychologist_id", "notifications", ["psychologist_id"])
-    op.create_index("ix_notifications_created_at", "notifications", ["created_at"])
-
-    # Enable RLS — Supabase Realtime uses this for real-time pushes to the correct client
-    op.execute("ALTER TABLE notifications ENABLE ROW LEVEL SECURITY")
     op.execute("""
-        CREATE POLICY "psychologist_reads_own_notifications" ON notifications
-        FOR ALL USING (psychologist_id = auth.uid()::uuid)
+        CREATE TABLE IF NOT EXISTS notifications (
+            id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            psychologist_id UUID NOT NULL,
+            type        VARCHAR(50) NOT NULL,
+            title       VARCHAR(200) NOT NULL,
+            body        TEXT,
+            read_at     TIMESTAMPTZ,
+            metadata    JSONB NOT NULL DEFAULT '{}',
+            created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
     """)
 
-    # Add to Supabase Realtime publication so the frontend can subscribe
-    op.execute("ALTER PUBLICATION supabase_realtime ADD TABLE notifications")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_psychologist_id ON notifications (psychologist_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_created_at ON notifications (created_at)")
+
+    op.execute("ALTER TABLE notifications ENABLE ROW LEVEL SECURITY")
+
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_policies
+                WHERE tablename = 'notifications'
+                  AND policyname = 'psychologist_reads_own_notifications'
+            ) THEN
+                CREATE POLICY "psychologist_reads_own_notifications" ON notifications
+                FOR ALL USING (psychologist_id = auth.uid()::uuid);
+            END IF;
+        END
+        $$
+    """)
+
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_publication_tables
+                WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+            ) THEN
+                ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+            END IF;
+        END
+        $$
+    """)
 
 
 def downgrade() -> None:
-    op.execute("ALTER PUBLICATION supabase_realtime DROP TABLE notifications")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_publication_tables
+                WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+            ) THEN
+                ALTER PUBLICATION supabase_realtime DROP TABLE notifications;
+            END IF;
+        END
+        $$
+    """)
     op.execute("DROP POLICY IF EXISTS psychologist_reads_own_notifications ON notifications")
     op.execute("ALTER TABLE notifications DISABLE ROW LEVEL SECURITY")
-    op.drop_index("ix_notifications_created_at", table_name="notifications")
-    op.drop_index("ix_notifications_psychologist_id", table_name="notifications")
-    op.drop_table("notifications")
+    op.execute("DROP INDEX IF EXISTS ix_notifications_created_at")
+    op.execute("DROP INDEX IF EXISTS ix_notifications_psychologist_id")
+    op.execute("DROP TABLE IF EXISTS notifications")

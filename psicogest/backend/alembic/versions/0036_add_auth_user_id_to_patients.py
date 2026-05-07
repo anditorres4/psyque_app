@@ -15,37 +15,74 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "patients",
-        sa.Column("auth_user_id", UUID(as_uuid=True), nullable=True, unique=True),
-    )
-    op.create_index("ix_patients_auth_user_id", "patients", ["auth_user_id"])
-
-    # RLS policy: patient can read their own row in the patients table
+    # Add column only if not already present
     op.execute("""
-        CREATE POLICY "patient_reads_own_row" ON patients
-        FOR SELECT
-        USING (
-            auth_user_id = auth.uid()::uuid
-            OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
-        )
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'patients' AND column_name = 'auth_user_id'
+            ) THEN
+                ALTER TABLE patients ADD COLUMN auth_user_id UUID UNIQUE;
+            END IF;
+        END
+        $$
     """)
 
-    # RLS policy: patient reads their own appointments
+    op.execute("CREATE INDEX IF NOT EXISTS ix_patients_auth_user_id ON patients (auth_user_id)")
+
     op.execute("""
-        CREATE POLICY "patient_reads_own_appointments" ON appointments
-        FOR SELECT
-        USING (
-            patient_id IN (
-                SELECT id FROM patients WHERE auth_user_id = auth.uid()::uuid
-            )
-            OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
-        )
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_policies
+                WHERE tablename = 'patients' AND policyname = 'patient_reads_own_row'
+            ) THEN
+                CREATE POLICY "patient_reads_own_row" ON patients
+                FOR SELECT
+                USING (
+                    auth_user_id = auth.uid()::uuid
+                    OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+                );
+            END IF;
+        END
+        $$
+    """)
+
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_policies
+                WHERE tablename = 'appointments' AND policyname = 'patient_reads_own_appointments'
+            ) THEN
+                CREATE POLICY "patient_reads_own_appointments" ON appointments
+                FOR SELECT
+                USING (
+                    patient_id IN (
+                        SELECT id FROM patients WHERE auth_user_id = auth.uid()::uuid
+                    )
+                    OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+                );
+            END IF;
+        END
+        $$
     """)
 
 
 def downgrade() -> None:
     op.execute("DROP POLICY IF EXISTS patient_reads_own_appointments ON appointments")
     op.execute("DROP POLICY IF EXISTS patient_reads_own_row ON patients")
-    op.drop_index("ix_patients_auth_user_id", table_name="patients")
-    op.drop_column("patients", "auth_user_id")
+    op.execute("DROP INDEX IF EXISTS ix_patients_auth_user_id")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'patients' AND column_name = 'auth_user_id'
+            ) THEN
+                ALTER TABLE patients DROP COLUMN auth_user_id;
+            END IF;
+        END
+        $$
+    """)

@@ -5,8 +5,6 @@ Revises: 0034
 Create Date: 2026-05-07
 """
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision = "0035"
 down_revision = "0034"
@@ -15,40 +13,51 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "triage_sessions",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", UUID(as_uuid=True), nullable=False, index=True),
-        sa.Column("patient_name", sa.String(200), nullable=False),
-        sa.Column("patient_phone", sa.String(30), nullable=False),
-        sa.Column("whatsapp_message_id", sa.String(100), nullable=True),
-        sa.Column(
-            "status",
-            sa.Enum("pending", "completed", "escalated", name="triage_status_enum"),
-            nullable=False,
-            server_default=sa.text("'pending'"),
-        ),
-        sa.Column(
-            "urgency_level",
-            sa.Enum("low", "medium", "high", "critical", name="urgency_level_enum"),
-            nullable=True,
-        ),
-        sa.Column("phq9_score", sa.Integer(), nullable=True),
-        sa.Column("phq9_item9_score", sa.Integer(), nullable=True),
-        sa.Column("responses", JSONB(), nullable=False, server_default=sa.text("'[]'")),
-        sa.Column("summary", sa.Text(), nullable=True),
-        sa.Column("booking_request_id", UUID(as_uuid=True), nullable=True),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("completed_at", sa.TIMESTAMP(timezone=True), nullable=True),
-    )
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'triage_status_enum') THEN
+                CREATE TYPE triage_status_enum AS ENUM ('pending', 'completed', 'escalated');
+            END IF;
+        END
+        $$
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'urgency_level_enum') THEN
+                CREATE TYPE urgency_level_enum AS ENUM ('low', 'medium', 'high', 'critical');
+            END IF;
+        END
+        $$
+    """)
 
-    op.create_index("ix_triage_sessions_tenant_id", "triage_sessions", ["tenant_id"])
-    op.create_index("ix_triage_sessions_created_at", "triage_sessions", ["created_at"])
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS triage_sessions (
+            id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            tenant_id           UUID NOT NULL,
+            patient_name        VARCHAR(200) NOT NULL,
+            patient_phone       VARCHAR(30) NOT NULL,
+            whatsapp_message_id VARCHAR(100),
+            status              triage_status_enum NOT NULL DEFAULT 'pending',
+            urgency_level       urgency_level_enum,
+            phq9_score          INTEGER,
+            phq9_item9_score    INTEGER,
+            responses           JSONB NOT NULL DEFAULT '[]',
+            summary             TEXT,
+            booking_request_id  UUID,
+            created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+            completed_at        TIMESTAMPTZ
+        )
+    """)
+
+    op.execute("CREATE INDEX IF NOT EXISTS ix_triage_sessions_tenant_id ON triage_sessions (tenant_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_triage_sessions_created_at ON triage_sessions (created_at)")
 
 
 def downgrade() -> None:
-    op.drop_index("ix_triage_sessions_created_at", table_name="triage_sessions")
-    op.drop_index("ix_triage_sessions_tenant_id", table_name="triage_sessions")
-    op.drop_table("triage_sessions")
+    op.execute("DROP INDEX IF EXISTS ix_triage_sessions_created_at")
+    op.execute("DROP INDEX IF EXISTS ix_triage_sessions_tenant_id")
+    op.execute("DROP TABLE IF EXISTS triage_sessions")
     op.execute("DROP TYPE IF EXISTS triage_status_enum")
     op.execute("DROP TYPE IF EXISTS urgency_level_enum")
