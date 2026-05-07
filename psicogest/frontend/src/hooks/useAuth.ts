@@ -7,10 +7,14 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  tenantReady: boolean;
 }
 
 async function ensureTenantConfigured(session: Session): Promise<Session> {
   if (session.user.app_metadata?.tenant_id) return session;
+  // Google OAuth users lack colpsic_number — skip auto-setup, route handles it
+  const meta = session.user.user_metadata ?? {};
+  if (!meta.colpsic_number) return session;
   try {
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("setup-profile timeout")), 8000)
@@ -29,28 +33,29 @@ export function useAuth(): AuthState {
     user: null,
     session: null,
     loading: true,
+    tenantReady: false,
   });
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         const finalSession = await ensureTenantConfigured(session);
-        setState({ user: finalSession.user, session: finalSession, loading: false });
+        setState({ user: finalSession.user, session: finalSession, loading: false, tenantReady: !!finalSession.user.app_metadata?.tenant_id });
       } else {
-        setState({ user: null, session: null, loading: false });
+        setState({ user: null, session: null, loading: false, tenantReady: false });
       }
     }).catch((e) => {
       console.error("[useAuth] getSession error:", e);
-      setState({ user: null, session: null, loading: false });
+      setState({ user: null, session: null, loading: false, tenantReady: false });
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session && event === "SIGNED_IN") {
           const finalSession = await ensureTenantConfigured(session);
-          setState({ user: finalSession.user, session: finalSession, loading: false });
+          setState({ user: finalSession.user, session: finalSession, loading: false, tenantReady: !!finalSession.user.app_metadata?.tenant_id });
         } else {
-          setState({ user: session?.user ?? null, session, loading: false });
+          setState({ user: session?.user ?? null, session, loading: false, tenantReady: !!session?.user.app_metadata?.tenant_id });
         }
       }
     );

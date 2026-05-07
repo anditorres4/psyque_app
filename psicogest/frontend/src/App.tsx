@@ -24,6 +24,7 @@ const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m
 const NpsPage = lazy(() => import("@/pages/NpsPage").then((m) => ({ default: m.NpsPage })));
 const PatientRegistrationPage = lazy(() => import("@/pages/PatientRegistrationPage").then((m) => ({ default: m.PatientRegistrationPage })));
 const PatientRegistrationsAdminPage = lazy(() => import("@/pages/patients/PatientRegistrationsAdminPage").then((m) => ({ default: m.PatientRegistrationsAdminPage })));
+const CompleteProfilePage = lazy(() => import("@/pages/auth/CompleteProfilePage").then((m) => ({ default: m.CompleteProfilePage })));
 
 function PageLoader() {
   return (
@@ -34,11 +35,11 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, tenantReady } = useAuth();
 
   if (loading) return <PageLoader />;
-
   if (!user) return <Navigate to="/login" replace />;
+  if (!tenantReady) return <Navigate to="/complete-profile" replace />;
   return <>{children}</>;
 }
 
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route path="/book/:slug" element={<BookingPage />} />
         <Route path="/join/:appointmentId" element={<JoinPage />} />
         <Route path="/nps/:token" element={<NpsPage />} />
