@@ -1,10 +1,14 @@
 """Appointments router — RF-AGE-01 to RF-AGE-05."""
+import logging
+import uuid
 from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 from app.core.deps import get_tenant_db, TenantDB
+from app.models.patient import Patient
+from app.models.tenant import Tenant
 from app.schemas.appointment import (
     AppointmentCreate,
     AppointmentDetail,
@@ -18,7 +22,30 @@ from app.services.appointment_service import (
     AppointmentNotFoundError,
     AppointmentService,
 )
+from app.services.email_service import EmailService
 from app.services.gcal_sync_service import sync_appointment_background
+
+logger = logging.getLogger(__name__)
+
+
+def _send_confirmation_email(
+    *,
+    to_email: str,
+    patient_name: str,
+    psychologist_name: str,
+    appointment_start: datetime,
+    modality: str,
+) -> None:
+    try:
+        EmailService().send_appointment_confirmation(
+            to_email=to_email,
+            patient_name=patient_name,
+            psychologist_name=psychologist_name,
+            appointment_start=appointment_start,
+            modality=modality,
+        )
+    except Exception:
+        logger.exception("Failed to send appointment confirmation to %s", to_email)
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -64,6 +91,17 @@ def create_appointment(
         background_tasks.add_task(
             sync_appointment_background, ctx.tenant.tenant_id, str(appt.id), "create"
         )
+        patient = ctx.db.get(Patient, appt.patient_id)
+        if patient and patient.email:
+            tenant = ctx.db.get(Tenant, uuid.UUID(ctx.tenant.tenant_id))
+            background_tasks.add_task(
+                _send_confirmation_email,
+                to_email=patient.email,
+                patient_name=patient.full_name,
+                psychologist_name=tenant.full_name if tenant else "tu psicólogo",
+                appointment_start=appt.scheduled_start,
+                modality=appt.modality,
+            )
         return AppointmentDetail.model_validate(appt)
     except AppointmentConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
