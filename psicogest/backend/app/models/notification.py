@@ -22,7 +22,7 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(sa.String(200), nullable=False)
     body: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     read_at: Mapped[datetime | None] = mapped_column(sa.TIMESTAMP(timezone=True), nullable=True)
-    metadata: Mapped[dict] = mapped_column(JSONB(), nullable=False, server_default=sa.text("'{}'"))
+    extra_data: Mapped[dict] = mapped_column("metadata", JSONB(), nullable=False, server_default=sa.text("'{}'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

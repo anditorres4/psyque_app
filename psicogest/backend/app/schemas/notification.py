@@ -12,7 +12,7 @@ class NotificationOut(BaseModel):
     body: str | None
     read_at: datetime | None
     created_at: datetime
-    metadata: dict
+    extra_data: dict
 
     model_config = {"from_attributes": True}
 

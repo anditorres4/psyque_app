@@ -72,7 +72,7 @@ def create_booking_request(
         type="new_booking_request",
         title=f"Nueva solicitud de cita — {body.patient_name}",
         body=f"{body.session_type.capitalize()} · {body.requested_start.strftime('%d/%m/%Y %H:%M')}",
-        metadata={"booking_request_id": str(req.id)},
+        extra_data={"booking_request_id": str(req.id)},
     )
 
     db.commit()

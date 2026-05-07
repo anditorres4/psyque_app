@@ -87,7 +87,7 @@ def receive_triage_webhook(
             type="triage_completed",
             title=f"Triage completado — {payload.patient_name}",
             body=f"PHQ-9: {payload.phq9_score or 'N/A'} · Urgencia: {urgency_label}",
-            metadata={
+            extra_data={
                 "triage_session_id": str(session.id),
                 "urgency_level": session.urgency_level,
                 "patient_phone": session.patient_phone,

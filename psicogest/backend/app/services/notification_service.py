@@ -20,14 +20,14 @@ class NotificationService:
         type: str,
         title: str,
         body: str | None = None,
-        metadata: dict | None = None,
+        extra_data: dict | None = None,
     ) -> Notification:
         notification = Notification(
             psychologist_id=psychologist_auth_id,
             type=type,
             title=title,
             body=body,
-            metadata=metadata or {},
+            extra_data=extra_data or {},
         )
         self.db.add(notification)
         self.db.flush()
