@@ -70,11 +70,11 @@ function Field({
     <div className="space-y-1">
       <Label>
         {label}
-        {required && <span className="text-[#E74C3C] ml-0.5">*</span>}
+        {required && <span style={{ color: "var(--psy-danger)" }} className="ml-0.5">*</span>}
       </Label>
       {children}
       {error && (
-        <p className="text-xs text-[#E74C3C]" role="alert">
+        <p className="text-xs" role="alert" style={{ color: "var(--psy-danger)" }}>
           {error}
         </p>
       )}
@@ -247,7 +247,7 @@ export function PatientForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
       {/* Identificación */}
       <section>
-        <h3 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide mb-3">
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
           Identificación
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -277,7 +277,7 @@ export function PatientForm({
 
       {/* Nombres y apellidos */}
       <section>
-        <h3 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide mb-3">
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
           Nombre completo
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -298,7 +298,7 @@ export function PatientForm({
 
       {/* Datos demográficos */}
       <section>
-        <h3 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide mb-3">
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
           Datos personales
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -340,7 +340,7 @@ export function PatientForm({
 
       {/* Ubicación y contacto */}
       <section>
-        <h3 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide mb-3">
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
           Contacto y ubicación
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -386,7 +386,7 @@ export function PatientForm({
 
       {/* Vinculación / RIPS */}
       <section>
-        <h3 className="text-sm font-semibold text-[#1E3A5F] uppercase tracking-wide mb-3">
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
           Vinculación (RIPS)
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -440,7 +440,7 @@ export function PatientForm({
             </span>
           </label>
           {errors.consent_accepted && (
-            <p className="text-xs text-[#E74C3C] mt-1" role="alert">
+            <p className="text-xs mt-1" role="alert" style={{ color: "var(--psy-danger)" }}>
               {errors.consent_accepted.message}
             </p>
           )}
@@ -449,7 +449,7 @@ export function PatientForm({
 
       <Button
         type="submit"
-        className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+        className="w-full bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]"
         disabled={isSubmitting}
       >
         {isSubmitting

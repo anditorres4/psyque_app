@@ -45,16 +45,16 @@ export function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-[#1E3A5F]">Revisa tu correo</CardTitle>
+            <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Revisa tu correo</CardTitle>
             <CardDescription>
               Te enviamos un enlace para restablecer tu contraseña. Revisa también la carpeta de spam.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Link to="/login" className="text-[#2E86AB] hover:underline text-sm">
+            <Link to="/login" className="text-[var(--psy-info)] hover:underline text-sm">
               Volver al inicio de sesión
             </Link>
           </CardContent>
@@ -64,10 +64,10 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--psy-bg)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#1E3A5F]">Recuperar contraseña</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Recuperar contraseña</CardTitle>
           <CardDescription>
             Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
           </CardDescription>
@@ -85,21 +85,21 @@ export function ForgotPasswordPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.email.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>
                 {serverError}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Enviando..." : "Enviar enlace"}
@@ -107,7 +107,7 @@ export function ForgotPasswordPage() {
           </form>
 
           <div className="text-center">
-            <Link to="/login" className="text-[#2E86AB] hover:underline text-sm">
+            <Link to="/login" className="text-[var(--psy-info)] hover:underline text-sm">
               Volver al inicio de sesión
             </Link>
           </div>

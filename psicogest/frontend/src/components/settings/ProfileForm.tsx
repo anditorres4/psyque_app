@@ -93,7 +93,7 @@ export function ProfileForm() {
       <Button
         type="submit"
         disabled={!isDirty || updateMutation.isPending}
-        className="bg-[#1E3A5F] hover:bg-[#2E86AB] text-white"
+        className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white"
       >
         {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
       </Button>

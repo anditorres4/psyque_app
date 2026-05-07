@@ -26,7 +26,7 @@ function Initials({ name }: { name: string }) {
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
   return (
-    <div className="h-10 w-10 rounded-full bg-[#2E86AB] text-white flex items-center justify-center text-sm font-semibold shrink-0">
+    <div className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: "var(--psy-primary)", color: "var(--psy-surface)" }}>
       {letters}
     </div>
   );
@@ -47,29 +47,32 @@ export function PatientCard({ patient, onClick, className }: PatientCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 p-3 rounded-lg border bg-white hover:bg-slate-50 transition-colors text-left",
+        "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
         !patient.is_active && "opacity-60",
         className
       )}
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--psy-bg-soft)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "var(--psy-surface)")}
     >
       <Initials name={fullName} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[#1E3A5F] truncate">{fullName}</p>
+        <p className="font-medium truncate" style={{ color: "var(--psy-ink-1)" }}>{fullName}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {patient.current_diagnosis_cie11 && (
-            <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">
+            <span className="psy-mono text-[10.5px] px-1.5 py-0.5 rounded" style={{ background: "var(--psy-bg-soft)", color: "var(--psy-info)" }}>
               {patient.current_diagnosis_cie11}
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs" style={{ color: "var(--psy-ink-3)" }}>
             {PAYER_LABELS[patient.payer_type] ?? patient.payer_type}
           </span>
           {!patient.is_active && (
-            <span className="text-xs text-[#E74C3C]">Inactivo</span>
+            <span className="text-xs" style={{ color: "var(--psy-danger)" }}>Inactivo</span>
           )}
         </div>
       </div>
-      <span className="text-xs text-muted-foreground shrink-0 font-mono">
+      <span className="text-xs shrink-0 font-mono" style={{ color: "var(--psy-ink-3)" }}>
         {patient.hc_number}
       </span>
     </button>

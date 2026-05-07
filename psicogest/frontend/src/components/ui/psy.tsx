@@ -41,9 +41,8 @@ export function KPI({
     <div
       className="rounded-[var(--radius)] p-4 flex flex-col gap-2"
       style={{
-        background: "var(--psy-surface)",
-        border: "1px solid var(--psy-line)",
-        borderLeft: accentColor ? `3px solid ${accentColor}` : undefined,
+        background: accentColor ? `color-mix(in srgb, ${accentColor} 6%, var(--psy-surface))` : "var(--psy-surface)",
+        border: accentColor ? `1px solid color-mix(in srgb, ${accentColor} 22%, var(--psy-line))` : "1px solid var(--psy-line)",
       }}
     >
       <div

@@ -115,7 +115,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+        <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>
           {error}
         </div>
       )}
@@ -181,7 +181,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
         )}
 
         {patientError && (
-          <p className="mt-1 text-xs text-[#E74C3C]">{patientError}</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--psy-danger)" }}>{patientError}</p>
         )}
       </div>
 
@@ -247,7 +247,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
       <div className="flex gap-3 pt-2">
         <Button
           type="submit"
-          className="bg-[#2E86AB] hover:bg-[#1E3A5F]"
+          className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Guardando..." : "Agendar cita"}

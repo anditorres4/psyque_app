@@ -14,8 +14,8 @@ export function ErrorState({
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
       <div className="text-3xl mb-3">⚠️</div>
-      <p className="text-sm font-medium text-[#E74C3C] mb-1">{title}</p>
-      <p className="text-xs text-muted-foreground max-w-xs">{message}</p>
+      <p className="text-sm font-medium mb-1" style={{ color: "var(--psy-danger)" }}>{title}</p>
+      <p className="text-xs max-w-xs" style={{ color: "var(--psy-ink-3)" }}>{message}</p>
       {onRetry && (
         <Button
           variant="outline"

@@ -20,8 +20,8 @@ const SPARK_PAT  = [1, 2, 1, 3, 2, 1, 2, 3, 2, 1, 3, 2];
 
 const PSY_PRIMARY = "#0F2A4A";
 const PSY_SAGE    = "#7C9885";
-const PSY_WARN    = "#D97706";
-const PSY_DANGER  = "#C0392B";
+const PSY_WARN    = "#B8843A";
+const PSY_DANGER  = "#B0463A";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("es-CO", {

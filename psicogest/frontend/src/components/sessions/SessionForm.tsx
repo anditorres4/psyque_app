@@ -170,7 +170,7 @@ function Cie11Autocomplete({
   return (
     <div ref={containerRef} className="relative">
       <label className="block text-sm font-medium mb-1">
-        {label} {required && <span className="text-[#E74C3C]">*</span>}
+        {label} {required && <span style={{ color: "var(--psy-danger)" }}>*</span>}
       </label>
       <Input
         value={query}
@@ -181,17 +181,20 @@ function Cie11Autocomplete({
         autoComplete="off"
       />
       {showDropdown && (
-        <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-md shadow-lg max-h-52 overflow-y-auto">
+        <div className="absolute z-10 top-full mt-1 w-full rounded-[var(--radius)] shadow-lg max-h-52 overflow-y-auto" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
           {results.map((entry) => (
             <button
               key={entry.code}
               type="button"
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 border-b last:border-b-0"
+              className="w-full text-left px-3 py-2 text-sm transition-colors"
+              style={{ borderBottom: "1px solid var(--psy-line)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--psy-bg-soft)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "")}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(entry)}
             >
-              <span className="font-mono text-[#2E86AB] font-medium">{entry.code}</span>
-              <span className="text-muted-foreground ml-2">{entry.description}</span>
+              <span className="font-mono font-medium" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>
+              <span className="ml-2" style={{ color: "var(--psy-ink-3)" }}>{entry.description}</span>
             </button>
           ))}
         </div>
@@ -299,7 +302,7 @@ export function SessionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+        <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>
           {error}
         </div>
       )}
@@ -308,14 +311,14 @@ export function SessionForm({
       {!defaultPatientId && (
         <div>
           <label className="block text-sm font-medium mb-1">
-            Paciente <span className="text-[#E74C3C]">*</span>
+            Paciente <span style={{ color: "var(--psy-danger)" }}>*</span>
           </label>
           <PatientPicker
             selected={selectedPatient}
             onSelect={(p) => { setSelectedPatient(p); setPatientError(null); }}
             onClear={() => setSelectedPatient(null)}
           />
-          {patientError && <p className="mt-1 text-xs text-[#E74C3C]">{patientError}</p>}
+          {patientError && <p className="mt-1 text-xs text-xs" style={{ color: "var(--psy-danger)" }}>{patientError}</p>}
         </div>
       )}
 
@@ -323,7 +326,7 @@ export function SessionForm({
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
         <div>
           <label className="block text-sm font-semibold mb-1">
-            Tipo de diagnóstico principal <span className="text-[#E74C3C]">*</span>
+            Tipo de diagnóstico principal <span style={{ color: "var(--psy-danger)" }}>*</span>
           </label>
           <select
             className="h-10 w-full rounded-md border border-input px-3 text-sm bg-white"
@@ -384,7 +387,7 @@ export function SessionForm({
         />
         <div>
           <label className="block text-sm font-medium mb-1">
-            Código CUPS <span className="text-[#E74C3C]">*</span>
+            Código CUPS <span style={{ color: "var(--psy-danger)" }}>*</span>
           </label>
           <select
             className="h-10 w-full rounded-md border border-input px-3 text-sm"
@@ -410,9 +413,9 @@ export function SessionForm({
       {/* Motivo de consulta */}
       <div>
         <label className="block text-sm font-medium mb-1">
-          Motivo de consulta <span className="text-[#E74C3C]">*</span>
+          Motivo de consulta <span style={{ color: "var(--psy-danger)" }}>*</span>
           {isFollowUp && !isEmergency && (
-            <span className="ml-2 text-xs font-normal text-[#2E86AB] bg-blue-50 px-2 py-0.5 rounded-full">
+            <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full" style={{ color: "var(--psy-info)", background: "color-mix(in srgb, var(--psy-info) 10%, var(--psy-surface))" }}>
               Auto-cargado de primera sesión
             </span>
           )}
@@ -437,7 +440,7 @@ export function SessionForm({
       {/* Intervención */}
       <div>
         <label className="block text-sm font-medium mb-1">
-          Intervención realizada <span className="text-[#E74C3C]">*</span>
+          Intervención realizada <span style={{ color: "var(--psy-danger)" }}>*</span>
         </label>
         <textarea
           className="w-full rounded-md border border-input px-3 py-2 text-sm min-h-[80px]"
@@ -488,7 +491,7 @@ export function SessionForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">
-            Valor sesión (COP) <span className="text-[#E74C3C]">*</span>
+            Valor sesión (COP) <span style={{ color: "var(--psy-danger)" }}>*</span>
           </label>
           <Input
             type="number"
@@ -513,7 +516,7 @@ export function SessionForm({
       <div className="pt-2">
         <Button
           type="submit"
-          className="bg-[#2E86AB] hover:bg-[#1E3A5F] w-full"
+          className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] w-full"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Guardando borrador..." : "Guardar borrador"}

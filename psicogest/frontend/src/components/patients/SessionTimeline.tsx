@@ -93,7 +93,7 @@ function SessionRow({ session, onOpenSession }: SessionRowProps) {
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onOpenSession(session.id); }}
-          className="text-sm text-[#2E86AB] hover:text-[#1E3A5F] hover:underline shrink-0"
+          className="text-sm hover:underline shrink-0 transition-colors" style={{ color: "var(--psy-info)" }}
         >
           Ver nota
         </button>

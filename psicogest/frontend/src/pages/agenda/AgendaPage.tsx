@@ -13,10 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: "#2E86AB",
-  completed: "#27AE60",
-  cancelled: "#E74C3C",
-  noshow: "#F39C12",
+  scheduled: "#2E5E8A",
+  completed: "#4F7F5A",
+  cancelled: "#B0463A",
+  noshow: "#B8843A",
 };
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
@@ -99,8 +99,8 @@ export function AgendaPage() {
       title: `⏳ ${req.patient_name}`,
       start: req.requested_start,
       end: req.requested_end,
-      backgroundColor: "#F39C12",
-      borderColor: "#d68910",
+      backgroundColor: "#B8843A",
+      borderColor: "#8F5E25",
       textColor: "#fff",
       extendedProps: { type: "booking_request", requestId: req.id },
     })),
@@ -195,16 +195,16 @@ export function AgendaPage() {
           style={{ color: "var(--psy-ink-3)" }}
         >
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#2E86AB" }} /> Confirmada
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#2E5E8A" }} /> Confirmada
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#27AE60" }} /> Completada
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#4F7F5A" }} /> Completada
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#F39C12" }} /> Solicitud pendiente
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#B8843A" }} /> Solicitud pendiente
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#E74C3C" }} /> Cancelada
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#B0463A" }} /> Cancelada
           </span>
         </div>
       </div>

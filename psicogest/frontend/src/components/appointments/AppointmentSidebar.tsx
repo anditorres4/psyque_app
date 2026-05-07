@@ -20,11 +20,11 @@ const MODALITY_LABELS: Record<string, string> = { presential: "Presencial", virt
 const STATUS_LABELS: Record<string, string> = {
   scheduled: "Agendada", completed: "Completada", cancelled: "Cancelada", noshow: "No asistió",
 };
-const STATUS_COLORS: Record<string, string> = {
-  scheduled: "bg-blue-50 text-blue-700",
-  completed: "bg-green-50 text-green-700",
-  cancelled: "bg-red-50 text-[#E74C3C]",
-  noshow: "bg-amber-50 text-amber-700",
+const STATUS_COLORS: Record<string, { background: string; color: string }> = {
+  scheduled: { background: "color-mix(in srgb, var(--psy-info) 10%, var(--psy-surface))", color: "var(--psy-info)" },
+  completed: { background: "var(--psy-sage-bg)", color: "var(--psy-ok)" },
+  cancelled: { background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" },
+  noshow: { background: "color-mix(in srgb, var(--psy-warn) 10%, var(--psy-surface))", color: "var(--psy-warn)" },
 };
 
 export function AppointmentSidebar({ appointmentId, onClose }: Props) {
@@ -47,7 +47,7 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   if (isLoading) return (
-    <div className="p-6 text-muted-foreground text-sm">Cargando...</div>
+    <div className="p-6 text-sm" style={{ color: "var(--psy-ink-3)" }}>Cargando...</div>
   );
   if (!appt) return null;
 
@@ -132,47 +132,50 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="font-semibold text-[#1E3A5F]">Detalle de cita</h2>
-        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+        <h2 className="font-semibold" style={{ color: "var(--psy-ink-1)" }}>Detalle de cita</h2>
+        <button type="button" onClick={onClose} className="text-xl transition-colors" style={{ color: "var(--psy-ink-3)" }}>✕</button>
       </div>
 
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        <span className={`inline-block text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[appt.status] ?? ""}`}>
+        <span
+          className="inline-block text-xs px-2 py-0.5 rounded font-medium"
+          style={STATUS_COLORS[appt.status] ?? { background: "var(--psy-bg-soft)", color: "var(--psy-ink-2)" }}
+        >
           {STATUS_LABELS[appt.status] ?? appt.status}
         </span>
 
         <dl className="space-y-3">
           <div>
-            <dt className="text-xs text-muted-foreground uppercase tracking-wide">Fecha</dt>
+            <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Fecha</dt>
             <dd className="text-sm">{start.toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground uppercase tracking-wide">Horario</dt>
+            <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Horario</dt>
             <dd className="text-sm">{start.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })} — {end.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground uppercase tracking-wide">Tipo</dt>
+            <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Tipo</dt>
             <dd className="text-sm">{SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground uppercase tracking-wide">Modalidad</dt>
+            <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Modalidad</dt>
             <dd className="text-sm">{MODALITY_LABELS[appt.modality] ?? appt.modality}</dd>
           </div>
           {appt.notes && (
             <div>
-              <dt className="text-xs text-muted-foreground uppercase tracking-wide">Notas</dt>
+              <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Notas</dt>
               <dd className="text-sm">{appt.notes}</dd>
             </div>
           )}
           {appt.cancellation_reason && (
             <div>
-              <dt className="text-xs text-muted-foreground uppercase tracking-wide">Motivo cancelación</dt>
-              <dd className="text-sm text-[#E74C3C]">{appt.cancellation_reason}</dd>
+              <dt className="psy-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--psy-ink-3)" }}>Motivo cancelación</dt>
+              <dd className="text-sm" style={{ color: "var(--psy-danger)" }}>{appt.cancellation_reason}</dd>
             </div>
           )}
         </dl>
 
-        {actionError && <p className="text-xs text-[#E74C3C]">{actionError}</p>}
+        {actionError && <p className="text-xs" style={{ color: "var(--psy-danger)" }}>{actionError}</p>}
 
         {appt.status === "scheduled" && !showCancelForm && (
           <div className="flex flex-col gap-2">
@@ -180,7 +183,7 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
               <>
                 <Button
                   size="sm"
-                  className="bg-[#2E86AB] hover:bg-[#1a6a8a] text-white"
+                  className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white"
                   onClick={handleStartVideo}
                   disabled={createRoomMutation.isPending || refreshTokenMutation.isPending}
                 >
@@ -193,18 +196,18 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="text-[#2E86AB] border-[#2E86AB] hover:bg-[#2E86AB]/10"
+                    className="text-[var(--psy-info)] border-[var(--psy-info)] hover:bg-[var(--psy-bg-soft)]"
                     onClick={handleCopyPatientLink}
                   >
                     Copiar link del paciente
                   </Button>
                 )}
-                {videoError && <p className="text-xs text-[#E74C3C]">{videoError}</p>}
+                {videoError && <p className="text-xs" style={{ color: "var(--psy-danger)" }}>{videoError}</p>}
               </>
             )}
             <Button
               size="sm"
-              className="bg-[#27AE60] hover:bg-green-700 text-white"
+              className="bg-[var(--psy-ok)] hover:opacity-90 text-white"
               onClick={handleComplete}
               disabled={completeMutation.isPending}
             >
@@ -222,7 +225,7 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
             <Button
               variant="outline"
               size="sm"
-              className="text-[#E74C3C] border-[#E74C3C] hover:bg-red-50"
+              className="text-[var(--psy-danger)] border-[var(--psy-danger)] hover:bg-[var(--psy-bg-soft)]"
               onClick={() => setShowCancelForm(true)}
             >
               Cancelar cita
@@ -231,9 +234,16 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
         )}
 
         {showCancelForm && (
-          <form onSubmit={handleCancel} className="space-y-3 border rounded-lg p-4 bg-red-50">
-            <p className="text-sm font-medium text-[#E74C3C]">Confirmar cancelación</p>
-            {cancelError && <p className="text-xs text-[#E74C3C]">{cancelError}</p>}
+          <form
+            onSubmit={handleCancel}
+            className="space-y-3 rounded-lg p-4"
+            style={{
+              background: "color-mix(in srgb, var(--psy-danger) 6%, var(--psy-surface))",
+              border: "1px solid color-mix(in srgb, var(--psy-danger) 20%, var(--psy-line))",
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: "var(--psy-danger)" }}>Confirmar cancelación</p>
+            {cancelError && <p className="text-xs" style={{ color: "var(--psy-danger)" }}>{cancelError}</p>}
             <div>
               <label className="block text-xs font-medium mb-1">Cancelada por</label>
               <select
@@ -257,7 +267,7 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
               />
             </div>
             <div className="flex gap-2">
-              <Button type="submit" size="sm" className="bg-[#E74C3C] hover:bg-red-700 text-white" disabled={cancelMutation.isPending}>
+              <Button type="submit" size="sm" className="bg-[var(--psy-danger)] hover:opacity-90 text-white" disabled={cancelMutation.isPending}>
                 {cancelMutation.isPending ? "Cancelando..." : "Confirmar"}
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setShowCancelForm(false)}>

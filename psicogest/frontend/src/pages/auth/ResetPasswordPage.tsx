@@ -70,7 +70,7 @@ export function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-[#1E3A5F]">Contraseña actualizada</CardTitle>
+            <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Contraseña actualizada</CardTitle>
             <CardDescription>Tu contraseña fue cambiada exitosamente. Redirigiendo al login...</CardDescription>
           </CardHeader>
         </Card>
@@ -81,7 +81,7 @@ export function ResetPasswordPage() {
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <p className="text-[#1E3A5F] text-sm">Verificando enlace de recuperación...</p>
+        <p className="text-[var(--psy-primary)] text-sm">Verificando enlace de recuperación...</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#1E3A5F]">Nueva contraseña</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Nueva contraseña</CardTitle>
           <CardDescription>Elige una contraseña segura para tu cuenta.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -106,7 +106,7 @@ export function ResetPasswordPage() {
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.password.message}
                 </p>
               )}
@@ -123,21 +123,21 @@ export function ResetPasswordPage() {
                 {...register("confirm")}
               />
               {errors.confirm && (
-                <p className="text-sm text-[#E74C3C]" role="alert">
+                <p className="text-sm text-[var(--psy-danger)]" role="alert">
                   {errors.confirm.message}
                 </p>
               )}
             </div>
 
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-[#E74C3C]" role="alert">
+              <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>
                 {serverError}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#1E3A5F]"
+              className="w-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Guardando..." : "Guardar contraseña"}

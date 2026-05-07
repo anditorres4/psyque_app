@@ -321,7 +321,7 @@ export function SessionDetail({ sessionId, onBack }: Props) {
             Verifique todos los campos antes de firmar.
           </div>
           <Button
-            className="bg-[#1E3A5F] hover:bg-[#2E86AB] text-white w-full"
+            className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white w-full"
             onClick={handleSign}
             disabled={signMutation.isPending}
           >
@@ -375,7 +375,7 @@ export function SessionDetail({ sessionId, onBack }: Props) {
               placeholder="Aclaración o información adicional..."
             />
             <div className="flex gap-2">
-              <Button type="submit" size="sm" className="bg-[#2E86AB] hover:bg-[#1E3A5F] text-white" disabled={addNoteMutation.isPending}>
+              <Button type="submit" size="sm" className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white" disabled={addNoteMutation.isPending}>
                 {addNoteMutation.isPending ? "Guardando..." : "Guardar nota"}
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setShowNoteForm(false)}>
