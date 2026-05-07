@@ -238,6 +238,7 @@ class EmailService:
         invoice_number: str,
         total_cop: int,
         pdf_bytes: bytes,
+        psychologist_name: str = "tu psicólogo",
     ) -> bool:
         """Send invoice PDF via email using Resend.
 
@@ -249,13 +250,13 @@ class EmailService:
         payload = {
             "from": settings.resend_from_email,
             "to": [to_email],
-            "subject": f"Factura {invoice_number} — tu psicólogo",
+            "subject": f"Factura {invoice_number} — {psychologist_name}",
             "html": (
                 f"<p>Hola {patient_name},</p>"
                 f"<p>Adjunto encontrarás tu factura <strong>{invoice_number}</strong> "
                 f"por valor de <strong>${total_cop:,} COP</strong>.</p>"
                 f"<p>Si tienes alguna pregunta, no dudes en contactarme.</p>"
-                f"<p>Saludos,<br>Tu psicólogo</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
             ),
             "attachments": [
                 {

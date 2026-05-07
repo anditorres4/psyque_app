@@ -138,6 +138,7 @@ class InvoiceService:
             patient = self.db.get(Patient, invoice.patient_id)
             if patient and patient.email:
                 try:
+                    tenant = self.db.get(Tenant, self._tenant_uuid)
                     pdf_data = self.get_pdf_data(invoice_id)
                     pdf_bytes = build_invoice_pdf(pdf_data)
                     email_service.send_invoice(
@@ -146,6 +147,7 @@ class InvoiceService:
                         invoice_number=invoice.invoice_number,
                         total_cop=invoice.total_cop,
                         pdf_bytes=pdf_bytes,
+                        psychologist_name=tenant.full_name if tenant else "tu psicólogo",
                     )
                 except Exception:
                     pass  # email failure must not revert the invoice

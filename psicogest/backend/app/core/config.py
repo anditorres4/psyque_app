@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     hms_app_secret: str = ""
     hms_template_id: str = ""
 
+    # --- Webhook secrets (n8n → backend) ---
+    webhook_triage_secret: str = ""  # If empty, auth is skipped in development
+
     @property
     def is_development(self) -> bool:
         """True when running in development environment."""

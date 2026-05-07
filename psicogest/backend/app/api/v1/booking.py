@@ -1,4 +1,5 @@
 """Public booking router — no authentication required."""
+import uuid
 from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from app.core.database import get_db
 from app.schemas.booking import BookingInfo, BookingRequestCreate, BookingRequestCreated
 from app.services.booking_service import BookingNotFoundError, BookingService
 from app.services.email_service import EmailService
+from app.services.notification_service import NotificationService
 
 router = APIRouter(prefix="/public/booking", tags=["booking-public"])
 
@@ -63,6 +65,17 @@ def create_booking_request(
         patient_phone=body.patient_phone, session_type=body.session_type,
         requested_start=body.requested_start, notes=body.notes,
     )
+
+    # Create in-app notification for the psychologist
+    NotificationService(db).create(
+        psychologist_auth_id=tenant.auth_user_id,
+        type="new_booking_request",
+        title=f"Nueva solicitud de cita — {body.patient_name}",
+        body=f"{body.session_type.capitalize()} · {body.requested_start.strftime('%d/%m/%Y %H:%M')}",
+        metadata={"booking_request_id": str(req.id)},
+    )
+
+    db.commit()
 
     if tenant.email:
         bg.add_task(

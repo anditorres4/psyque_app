@@ -5,7 +5,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader, PsyButton, PsyCard, KPI, Tag } from "@/components/ui/psy";
 import { api, type InvoiceStatus, type InvoiceSummary, type PatientSummary } from "@/lib/api";
-import { Download, Send, CheckCircle } from "lucide-react";
+import { Download, Send, CheckCircle, FileMinus } from "lucide-react";
+import { InvoiceNoteDialog } from "./InvoiceNoteDialog";
 
 const SPARK_REVENUE = [8, 12, 11, 15, 14, 18, 20, 17, 22, 20, 25, 28];
 
@@ -31,11 +32,13 @@ function InvoiceCard({
   onDownload,
   onIssue,
   onPay,
+  onNote,
 }: {
   invoice: InvoiceSummary;
   onDownload: (id: string, num: string) => void;
   onIssue: { mutate: (id: string) => void; isPending: boolean };
   onPay: { mutate: (id: string) => void; isPending: boolean };
+  onNote: (id: string, num: string) => void;
 }) {
   const issueDate = invoice.issue_date
     ? new Date(invoice.issue_date).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })
@@ -78,14 +81,25 @@ function InvoiceCard({
             </PsyButton>
           )}
           {invoice.status === "issued" && (
-            <PsyButton
-              variant="sage"
-              icon={<CheckCircle size={11} />}
-              onClick={() => onPay.mutate(invoice.id)}
-              className="text-[11px] px-2.5 py-1.5"
-            >
-              Pagada
-            </PsyButton>
+            <>
+              <PsyButton
+                variant="sage"
+                icon={<CheckCircle size={11} />}
+                onClick={() => onPay.mutate(invoice.id)}
+                className="text-[11px] px-2.5 py-1.5"
+              >
+                Pagada
+              </PsyButton>
+              <button
+                type="button"
+                onClick={() => onNote(invoice.id, invoice.invoice_number)}
+                className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                style={{ color: "var(--psy-ink-3)" }}
+                title="Emitir Nota Crédito o Débito"
+              >
+                <FileMinus size={12} /> NC/ND
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -203,6 +217,7 @@ export function InvoicesPage() {
   const queryClient = useQueryClient();
   const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [noteDialog, setNoteDialog] = useState<{ id: string; number: string } | null>(null);
 
   const { data: invoicesData, isLoading, isError } = useQuery({
     queryKey: ["invoices", selectedPatient?.id, filterStatus],
@@ -239,6 +254,7 @@ export function InvoicesPage() {
   const totalPaid = items.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.total_cop), 0);
 
   return (
+    <>
     <div className="space-y-5">
       <PageHeader
         title="Facturas"
@@ -378,14 +394,25 @@ export function InvoicesPage() {
                             </PsyButton>
                           )}
                           {inv.status === "issued" && (
-                            <PsyButton
-                              variant="sage"
-                              icon={<CheckCircle size={11} />}
-                              onClick={() => payMutation.mutate(inv.id)}
-                              className={payMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
-                            >
-                              Pagada
-                            </PsyButton>
+                            <>
+                              <PsyButton
+                                variant="sage"
+                                icon={<CheckCircle size={11} />}
+                                onClick={() => payMutation.mutate(inv.id)}
+                                className={payMutation.isPending ? "opacity-50 pointer-events-none text-[11px] px-2.5 py-1.5" : "text-[11px] px-2.5 py-1.5"}
+                              >
+                                Pagada
+                              </PsyButton>
+                              <button
+                                type="button"
+                                onClick={() => setNoteDialog({ id: inv.id, number: inv.invoice_number })}
+                                className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                                style={{ color: "var(--psy-ink-3)" }}
+                                title="Nota Crédito / Débito"
+                              >
+                                <FileMinus size={12} /> NC/ND
+                              </button>
+                            </>
                           )}
                           <button
                             type="button"
@@ -407,11 +434,27 @@ export function InvoicesPage() {
           {/* Cards — mobile */}
           <div className="md:hidden space-y-3">
             {items.map((inv) => (
-              <InvoiceCard key={inv.id} invoice={inv} onDownload={handleDownload} onIssue={issueMutation} onPay={payMutation} />
+              <InvoiceCard
+                key={inv.id}
+                invoice={inv}
+                onDownload={handleDownload}
+                onIssue={issueMutation}
+                onPay={payMutation}
+                onNote={(id, num) => setNoteDialog({ id, number: num })}
+              />
             ))}
           </div>
         </>
       )}
     </div>
+
+    {noteDialog && (
+      <InvoiceNoteDialog
+        invoiceId={noteDialog.id}
+        invoiceNumber={noteDialog.number}
+        onClose={() => setNoteDialog(null)}
+      />
+    )}
+    </>
   );
 }

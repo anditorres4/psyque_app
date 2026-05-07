@@ -97,6 +97,8 @@ export function PatientDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
   const [exportOptions, setExportOptions] = useState({
     include_diagnosis: true,
     include_treatment: true,
@@ -180,6 +182,19 @@ export function PatientDetailPage() {
     }
   };
 
+  const handleInviteToPortal = async () => {
+    if (!id) return;
+    setIsInviting(true);
+    try {
+      await api.patients.inviteToPortal(id);
+      setInviteSent(true);
+    } catch (err) {
+      console.error("Error inviting patient to portal:", err);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   const initials = [patient.first_name, patient.first_surname]
     .filter(Boolean)
     .map((s) => s![0].toUpperCase())
@@ -222,7 +237,16 @@ export function PatientDetailPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+          {patient.email && (
+            <Button
+              variant="outline"
+              onClick={handleInviteToPortal}
+              disabled={isInviting || inviteSent}
+            >
+              {inviteSent ? "Invitación enviada" : isInviting ? "Enviando..." : "Invitar al portal"}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setIsEditing(!isEditing)}

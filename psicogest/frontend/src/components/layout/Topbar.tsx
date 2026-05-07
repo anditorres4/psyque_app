@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -68,6 +69,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         ))}
       </div>
       <div className="ml-auto flex items-center gap-2.5">
+        <NotificationBell />
         <div
           className="flex items-center gap-2 px-2.5 py-1 rounded-full psy-mono text-[11px]"
           style={{

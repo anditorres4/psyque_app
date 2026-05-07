@@ -115,3 +115,53 @@ def get_current_tenant(
 
 
 CurrentTenant = Annotated[TenantContext, Depends(get_current_tenant)]
+
+
+class PatientContext:
+    """Authenticated patient — JWT role is 'patient' with patient_id in app_metadata."""
+
+    def __init__(self, patient_id: str, user_id: str) -> None:
+        self.patient_id = patient_id  # patients table UUID
+        self.user_id = user_id        # auth.users UUID
+
+
+def get_current_patient(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
+) -> "PatientContext":
+    """FastAPI dependency: validate JWT and return PatientContext.
+
+    Requires app_metadata.role == 'patient' and app_metadata.patient_id set.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido o expirado",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            _get_public_key(),
+            algorithms=["ES256"],
+            options={"verify_aud": False},
+        )
+        user_id: str = payload.get("sub", "")
+        if not user_id:
+            raise credentials_exception
+        app_metadata: dict = payload.get("app_metadata", {})
+        if app_metadata.get("role") != "patient":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acceso restringido al portal de pacientes.",
+            )
+        patient_id: str = app_metadata.get("patient_id", "")
+        if not patient_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Cuenta de paciente no vinculada. Contacta a tu psicólogo.",
+            )
+    except JWTError:
+        raise credentials_exception
+    return PatientContext(patient_id=patient_id, user_id=user_id)
+
+
+CurrentPatient = Annotated[PatientContext, Depends(get_current_patient)]

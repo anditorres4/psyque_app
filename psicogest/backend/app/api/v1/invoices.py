@@ -12,10 +12,13 @@ from app.schemas.invoice import (
     InvoiceListResponse,
     InvoiceSummary,
     InvoiceUpdate,
+    CreditDebitNoteCreate,
+    CreditDebitNoteOut,
 )
 from app.services.email_service import EmailService
 from app.services.invoice_pdf_service import build_invoice_pdf
 from app.services.invoice_service import InvoiceNotFoundError, InvoiceService
+from app.services.credit_note_service import CreditNoteError, CreditNoteService
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
@@ -170,3 +173,43 @@ def get_invoice_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+def _note_service(ctx: TenantDB) -> CreditNoteService:
+    return CreditNoteService(ctx.db, ctx.tenant.tenant_id)
+
+
+@router.post(
+    "/{invoice_id}/notes",
+    response_model=CreditDebitNoteOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_invoice_note(
+    invoice_id: str,
+    body: CreditDebitNoteCreate,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> CreditDebitNoteOut:
+    try:
+        note = _note_service(ctx).create(
+            invoice_id,
+            type=body.type,
+            reason=body.reason,
+            amount_cop=body.amount_cop,
+        )
+        ctx.db.commit()
+        ctx.db.refresh(note)
+        return CreditDebitNoteOut.model_validate(note)
+    except CreditNoteError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+
+@router.get("/{invoice_id}/notes", response_model=list[CreditDebitNoteOut])
+def list_invoice_notes(
+    invoice_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> list[CreditDebitNoteOut]:
+    notes = _note_service(ctx).list_by_invoice(invoice_id)
+    return [CreditDebitNoteOut.model_validate(n) for n in notes]

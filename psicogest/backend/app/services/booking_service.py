@@ -130,7 +130,7 @@ class BookingService:
             notes=notes,
         )
         self.db.add(req)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(req)
         return req
 
@@ -143,14 +143,14 @@ class BookingService:
     def confirm(self, request_id: uuid.UUID, tenant_id: uuid.UUID) -> BookingRequest:
         req = self._get(request_id, tenant_id)
         req.status = "confirmed"
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(req)
         return req
 
     def reject(self, request_id: uuid.UUID, tenant_id: uuid.UUID) -> BookingRequest:
         req = self._get(request_id, tenant_id)
         req.status = "rejected"
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(req)
         return req
 

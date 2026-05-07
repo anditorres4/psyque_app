@@ -41,6 +41,7 @@ def list_booking_requests(
 def confirm_request(request_id: uuid.UUID, ctx: Annotated[TenantDB, Depends(get_tenant_db)]):
     try:
         req = _svc(ctx).confirm(request_id, uuid.UUID(ctx.tenant.tenant_id))
+        ctx.db.commit()
         return BookingRequestSummary(
             id=str(req.id),
             patient_name=req.patient_name,
@@ -61,6 +62,7 @@ def confirm_request(request_id: uuid.UUID, ctx: Annotated[TenantDB, Depends(get_
 def reject_request(request_id: uuid.UUID, ctx: Annotated[TenantDB, Depends(get_tenant_db)]):
     try:
         req = _svc(ctx).reject(request_id, uuid.UUID(ctx.tenant.tenant_id))
+        ctx.db.commit()
         return BookingRequestSummary(
             id=str(req.id),
             patient_name=req.patient_name,

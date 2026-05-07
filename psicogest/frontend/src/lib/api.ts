@@ -670,6 +670,105 @@ export interface PublicVideoTokenResponse {
   token: string;
 }
 
+// --- Patient Portal --------------------------------------------------------
+
+export interface PortalMe {
+  patient_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string;
+  psychologist_name: string;
+  psychologist_city: string;
+}
+
+export interface PortalAppointment {
+  id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  session_type: string;
+  modality: string;
+  status: string;
+  notes: string | null;
+}
+
+export interface PortalSession {
+  id: string;
+  actual_start: string;
+  diagnosis_cie11: string;
+  cups_code: string;
+}
+
+export interface PortalInvoice {
+  id: string;
+  invoice_number: string;
+  status: string;
+  total_cop: number;
+  issue_date: string | null;
+  created_at: string;
+}
+
+// --- WhatsApp Triage -------------------------------------------------------
+
+export type TriageUrgency = "low" | "medium" | "high" | "critical";
+export type TriageStatus = "pending" | "completed" | "escalated";
+
+export interface TriageSessionOut {
+  id: string;
+  tenant_id: string;
+  patient_name: string;
+  patient_phone: string;
+  status: TriageStatus;
+  urgency_level: TriageUrgency | null;
+  phq9_score: number | null;
+  phq9_item9_score: number | null;
+  summary: string | null;
+  responses: Record<string, unknown>[];
+  booking_request_id: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface TriageListResponse {
+  items: TriageSessionOut[];
+  total: number;
+}
+
+// --- Credit/Debit Notes ---------------------------------------------------
+
+export interface CreditDebitNoteCreate {
+  type: "credit" | "debit";
+  reason: string;
+  amount_cop: number;
+}
+
+export interface CreditDebitNoteOut {
+  id: string;
+  invoice_id: string;
+  type: "credit" | "debit";
+  number: string;
+  reason: string;
+  amount_cop: number;
+  issued_at: string;
+  created_at: string;
+}
+
+// --- Notifications --------------------------------------------------------
+
+export interface NotificationOut {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  read_at: string | null;
+  created_at: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface NotificationListResponse {
+  items: NotificationOut[];
+  unread_count: number;
+}
+
 // --- Caja / Cash ----------------------------------------------------------
 
 export type CashSessionStatus = "open" | "closed";
@@ -854,6 +953,10 @@ export const api = {
       request<InvoiceSummary>("POST", `/invoices/${id}/pay`),
     getPdf: (id: string) =>
       downloadBlob("GET", `/invoices/${id}/pdf`),
+    createNote: (id: string, body: CreditDebitNoteCreate) =>
+      request<CreditDebitNoteOut>("POST", `/invoices/${id}/notes`, body),
+    listNotes: (id: string) =>
+      request<CreditDebitNoteOut[]>("GET", `/invoices/${id}/notes`),
   },
   patients: {
     list: (params?: {
@@ -895,6 +998,8 @@ export const api = {
       const qs = params.toString();
       return downloadBlob("GET", `/patients/${id}/export-history-protected${qs ? `?${qs}` : ""}`);
     },
+    inviteToPortal: (id: string): Promise<{ ok: boolean; auth_user_id: string; email: string }> =>
+      request("POST", `/patients/${id}/invite-to-portal`),
     exportAttendanceCertificate: async (
       id: string,
       opts: { include_session_count?: boolean; include_dates?: boolean } = {},
@@ -1087,6 +1192,28 @@ referrals: {
       request<void>("POST", "/google-calendar/disconnect"),
     syncNow: (): Promise<void> =>
       request<void>("POST", "/google-calendar/sync"),
+  },
+  // --- Patient Portal API (patient-scoped auth) ----------------------------
+  portal: {
+    me: () => request<PortalMe>("GET", "/portal/me"),
+    appointments: () => request<PortalAppointment[]>("GET", "/portal/appointments"),
+    sessions: () => request<PortalSession[]>("GET", "/portal/sessions"),
+    invoices: () => request<PortalInvoice[]>("GET", "/portal/invoices"),
+  },
+  // --- Triage ----------------------------------------------------------
+  triage: {
+    list: (params?: { status?: string; limit?: number }): Promise<TriageListResponse> => {
+      const q = new URLSearchParams();
+      if (params?.status) q.set("status", params.status);
+      if (params?.limit) q.set("limit", String(params.limit));
+      return request<TriageListResponse>("GET", `/webhooks/triage-sessions?${q}`);
+    },
+  },
+  // --- Notifications ---------------------------------------------------
+  notifications: {
+    list: () => request<NotificationListResponse>("GET", "/notifications"),
+    markRead: (id: string) => request<NotificationOut>("PATCH", `/notifications/${id}/read`),
+    markAllRead: () => request<void>("POST", "/notifications/read-all"),
   },
   // --- Video -----------------------------------------------------------
   video: {

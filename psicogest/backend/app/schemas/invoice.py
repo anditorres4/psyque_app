@@ -47,3 +47,22 @@ class InvoiceDetail(InvoiceSummary):
 class InvoiceListResponse(BaseModel):
     items: list[InvoiceSummary]
     total: int
+
+
+class CreditDebitNoteCreate(BaseModel):
+    type: str  # "credit" | "debit"
+    reason: str
+    amount_cop: int = Field(..., gt=0)
+
+
+class CreditDebitNoteOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    invoice_id: uuid.UUID
+    type: str
+    number: str
+    reason: str
+    amount_cop: int
+    issued_at: datetime
+    created_at: datetime

@@ -25,6 +25,12 @@ const NpsPage = lazy(() => import("@/pages/NpsPage").then((m) => ({ default: m.N
 const PatientRegistrationPage = lazy(() => import("@/pages/PatientRegistrationPage").then((m) => ({ default: m.PatientRegistrationPage })));
 const PatientRegistrationsAdminPage = lazy(() => import("@/pages/patients/PatientRegistrationsAdminPage").then((m) => ({ default: m.PatientRegistrationsAdminPage })));
 const CompleteProfilePage = lazy(() => import("@/pages/auth/CompleteProfilePage").then((m) => ({ default: m.CompleteProfilePage })));
+const TriagePage = lazy(() => import("@/pages/triage/TriagePage").then((m) => ({ default: m.TriagePage })));
+const PatientPortalLayout = lazy(() => import("@/components/layout/PatientPortalLayout").then((m) => ({ default: m.PatientPortalLayout })));
+const PortalDashboardPage = lazy(() => import("@/pages/portal/PortalDashboardPage").then((m) => ({ default: m.PortalDashboardPage })));
+const PortalAppointmentsPage = lazy(() => import("@/pages/portal/PortalAppointmentsPage").then((m) => ({ default: m.PortalAppointmentsPage })));
+const PortalSessionsPage = lazy(() => import("@/pages/portal/PortalSessionsPage").then((m) => ({ default: m.PortalSessionsPage })));
+const PortalInvoicesPage = lazy(() => import("@/pages/portal/PortalInvoicesPage").then((m) => ({ default: m.PortalInvoicesPage })));
 
 function PageLoader() {
   return (
@@ -39,7 +45,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.app_metadata?.role === "patient") return <Navigate to="/portal/dashboard" replace />;
   if (!tenantReady) return <Navigate to="/complete-profile" replace />;
+  return <>{children}</>;
+}
+
+function PatientRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.app_metadata?.role !== "patient") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -78,7 +94,22 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/patient-registrations" element={<PatientRegistrationsAdminPage />} />
+          <Route path="/triage" element={<TriagePage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+
+        <Route
+          element={
+            <PatientRoute>
+              <PatientPortalLayout />
+            </PatientRoute>
+          }
+        >
+          <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
+          <Route path="/portal/appointments" element={<PortalAppointmentsPage />} />
+          <Route path="/portal/sessions" element={<PortalSessionsPage />} />
+          <Route path="/portal/invoices" element={<PortalInvoicesPage />} />
+          <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

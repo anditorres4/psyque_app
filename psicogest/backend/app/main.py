@@ -27,6 +27,10 @@ from app.api.v1.google_calendar import router as gcal_router
 from app.api.v1.ai import router as ai_router
 from app.api.v1.video import router as video_router
 from app.api.v1.nps import router as nps_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.webhooks import router as webhooks_router
+from app.api.v1.patient_auth import router as patient_auth_router
+from app.api.v1.portal_api import router as portal_api_router
 from app.api.v1.patient_portal import router as patient_portal_router
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -104,4 +108,8 @@ app.include_router(gcal_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
 app.include_router(video_router, prefix="/api/v1")
 app.include_router(nps_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(webhooks_router, prefix="/api/v1")
+app.include_router(patient_auth_router, prefix="/api/v1")
+app.include_router(portal_api_router, prefix="/api/v1")
 app.include_router(patient_portal_router, prefix="/api/v1")
