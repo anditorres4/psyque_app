@@ -70,7 +70,7 @@ def invite_patient_to_portal(
             timeout=15.0,
         )
 
-        if resp.status_code == 422 and "already registered" in resp.text.lower():
+        if resp.status_code == 422 and "email_exists" in resp.text:
             # User already exists — fetch and update app_metadata instead
             existing = _find_user_by_email(patient.email)
             if not existing:
