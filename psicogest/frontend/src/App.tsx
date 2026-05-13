@@ -95,7 +95,6 @@ export default function App() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/patient-registrations" element={<PatientRegistrationsAdminPage />} />
           <Route path="/triage" element={<TriagePage />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
 
         <Route

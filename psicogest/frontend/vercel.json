@@ -1,5 +1,22 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "app.psycent.co" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "app.psycent.com" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/landing.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

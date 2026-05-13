@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PsyCent — Gestión Clínica con IA para Psicólogos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #7A9E7E;
+    --sage-light: #B8D4BA;
+    --sage-pale: #EEF5EF;
+    --teal: #4A8FA8;
+    --teal-light: #A8D4E3;
+    --teal-pale: #EAF4F8;
+    --slate: #2C3E50;
+    --slate-mid: #546E7A;
+    --slate-soft: #8FA8B4;
+    --cream: #FAF9F7;
+    --white: #FFFFFF;
+    --sand: #F5F2ED;
+    --accent: #5B8FA8;
+    --accent-warm: #7AB3A0;
+    --text-main: #1E2D3A;
+    --text-secondary: #546E7A;
+    --text-muted: #90A4AE;
+    --border: rgba(74, 143, 168, 0.15);
+    --shadow-soft: 0 4px 32px rgba(44, 62, 80, 0.06);
+    --shadow-card: 0 2px 16px rgba(44, 62, 80, 0.08);
+    --shadow-hover: 0 8px 40px rgba(44, 62, 80, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-main);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(250, 249, 247, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    height: 68px;
+    display: flex; align-items: center; justify-content: space-between;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--sage) 0%, var(--teal) 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.9);
+    border-radius: 50%;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    width: 6px; height: 6px;
+    background: white;
+    border-radius: 50%;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+
+  .logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--slate);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-text span { color: var(--teal); }
+
+  .nav-links {
+    display: flex; align-items: center; gap: 36px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--teal); }
+
+  .nav-login {
+    color: var(--teal) !important;
+    font-weight: 600 !important;
+    padding: 8px 18px;
+    border: 1.5px solid var(--teal);
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s !important;
+  }
+
+  .nav-login:hover {
+    background: var(--teal) !important;
+    color: white !important;
+  }
+
+  .nav-cta {
+    background: var(--teal);
+    color: white !important;
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-weight: 600 !important;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s !important;
+    box-shadow: 0 2px 12px rgba(74, 143, 168, 0.3);
+  }
+
+  .nav-cta:hover {
+    background: var(--slate) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(44, 62, 80, 0.2) !important;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    padding: 140px 48px 100px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    max-width: 1280px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .hero::before {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(184, 212, 186, 0.25) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .hero::after {
+    content: '';
+    position: fixed;
+    bottom: -100px; left: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(168, 212, 227, 0.2) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--teal-pale);
+    border: 1px solid rgba(74, 143, 168, 0.2);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12.5px; font-weight: 600;
+    color: var(--teal); letter-spacing: 0.5px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--teal);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(40px, 5vw, 58px);
+    line-height: 1.1;
+    color: var(--slate);
+    margin-bottom: 24px;
+    animation: fadeUp 0.7s 0.3s ease both;
+    letter-spacing: -0.5px;
+  }
+
+  .hero h1 em { font-style: italic; color: var(--teal); }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin-bottom: 40px;
+    max-width: 480px;
+    font-weight: 300;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+
+  .hero-actions {
+    display: flex; gap: 16px; align-items: center;
+    animation: fadeUp 0.7s 0.5s ease both;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--accent-warm) 100%);
+    color: white;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 15px; font-weight: 600;
+    text-decoration: none;
+    border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 20px rgba(74, 143, 168, 0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(74, 143, 168, 0.45);
+  }
+
+  .btn-secondary {
+    color: var(--text-secondary);
+    font-size: 15px; font-weight: 500;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: color 0.2s, gap 0.2s;
+  }
+
+  .btn-secondary:hover { color: var(--teal); gap: 12px; }
+
+  .hero-stats {
+    display: flex; gap: 32px; margin-top: 52px;
+    animation: fadeUp 0.7s 0.6s ease both;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+
+  .stat { text-align: left; }
+
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--slate);
+    display: block; line-height: 1; margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 12px; color: var(--text-muted);
+    font-weight: 500; letter-spacing: 0.3px;
+  }
+
+  /* Hero visual */
+  .hero-visual {
+    position: relative; z-index: 1;
+    animation: fadeLeft 0.9s 0.4s ease both;
+  }
+
+  .app-mockup {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: var(--shadow-hover);
+    border: 1px solid var(--border);
+    overflow: hidden; position: relative;
+  }
+
+  .mockup-header {
+    background: linear-gradient(135deg, var(--sage) 0%, var(--teal) 100%);
+    padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .mockup-header-left { display: flex; align-items: center; gap: 12px; }
+
+  .avatar-sm {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .mockup-header h3 { font-size: 14px; color: white; font-weight: 600; }
+  .mockup-header p { font-size: 11px; color: rgba(255,255,255,0.75); margin: 0; }
+
+  .online-dot {
+    width: 8px; height: 8px;
+    background: #68E07A; border-radius: 50%;
+    box-shadow: 0 0 8px rgba(104, 224, 122, 0.6);
+    animation: pulse 2s infinite;
+  }
+
+  .mockup-body { padding: 20px; }
+
+  .chat-bubble {
+    border-radius: 16px;
+    padding: 12px 16px;
+    font-size: 13px; line-height: 1.5;
+    margin-bottom: 10px; max-width: 80%;
+    position: relative;
+  }
+
+  .bubble-ai {
+    background: var(--sage-pale);
+    color: var(--text-main);
+    border-bottom-left-radius: 4px;
+  }
+
+  .bubble-user {
+    background: var(--teal);
+    color: white;
+    border-bottom-right-radius: 4px;
+    margin-left: auto;
+  }
+
+  .bubble-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.5px; opacity: 0.6;
+    margin-bottom: 4px; display: block;
+  }
+
+  .risk-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(104, 194, 128, 0.15);
+    border: 1px solid rgba(104, 194, 128, 0.3);
+    color: #2E7D4F;
+    border-radius: 8px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600; margin-top: 8px;
+  }
+
+  .risk-dot { width: 6px; height: 6px; border-radius: 50%; background: #4CAF6A; }
+
+  .mockup-metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-top: 16px;
+  }
+
+  .metric-mini {
+    background: var(--sand); border-radius: 12px;
+    padding: 12px; text-align: center;
+  }
+
+  .metric-mini-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: var(--slate); display: block;
+  }
+
+  .metric-mini-label { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+
+  /* Floating cards */
+  .float-card {
+    position: absolute;
+    background: white; border-radius: 16px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-hover);
+    border: 1px solid var(--border);
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .float-card-1 { top: -20px; right: -30px; animation-delay: 0s; display: flex; align-items: center; gap: 10px; }
+  .float-card-2 { bottom: 40px; left: -36px; animation-delay: 2s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .float-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .float-card-1 .float-icon { background: rgba(104, 194, 128, 0.15); }
+  .float-card-2 .float-icon { background: rgba(74, 143, 168, 0.15); }
+
+  .float-text-main { font-size: 13px; font-weight: 600; color: var(--slate); }
+  .float-text-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* SECTION BASE */
+  section { padding: 100px 48px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 16px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 20px; height: 2px;
+    background: var(--teal); border-radius: 2px;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 4vw, 46px);
+    color: var(--slate); line-height: 1.15;
+    letter-spacing: -0.3px; margin-bottom: 16px;
+  }
+
+  .section-title em { font-style: italic; color: var(--teal); }
+
+  .section-sub {
+    font-size: 16px; color: var(--text-secondary);
+    font-weight: 300; max-width: 560px; line-height: 1.75;
+  }
+
+  /* PROBLEM */
+  .problem-section {
+    background: var(--sand); border-radius: 32px;
+    margin: 0 32px; padding: 80px 80px;
+  }
+
+  .problem-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px; margin-top: 56px;
+  }
+
+  .problem-card {
+    background: white; border-radius: 20px;
+    padding: 32px; border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .problem-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+
+  .problem-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--sage), var(--teal));
+  }
+
+  .problem-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 52px; color: var(--sage-light);
+    line-height: 1; margin-bottom: 12px;
+  }
+
+  .problem-card h3 { font-size: 16px; font-weight: 600; color: var(--slate); margin-bottom: 10px; }
+  .problem-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; font-weight: 300; }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 24px; margin-top: 60px;
+  }
+
+  .feature-card {
+    background: white; border-radius: 20px;
+    padding: 36px; border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative; overflow: hidden;
+  }
+
+  .feature-card.large {
+    grid-column: span 2;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 48px; align-items: center;
+    background: linear-gradient(135deg, #EAF4F8 0%, #EEF5EF 100%);
+  }
+
+  .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+
+  .feature-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 20px;
+  }
+
+  .icon-sage { background: var(--sage-pale); }
+  .icon-teal { background: var(--teal-pale); }
+
+  .feature-card h3 { font-size: 18px; font-weight: 600; color: var(--slate); margin-bottom: 10px; }
+  .feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; font-weight: 300; }
+
+  .feature-list {
+    list-style: none; margin-top: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13.5px; color: var(--text-secondary);
+  }
+
+  .feature-list li::before {
+    content: '✓';
+    width: 20px; height: 20px;
+    background: var(--sage-pale); color: var(--sage);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* PSYGUARD */
+  .psyguard-section {
+    background: linear-gradient(135deg, var(--slate) 0%, #1A3A4A 100%);
+    margin: 0; padding: 100px 48px;
+  }
+
+  .psyguard-inner {
+    max-width: 1280px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: center;
+  }
+
+  .psyguard-section .section-label { color: var(--sage-light); }
+  .psyguard-section .section-label::before { background: var(--sage-light); }
+  .psyguard-section .section-title { color: white; }
+  .psyguard-section .section-sub { color: rgba(255,255,255,0.65); }
+
+  .wa-mockup {
+    background: #1A1A2E; border-radius: 28px;
+    overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  }
+
+  .wa-header {
+    background: #075E54; padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .wa-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .wa-name { font-size: 15px; color: white; font-weight: 600; }
+  .wa-status { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+  .wa-body {
+    background: #0D1B2A;
+    padding: 20px; min-height: 300px;
+  }
+
+  .wa-bubble {
+    border-radius: 12px; padding: 10px 14px;
+    font-size: 13px; line-height: 1.55;
+    margin-bottom: 10px; max-width: 82%; color: white;
+  }
+
+  .wa-bubble-in { background: #1E3A2F; border-bottom-left-radius: 2px; }
+  .wa-bubble-out { background: #005C4B; border-bottom-right-radius: 2px; margin-left: auto; }
+  .wa-time { font-size: 10px; opacity: 0.5; margin-top: 4px; text-align: right; }
+
+  .risk-indicator {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(104, 224, 122, 0.1);
+    border: 1px solid rgba(104, 224, 122, 0.2);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+  }
+
+  .risk-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(104, 224, 122, 0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+
+  .risk-text { font-size: 12px; color: rgba(255,255,255,0.8); }
+  .risk-level { font-weight: 700; color: #68E07A; }
+
+  .psyguard-features {
+    display: flex; flex-direction: column; gap: 20px; margin-top: 36px;
+  }
+
+  .pg-feature { display: flex; gap: 16px; align-items: flex-start; }
+
+  .pg-feature-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+
+  .pg-feature-text h4 { font-size: 15px; font-weight: 600; color: white; margin-bottom: 4px; }
+  .pg-feature-text p { font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 300; line-height: 1.6; }
+
+  /* PRICING */
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 20px; margin-top: 60px;
+  }
+
+  .pricing-card {
+    background: white; border-radius: 20px;
+    padding: 32px 28px; border: 1.5px solid var(--border);
+    position: relative; transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .pricing-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+
+  .pricing-card.featured {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--accent-warm) 100%);
+    border-color: transparent; color: white;
+    transform: scale(1.03);
+    box-shadow: 0 8px 40px rgba(74, 143, 168, 0.4);
+  }
+
+  .pricing-card.featured:hover { transform: scale(1.03) translateY(-4px); }
+
+  .featured-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--slate); color: white;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 100px; white-space: nowrap;
+  }
+
+  .plan-name {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .pricing-card.featured .plan-name { color: rgba(255,255,255,0.7); }
+
+  .plan-price {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px; color: var(--slate); line-height: 1; margin-bottom: 4px;
+  }
+
+  .pricing-card.featured .plan-price { color: white; }
+
+  .plan-period { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; }
+  .pricing-card.featured .plan-period { color: rgba(255,255,255,0.6); }
+
+  .plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+  .pricing-card.featured .plan-divider { background: rgba(255,255,255,0.2); }
+
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+  .plan-features li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-secondary);
+  }
+
+  .pricing-card.featured .plan-features li { color: rgba(255,255,255,0.85); }
+
+  .plan-features li .check {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--sage-pale); color: var(--sage);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .pricing-card.featured .plan-features li .check {
+    background: rgba(255,255,255,0.2); color: white;
+  }
+
+  .plan-btn {
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: 1.5px solid var(--teal); background: transparent;
+    color: var(--teal); font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 28px;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  }
+
+  .plan-btn:hover { background: var(--teal); color: white; }
+
+  .pricing-card.featured .plan-btn { background: white; border-color: white; color: var(--teal); }
+  .pricing-card.featured .plan-btn:hover { background: rgba(255,255,255,0.9); }
+
+  /* TRUST */
+  .trust-section {
+    background: var(--sand); border-radius: 32px;
+    margin: 0 32px; padding: 80px;
+  }
+
+  .trust-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 32px; margin-top: 56px;
+  }
+
+  .trust-card {
+    background: white; border-radius: 20px;
+    padding: 32px; border: 1px solid var(--border); text-align: center;
+  }
+
+  .trust-icon { font-size: 36px; margin-bottom: 16px; display: block; }
+  .trust-card h3 { font-size: 16px; font-weight: 600; color: var(--slate); margin-bottom: 8px; }
+  .trust-card p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; font-weight: 300; }
+
+  /* TESTIMONIALS */
+  .testimonials-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; margin-top: 60px;
+  }
+
+  .testimonial-card {
+    background: white; border-radius: 20px;
+    padding: 32px; border: 1px solid var(--border);
+    box-shadow: var(--shadow-card); transition: transform 0.3s;
+  }
+
+  .testimonial-card:hover { transform: translateY(-4px); }
+
+  .stars { color: #F4B942; font-size: 16px; margin-bottom: 16px; letter-spacing: 2px; }
+
+  .testimonial-card blockquote {
+    font-size: 14px; color: var(--text-secondary);
+    line-height: 1.75; font-weight: 300; font-style: italic; margin-bottom: 24px;
+  }
+
+  .testimonial-author { display: flex; align-items: center; gap: 12px; }
+
+  .author-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+
+  .author-name { font-size: 14px; font-weight: 600; color: var(--slate); }
+  .author-title { font-size: 12px; color: var(--text-muted); }
+
+  /* CTA */
+  .cta-section {
+    background: linear-gradient(135deg, var(--slate) 0%, #1A3A4A 100%);
+    padding: 100px 48px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute; top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(122, 158, 126, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section::after {
+    content: '';
+    position: absolute; bottom: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(74, 143, 168, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+
+  .cta-section h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 5vw, 52px); color: white;
+    line-height: 1.1; margin-bottom: 20px; letter-spacing: -0.3px;
+  }
+
+  .cta-section h2 em { font-style: italic; color: var(--sage-light); }
+
+  .cta-section p {
+    font-size: 16px; color: rgba(255,255,255,0.6);
+    margin-bottom: 40px; font-weight: 300; line-height: 1.75;
+  }
+
+  .cta-actions { display: flex; gap: 16px; justify-content: center; align-items: center; }
+
+  .btn-cta-primary {
+    background: linear-gradient(135deg, var(--sage) 0%, var(--teal) 100%);
+    color: white; padding: 16px 36px; border-radius: 12px;
+    font-size: 16px; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer;
+    box-shadow: 0 4px 24px rgba(122, 158, 126, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 36px rgba(122, 158, 126, 0.5);
+  }
+
+  .btn-cta-secondary {
+    color: rgba(255,255,255,0.7); font-size: 15px; font-weight: 500;
+    text-decoration: none; display: flex; align-items: center; gap: 8px;
+    transition: color 0.2s;
+  }
+
+  .btn-cta-secondary:hover { color: white; }
+
+  /* FOOTER */
+  footer { background: var(--slate); padding: 60px 48px 40px; color: rgba(255,255,255,0.5); }
+
+  .footer-inner {
+    max-width: 1280px; margin: 0 auto;
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+  }
+
+  .footer-brand .logo-text {
+    color: white; margin-bottom: 12px; display: block;
+    font-size: 20px; font-family: 'DM Serif Display', serif;
+  }
+
+  .footer-brand p { font-size: 13px; line-height: 1.7; max-width: 280px; }
+
+  .footer-col h4 {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 16px;
+  }
+
+  .footer-col a {
+    display: block; font-size: 14px; color: rgba(255,255,255,0.6);
+    text-decoration: none; margin-bottom: 10px; transition: color 0.2s;
+  }
+
+  .footer-col a:hover { color: white; }
+
+  .footer-bottom {
+    max-width: 1280px; margin: 40px auto 0;
+    padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12.5px;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeLeft {
+    from { opacity: 0; transform: translateX(32px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    nav { padding: 0 24px; }
+    .nav-links { gap: 20px; }
+    .hero { grid-template-columns: 1fr; padding: 120px 24px 80px; gap: 40px; }
+    .hero-visual { display: none; }
+    section { padding: 70px 24px; }
+    .problem-section, .trust-section { margin: 0 16px; padding: 56px 32px; }
+    .problem-grid, .trust-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .feature-card.large { grid-column: span 1; grid-template-columns: 1fr; gap: 24px; }
+    .psyguard-inner { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    .testimonials-grid { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 16px 60px; }
+    .hero-stats { flex-wrap: wrap; gap: 20px; }
+    .hero-actions { flex-direction: column; align-items: flex-start; }
+    section { padding: 56px 16px; }
+    .problem-section, .trust-section { margin: 0; border-radius: 0; padding: 48px 20px; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .pricing-card.featured { transform: none; }
+    .cta-section { padding: 70px 24px; }
+    .cta-actions { flex-direction: column; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .psyguard-section { padding: 70px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-mark"></div>
+    <span class="logo-text">Psy<span>Cent</span></span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#funcionalidades">Funcionalidades</a></li>
+    <li><a href="#psyguard">PsyGuard</a></li>
+    <li><a href="#precios">Precios</a></li>
+    <li><a href="#nosotros">Seguridad</a></li>
+    <li><a href="/login" class="nav-login">Iniciar sesión</a></li>
+    <li><a href="/register" class="nav-cta">Comenzar gratis</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section style="padding: 0;">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">IA para psicólogos · Colombia &amp; LATAM</div>
+      <h1>Tu consultorio,<br><em>organizado</em> y<br>protegido 24/7</h1>
+      <p>PsyCent es la plataforma de gestión clínica diseñada para psicólogos. Agenda, historia clínica, RIPS automático y triaje de riesgo por WhatsApp — todo en un solo lugar.</p>
+      <div class="hero-actions">
+        <a href="/register" class="btn-primary">
+          Iniciar prueba gratuita
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#funcionalidades" class="btn-secondary">
+          Ver funcionalidades
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-value">4.8/5</span>
+          <span class="stat-label">NPS piloto</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">RIPS rechazados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">−8h</span>
+          <span class="stat-label">Admin. semanal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div style="position: relative; padding: 40px 36px 40px 36px;">
+        <div class="float-card float-card-1">
+          <div class="float-icon">✅</div>
+          <div>
+            <div class="float-text-main">RIPS generado</div>
+            <div class="float-text-sub">Conforme MinSalud</div>
+          </div>
+        </div>
+        <div class="float-card float-card-2">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="float-icon">🛡️</div>
+            <div>
+              <div class="float-text-main">Paciente seguro</div>
+              <div class="float-text-sub">Triaje: Riesgo bajo</div>
+            </div>
+          </div>
+        </div>
+        <div class="app-mockup">
+          <div class="mockup-header">
+            <div class="mockup-header-left">
+              <div class="avatar-sm">🧠</div>
+              <div>
+                <h3>PsyCent AI</h3>
+                <p>Asistente clínico</p>
+              </div>
+            </div>
+            <div class="online-dot"></div>
+          </div>
+          <div class="mockup-body">
+            <div class="chat-bubble bubble-ai">
+              <span class="bubble-label">PSYCENT AI</span>
+              Buenos días, Dra. Torres. Hoy tiene 5 citas confirmadas. María G. canceló a las 10am — ¿activo la lista de espera?
+            </div>
+            <div class="chat-bubble bubble-user">
+              Sí, por favor. Y genera el RIPS de ayer.
+            </div>
+            <div class="chat-bubble bubble-ai">
+              <span class="bubble-label">PSYCENT AI</span>
+              ✓ Lista de espera activada. RIPS del 12/05 generado.
+              <div class="risk-badge">
+                <div class="risk-dot"></div>
+                Riesgo bajo · PsyGuard: sin alertas
+              </div>
+            </div>
+            <div class="mockup-metrics">
+              <div class="metric-mini">
+                <span class="metric-mini-value">5</span>
+                <span class="metric-mini-label">Citas hoy</span>
+              </div>
+              <div class="metric-mini">
+                <span class="metric-mini-value">$0</span>
+                <span class="metric-mini-label">Cartera vencida</span>
+              </div>
+              <div class="metric-mini">
+                <span class="metric-mini-value">✓</span>
+                <span class="metric-mini-label">RIPS al día</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section style="padding: 60px 32px;">
+  <div class="problem-section reveal">
+    <div style="text-align:center; max-width:640px; margin:0 auto;">
+      <div class="section-label">El problema</div>
+      <h2 class="section-title">El sistema está<br><em>en contra</em> de los psicólogos</h2>
+      <p class="section-sub" style="margin:0 auto;">Colombia tiene solo 1 psicólogo por cada 3.300 personas. Y aun así, los que ejercen dedican horas valiosas a tareas que no son clínica.</p>
+    </div>
+    <div class="problem-grid">
+      <div class="problem-card reveal">
+        <div class="problem-number">35%</div>
+        <h3>Citas perdidas sin recuperar</h3>
+        <p>Sin recordatorios automáticos, más de un tercio de los pacientes no se presenta. Cada no-show es ingreso directo que se va.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-number">8h</div>
+        <h3>Horas semanales en papeleo</h3>
+        <p>RIPS manuales, facturación DIAN, historias clínicas en Word o papel. Tiempo robado al paciente y al bienestar del profesional.</p>
+      </div>
+      <div class="problem-card reveal">
+        <div class="problem-number">0</div>
+        <h3>Cobertura de crisis fuera de horario</h3>
+        <p>Cuando un paciente vive una crisis a las 2 AM, no existe ningún sistema de triaje disponible. Una brecha de 18 horas diarias sin red de seguridad.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="funcionalidades">
+  <div class="container">
+    <div class="section-label">PsyFlow — Gestión clínica</div>
+    <h2 class="section-title">Todo lo que necesitas para<br>administrar tu <em>consultorio</em></h2>
+    <div class="features-grid">
+
+      <div class="feature-card large reveal">
+        <div>
+          <div class="feature-icon icon-sage">📅</div>
+          <h3>Agendamiento inteligente</h3>
+          <p>Agenda automática con recordatorios por WhatsApp, SMS y correo. Reduce el no-show hasta un 80% desde el primer mes.</p>
+          <ul class="feature-list">
+            <li>Confirmación automática de citas</li>
+            <li>Lista de espera activable con 1 clic</li>
+            <li>Gestión de cancelaciones y reagendamientos</li>
+            <li>Vista semanal y mensual del calendario</li>
+          </ul>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow-card);">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px;">Agenda · Semana actual</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--sage-pale);border-radius:10px;">
+              <div style="font-size:12px;color:var(--text-muted);width:44px;flex-shrink:0;">9:00</div>
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0;"></div>
+              <div style="font-size:13px;color:var(--slate);font-weight:500;">Ana Rodríguez · Terapia individual</div>
+              <div style="margin-left:auto;font-size:11px;background:rgba(122,158,126,0.15);color:var(--sage);padding:3px 8px;border-radius:6px;font-weight:600;">✓ Confirmada</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--teal-pale);border-radius:10px;">
+              <div style="font-size:12px;color:var(--text-muted);width:44px;flex-shrink:0;">10:30</div>
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0;"></div>
+              <div style="font-size:13px;color:var(--slate);font-weight:500;">Carlos M. · Evaluación inicial</div>
+              <div style="margin-left:auto;font-size:11px;background:rgba(74,143,168,0.15);color:var(--teal);padding:3px 8px;border-radius:6px;font-weight:600;">Pendiente</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--sand);border-radius:10px;">
+              <div style="font-size:12px;color:var(--text-muted);width:44px;flex-shrink:0;">15:00</div>
+              <div style="width:6px;height:6px;border-radius:50%;background:#F4B942;flex-shrink:0;"></div>
+              <div style="font-size:13px;color:var(--slate);font-weight:500;">Familia Pérez · Terapia familiar</div>
+              <div style="margin-left:auto;font-size:11px;background:rgba(244,185,66,0.15);color:#C8960C;padding:3px 8px;border-radius:6px;font-weight:600;">En lista espera</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon icon-teal">📝</div>
+        <h3>Historia clínica digital</h3>
+        <p>Plantillas personalizables por especialidad. Notas de sesión, evaluaciones, escalas y seguimiento de progreso en un solo lugar.</p>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li>Plantillas por tipo de consulta</li>
+          <li>Escalas validadas (PHQ-9, GAD-7, BDI)</li>
+          <li>Línea de tiempo del paciente</li>
+        </ul>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon icon-sage">📊</div>
+        <h3>RIPS automático + DIAN</h3>
+        <p>Genera RIPS conformes a MinSalud sin errores y facturación electrónica integrada. Cero multas por documentación incorrecta.</p>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li>RIPS generado al cerrar consulta</li>
+          <li>Facturación electrónica DIAN</li>
+          <li>Exportación para EPS y seguros</li>
+        </ul>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon icon-teal">💳</div>
+        <h3>Cartera y pagos</h3>
+        <p>Control de ingresos, cuentas por cobrar, pagos parciales y reportes financieros del consultorio en tiempo real.</p>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li>Dashboard financiero mensual</li>
+          <li>Alertas de pagos pendientes</li>
+          <li>Reportes de rentabilidad</li>
+        </ul>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon icon-sage">📈</div>
+        <h3>Analytics del consultorio</h3>
+        <p>Métricas de productividad, satisfacción del paciente, tasa de no-show y evolución de la cartera. Toma decisiones con datos.</p>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li>KPIs clínicos y financieros</li>
+          <li>Tendencias por período</li>
+          <li>Reportes exportables</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PSYGUARD -->
+<section id="psyguard" style="padding: 0;">
+  <div class="psyguard-section">
+    <div class="psyguard-inner">
+      <div class="reveal">
+        <div class="section-label">PsyGuard — Triaje IA 24/7</div>
+        <h2 class="section-title" style="color:white;">Tu paciente protegido<br>cuando tú <em style="color:var(--sage-light);">no puedes</em><br>estar disponible</h2>
+        <p class="section-sub">PsyGuard es el primer sistema de triaje de salud mental entrenado por psicólogos especialistas en Latinoamérica. Opera 24/7 vía WhatsApp y escala automáticamente al profesional cuando detecta riesgo.</p>
+        <div class="psyguard-features">
+          <div class="pg-feature reveal">
+            <div class="pg-feature-icon">🧠</div>
+            <div class="pg-feature-text">
+              <h4>IA entrenada por especialistas</h4>
+              <p>Protocolos validados clínicamente. No es un chatbot genérico — entiende el contexto de salud mental y evalúa riesgo real.</p>
+            </div>
+          </div>
+          <div class="pg-feature reveal">
+            <div class="pg-feature-icon">⚡</div>
+            <div class="pg-feature-text">
+              <h4>Alerta instantánea al tratante</h4>
+              <p>Cuando detecta riesgo moderado o alto, te notifica de inmediato con el resumen de la conversación y el nivel de urgencia.</p>
+            </div>
+          </div>
+          <div class="pg-feature reveal">
+            <div class="pg-feature-icon">🔒</div>
+            <div class="pg-feature-text">
+              <h4>Confidencial y cifrado end-to-end</h4>
+              <p>Cumple con estándares GDPR y Ley 1581. La información del paciente nunca sale del entorno protegido.</p>
+            </div>
+          </div>
+          <div class="pg-feature reveal">
+            <div class="pg-feature-icon">🚨</div>
+            <div class="pg-feature-text">
+              <h4>Redirección inteligente a emergencias</h4>
+              <p>En casos de riesgo inminente, el sistema activa protocolos de emergencia y conecta con líneas de crisis validadas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal" style="animation-delay:0.2s">
+        <div class="wa-mockup">
+          <div class="wa-header">
+            <div class="wa-avatar">🤖</div>
+            <div>
+              <div class="wa-name">PsyGuard · Dra. Torres</div>
+              <div class="wa-status">Asistente de salud mental · Disponible 24/7</div>
+            </div>
+          </div>
+          <div class="wa-body">
+            <div class="wa-bubble wa-bubble-in">
+              Hola, no me siento bien hoy. Llevo 3 días sin poder dormir y me cuesta salir de la cama.
+              <div class="wa-time">2:14 a.m.</div>
+            </div>
+            <div class="wa-bubble wa-bubble-out">
+              Gracias por escribirme. Estoy aquí contigo 🤝 ¿Hace cuánto tiempo te sientes así? ¿Has tenido pensamientos de hacerte daño?
+              <div class="wa-time">2:14 a.m.</div>
+            </div>
+            <div class="wa-bubble wa-bubble-in">
+              No, no ese tipo de pensamientos. Solo me siento muy agotada y no veo salida.
+              <div class="wa-time">2:15 a.m.</div>
+            </div>
+            <div class="risk-indicator">
+              <div class="risk-circle">🛡️</div>
+              <div>
+                <div class="risk-text"><span class="risk-level">Riesgo moderado detectado</span></div>
+                <div class="risk-text" style="font-size:11px;margin-top:2px;opacity:0.7;">Notificación enviada a Dra. Torres · 2:15 a.m.</div>
+              </div>
+            </div>
+            <div class="wa-bubble wa-bubble-out">
+              Te entiendo, y que hayas escrito esta noche importa mucho. Tu psicóloga, la Dra. Torres, estará disponible mañana a las 9am. ¿Quieres que te confirme una cita prioritaria?
+              <div class="wa-time">2:15 a.m.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="precios">
+  <div class="container">
+    <div style="text-align:center;">
+      <div class="section-label">Precios</div>
+      <h2 class="section-title">Planes que crecen<br>con tu <em>consultorio</em></h2>
+      <p class="section-sub" style="margin: 0 auto;">Sin permanencia forzada. Sin sorpresas. Cancela cuando quieras.</p>
+    </div>
+    <div class="pricing-grid reveal">
+
+      <div class="pricing-card">
+        <div class="plan-name">Estándar</div>
+        <div class="plan-price">$60K</div>
+        <div class="plan-period">COP / mes · ~USD 14</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Agendamiento + recordatorios</li>
+          <li><span class="check">✓</span> Historia clínica digital</li>
+          <li><span class="check">✓</span> Analytics básicos</li>
+          <li><span class="check">✓</span> App móvil incluida</li>
+        </ul>
+        <button class="plan-btn" onclick="location.href='/register'">Comenzar gratis</button>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="featured-badge">MÁS POPULAR</div>
+        <div class="plan-name">Premium</div>
+        <div class="plan-price">$90K</div>
+        <div class="plan-period">COP / mes · ~USD 21</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Todo lo del plan Estándar</li>
+          <li><span class="check">✓</span> RIPS automático MinSalud</li>
+          <li><span class="check">✓</span> Facturación electrónica DIAN</li>
+          <li><span class="check">✓</span> Analytics avanzados</li>
+          <li><span class="check">✓</span> Soporte prioritario</li>
+        </ul>
+        <button class="plan-btn" onclick="location.href='/register'">Empezar ahora</button>
+      </div>
+
+      <div class="pricing-card">
+        <div class="plan-name">+ PsyGuard</div>
+        <div class="plan-price">$50K</div>
+        <div class="plan-period">COP / mes · ~USD 12 · Add-on</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Triaje IA 24/7 por WhatsApp</li>
+          <li><span class="check">✓</span> Clasificación de riesgo en tiempo real</li>
+          <li><span class="check">✓</span> Alertas automáticas al tratante</li>
+          <li><span class="check">✓</span> Protocolos validados clínicamente</li>
+        </ul>
+        <button class="plan-btn" onclick="location.href='/register'">Agregar PsyGuard</button>
+      </div>
+
+      <div class="pricing-card">
+        <div class="plan-name">IPS / Centro</div>
+        <div class="plan-price">$250K+</div>
+        <div class="plan-period">COP / mes · Cotiza</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Multi-psicólogo ilimitado</li>
+          <li><span class="check">✓</span> Dashboard administrativo central</li>
+          <li><span class="check">✓</span> Marca propia (white label)</li>
+          <li><span class="check">✓</span> Integración EPS / seguros</li>
+          <li><span class="check">✓</span> Onboarding dedicado</li>
+        </ul>
+        <button class="plan-btn" onclick="location.href='mailto:andres@japsystems.com'">Contactar ventas</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section id="nosotros" style="padding: 60px 32px;">
+  <div class="trust-section reveal">
+    <div style="text-align:center; max-width:580px; margin:0 auto;">
+      <div class="section-label">Confianza y seguridad</div>
+      <h2 class="section-title">Construido con la<br><em>confidencialidad</em><br>como principio</h2>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-card reveal">
+        <span class="trust-icon">🔐</span>
+        <h3>Cifrado extremo a extremo</h3>
+        <p>Toda la información clínica viaja y se almacena cifrada. Ni nuestro equipo puede acceder a los datos de tus pacientes.</p>
+      </div>
+      <div class="trust-card reveal">
+        <span class="trust-icon">📋</span>
+        <h3>Cumplimiento normativo</h3>
+        <p>Diseñado bajo estándares Ley 1581/2012, Res. 2275/2023 (RIPS) y regulación colombiana de datos de salud.</p>
+      </div>
+      <div class="trust-card reveal">
+        <span class="trust-icon">🏥</span>
+        <h3>Validado por psicólogos</h3>
+        <p>Cada protocolo y algoritmo de PsyGuard fue diseñado y validado por psicólogos clínicos con más de 15 años de experiencia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section>
+  <div class="container">
+    <div class="section-label">Psicólogos que ya lo usan</div>
+    <h2 class="section-title">Lo que dicen los<br><em>profesionales</em></h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Antes dedicaba dos horas diarias a hacer RIPS a mano. Ahora el sistema los genera automáticamente al cerrar cada sesión. En cuatro meses, cero rechazos."</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:var(--sage-pale);">👩‍⚕️</div>
+          <div>
+            <div class="author-name">Dra. Carolina Vargas</div>
+            <div class="author-title">Psicóloga clínica · Bogotá</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"PsyGuard me alertó a las 2am sobre un paciente en crisis. Pude actuar a tiempo. Eso no tiene precio — es literalmente la diferencia."</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:var(--teal-pale);">👨‍⚕️</div>
+          <div>
+            <div class="author-name">Dr. Andrés Mejía</div>
+            <div class="author-title">Psicólogo de pareja · Medellín</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Los recordatorios automáticos redujeron mis cancelaciones a casi cero. Mi agenda ahora está llena y no pierdo tiempo persiguiendo pacientes por WhatsApp."</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:var(--sand);">👩‍⚕️</div>
+          <div>
+            <div class="author-name">Dra. Valentina Cruz</div>
+            <div class="author-title">Salud ocupacional · Cali</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contacto" style="padding:0;">
+  <div class="cta-section">
+    <div class="cta-inner reveal">
+      <h2>Tu tiempo vale<br>más que el <em>papeleo</em></h2>
+      <p>Comienza gratis por 14 días. Sin tarjeta de crédito. Sin permanencia. Onboarding completo en menos de una semana.</p>
+      <div class="cta-actions">
+        <a href="/register" class="btn-cta-primary">Comenzar prueba gratuita →</a>
+        <a href="https://wa.me/573000000000" class="btn-cta-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Hablar con un asesor
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="logo-text">PsyCent</span>
+      <p>Plataforma de gestión clínica con inteligencia artificial para psicólogos en Latinoamérica. Bogotá, Colombia.</p>
+      <div style="margin-top:20px;font-size:12px;">
+        <a href="mailto:andres@japsystems.com" style="color:rgba(255,255,255,0.4);text-decoration:none;">andres@japsystems.com</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Producto</h4>
+      <a href="#">PsyFlow</a>
+      <a href="#">PsyGuard</a>
+      <a href="#precios">Precios</a>
+      <a href="#">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Recursos</h4>
+      <a href="#">Documentación</a>
+      <a href="#">Guía RIPS</a>
+      <a href="#">Ayuda</a>
+      <a href="#">Blog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="#">Tratamiento de datos</a>
+      <a href="#">Seguridad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 PsyCent · JapSystems · Bogotá, Colombia</span>
+    <span>Hecho con ❤️ para los psicólogos de LATAM</span>
+  </div>
+</footer>
+
+<script>
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        link.style.color = href === '#' + current ? 'var(--teal)' : '';
+      }
+    });
+  });
+
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.style.boxShadow = window.scrollY > 20 ? '0 4px 32px rgba(44,62,80,0.08)' : '';
+  });
+</script>
+</body>
+</html>
