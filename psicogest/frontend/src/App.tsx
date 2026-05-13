@@ -59,10 +59,24 @@ function PatientRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function HomeRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+  if (user) {
+    if (user.app_metadata?.role === "patient") return <Navigate to="/portal/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+  // Not authenticated — serve the static landing page
+  window.location.replace("/landing.html");
+  return <PageLoader />;
+}
+
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
