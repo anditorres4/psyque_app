@@ -7,9 +7,15 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 
+import logging
+
 from app.core.config import settings
 from app.core.deps import TenantDB, get_tenant_db
 from app.models.patient import Patient
+from app.models.tenant import Tenant
+from app.services.email_service import EmailService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/patients", tags=["patient-auth"])
 
@@ -78,13 +84,31 @@ def invite_patient_to_portal(
             resp.raise_for_status()
             auth_user_id = uuid.UUID(resp.json()["id"])
 
-        # Send magic link / password reset so the patient sets their password
-        httpx.post(
-            f"{settings.supabase_url}/auth/v1/recover",
-            json={"email": patient.email},
+        # Generate a recovery link via Admin API and send it via Resend
+        # (more reliable than POST /recover which uses Supabase's SMTP with rate limits)
+        link_resp = httpx.post(
+            f"{settings.supabase_url}/auth/v1/admin/generate_link",
+            json={"type": "recovery", "email": patient.email},
             headers=_SUPABASE_ADMIN_HEADERS,
             timeout=10.0,
         )
+        if link_resp.is_success:
+            action_link = link_resp.json().get("action_link", "")
+            if action_link:
+                tenant = ctx.db.get(Tenant, uuid.UUID(ctx.tenant.tenant_id))
+                try:
+                    EmailService().send_portal_invite(
+                        to_email=patient.email,
+                        patient_name=patient.full_name,
+                        psychologist_name=tenant.full_name if tenant else "tu psicólogo",
+                        action_link=action_link,
+                    )
+                except Exception:
+                    logger.exception("Failed to send portal invite email to %s", patient.email)
+        else:
+            logger.warning(
+                "generate_link failed for %s: %s", patient.email, link_resp.text
+            )
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(

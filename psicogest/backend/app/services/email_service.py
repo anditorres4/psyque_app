@@ -230,6 +230,36 @@ class EmailService:
         response.raise_for_status()
         return True
 
+    def send_portal_invite(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        action_link: str,
+    ) -> bool:
+        """Send portal access invite with the Supabase recovery link embedded."""
+        if not settings.resend_api_key:
+            return False
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Accede a tu portal de paciente — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p><strong>{psychologist_name}</strong> te ha dado acceso a tu portal de paciente, "
+                f"donde podrás ver tus citas, sesiones y facturas.</p>"
+                f"<p>Haz clic en el botón para establecer tu contraseña y acceder:</p>"
+                f"<p style='margin:24px 0;'>"
+                f"<a href='{action_link}' style='display:inline-block;background:#0F2A4A;color:white;"
+                f"padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;'>"
+                f"Activar mi acceso</a></p>"
+                f"<p style='font-size:12px;color:#6B7A7E;'>Este enlace expira en 24 horas. "
+                f"Si no lo solicitaste, ignora este mensaje.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })
+
     def send_invoice(
         self,
         *,
