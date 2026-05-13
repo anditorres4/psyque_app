@@ -523,7 +523,7 @@ export function SessionForm({
         </Button>
       </div>
 
-      {/* ── Psyque IA · Resumen (post-guardado) ── */}
+      {/* ── PsyCent IA · Resumen (post-guardado) ── */}
       <div
         className="rounded-lg p-5 mt-4"
         style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}

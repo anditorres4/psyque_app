@@ -22,7 +22,7 @@ export function AiFeatureBadge({
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 psy-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--psy-sage)" }}>
           <Sparkles size={11} />
-          Psyque IA
+          PsyCent IA
         </div>
         {children}
       </div>
@@ -38,7 +38,7 @@ export function AiFeatureBadge({
         style={{ color: "var(--psy-sage)" }}
       >
         <Sparkles size={11} />
-        Psyque IA
+        PsyCent IA
       </button>
     );
   }
@@ -54,7 +54,7 @@ export function AiFeatureBadge({
       <Sparkles size={16} className="shrink-0 mt-0.5" style={{ color: "var(--psy-sage)" }} />
       <div className="flex-1">
         <p className="text-[13px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
-          Psyque IA · Plan Pro
+          PsyCent IA · Plan Pro
         </p>
         <p className="text-[12px] mt-0.5" style={{ color: "var(--psy-ink-3)" }}>
           {`Activa ${featureName} actualizando tu plan a Pro o Clinic.`}

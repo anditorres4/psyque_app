@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Proyecto
 
-Psyque App es un sistema de gestión clínica para psicólogos independientes en Colombia. Incluye un administrador de pacientes multi-tenant (PsicoGest) y una integración planificada de triage por WhatsApp (vía Kapso + n8n).
+PsyCent es un sistema de gestión clínica para psicólogos independientes en Colombia. Incluye un administrador de pacientes multi-tenant y una integración planificada de triage por WhatsApp (vía Kapso + n8n).
 
 ## Arquitectura
 

@@ -65,7 +65,7 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">
-            psyque app
+            PsyCent
           </CardTitle>
           <CardDescription>Ingresa a tu cuenta para continuar</CardDescription>
         </CardHeader>

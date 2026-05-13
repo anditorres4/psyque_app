@@ -204,7 +204,7 @@ class GCalService:
         modality_label = MODALITY_LABELS.get(appointment.modality, appointment.modality)
         return {
             "summary": f"{patient_name} — {session_label}",
-            "description": f"Modalidad: {modality_label}\n\nGestionado desde Psyque App.",
+            "description": f"Modalidad: {modality_label}\n\nGestionado desde PsyCent.",
             "start": {
                 "dateTime": appointment.scheduled_start.isoformat(),
                 "timeZone": "America/Bogota",

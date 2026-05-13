@@ -14,7 +14,7 @@ const TABS = [
   { id: "recordatorios", label: "Recordatorios" },
   { id: "agendamiento", label: "Agendamiento" },
   { id: "google-calendar", label: "Google Calendar" },
-  { id: "psyque-ia", label: "Psyque IA" },
+  { id: "psycent-ia", label: "PsyCent IA" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -122,10 +122,10 @@ export function SettingsPage() {
         </section>
       )}
 
-      {active === "psyque-ia" && (
+      {active === "psycent-ia" && (
         <section className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Configura el proveedor de IA para usar las funcionalidades de Psyque IA.
+            Configura el proveedor de IA para usar las funcionalidades de PsyCent IA.
           </p>
           <AiSettings />
         </section>

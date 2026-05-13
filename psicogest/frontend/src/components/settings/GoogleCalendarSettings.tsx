@@ -55,7 +55,7 @@ export function GoogleCalendarSettings() {
           <div className="rounded-lg border p-4 bg-white space-y-3">
             <p className="text-sm font-semibold text-[#1E3A5F]">Sincronización de eventos externos</p>
             <p className="text-xs text-muted-foreground">
-              Los eventos de tu Google Calendar que no son citas de Psyque se importan cada 15 minutos y bloquean esos horarios en el agendamiento público.
+              Los eventos de tu Google Calendar que no son citas de PsyCent se importan cada 15 minutos y bloquean esos horarios en el agendamiento público.
             </p>
             <div className="flex items-center gap-3">
               <Button
@@ -78,8 +78,8 @@ export function GoogleCalendarSettings() {
           <div className="rounded-lg border p-4 bg-gray-50 space-y-2">
             <p className="text-xs font-semibold text-[#1E3A5F]">¿Cómo funciona?</p>
             <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
-              <li>Citas creadas en Psyque → aparecen automáticamente en tu Google Calendar.</li>
-              <li>Al actualizar o cancelar una cita en Psyque → el evento de GCal se actualiza/elimina.</li>
+              <li>Citas creadas en PsyCent → aparecen automáticamente en tu Google Calendar.</li>
+              <li>Al actualizar o cancelar una cita en PsyCent → el evento de GCal se actualiza/elimina.</li>
               <li>Eventos personales en GCal → bloquean esos horarios para el agendamiento público.</li>
             </ul>
           </div>

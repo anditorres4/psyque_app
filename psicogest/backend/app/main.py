@@ -1,4 +1,4 @@
-"""FastAPI application factory for psyque app backend."""
+"""FastAPI application factory for PsyCent backend."""
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="psyque app API",
+    title="PsyCent API",
     description="Sistema de gestión clínica para psicólogos independientes en Colombia",
     version="1.0.0",
     docs_url="/docs" if settings.is_development else None,

@@ -200,7 +200,7 @@ export function DocumentsTab({ patientId }: { patientId: string }) {
         </div>
       )}
 
-      {/* ── Psyque IA · Análisis de documentos ── */}
+      {/* ── PsyCent IA · Análisis de documentos ── */}
       <div
         className="rounded-lg p-5 mt-2"
         style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}

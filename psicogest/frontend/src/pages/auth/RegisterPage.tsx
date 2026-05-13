@@ -106,7 +106,7 @@ export function RegisterPage() {
             Crea tu cuenta
           </CardTitle>
           <CardDescription>
-            psyque app — gestión clínica para psicólogos en Colombia
+            PsyCent — gestión clínica para psicólogos en Colombia
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,5 +1,5 @@
 /**
- * Typed API client for psyque app backend.
+ * Typed API client for PsyCent backend.
  * Automatically attaches the Supabase JWT to every request.
  */
 import { supabase } from "./supabase";

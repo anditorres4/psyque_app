@@ -220,7 +220,7 @@ class EmailService:
                 f"<strong>Tipo:</strong> {session_labels.get(session_type, session_type)}<br>"
                 f"<strong>Fecha:</strong> {date_str} — {time_str}</p>"
                 f"{notes_line}"
-                f"<p>Ingresa a psyque app para confirmar o rechazar.</p>"
+                f"<p>Ingresa a PsyCent para confirmar o rechazar.</p>"
             ),
         }
         response = httpx.post(

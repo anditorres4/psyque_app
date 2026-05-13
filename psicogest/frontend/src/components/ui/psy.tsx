@@ -1,5 +1,5 @@
 /**
- * psyque app — UI primitives
+ * PsyCent — UI primitives
  * Reusable atoms aligned with the cálido-tech design system.
  */
 import { type ReactNode, useEffect, useState } from "react";

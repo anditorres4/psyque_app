@@ -91,7 +91,7 @@ export function Sidebar({ onSearchClick, isOpen = false, onClose }: SidebarProps
           </svg>
         </div>
         <div className="leading-tight">
-          <div className="psy-serif text-[19px]" style={{ color: "var(--psy-ink-1)" }}>psyque</div>
+          <div className="psy-serif text-[19px]" style={{ color: "var(--psy-ink-1)" }}>PsyCent</div>
           <div className="psy-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>
             CO · Colombia
           </div>

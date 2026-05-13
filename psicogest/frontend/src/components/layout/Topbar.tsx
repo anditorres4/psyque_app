@@ -36,7 +36,7 @@ interface TopbarProps {
 export function Topbar({ onMenuClick }: TopbarProps) {
   const location = useLocation();
   const segments = location.pathname.split("/").filter(Boolean);
-  const crumbs = ["psyque", ...segments.map((s) => ROUTE_LABELS[s] ?? s)];
+  const crumbs = ["PsyCent", ...segments.map((s) => ROUTE_LABELS[s] ?? s)];
 
   return (
     <div

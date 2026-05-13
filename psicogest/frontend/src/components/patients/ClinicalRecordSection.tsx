@@ -549,7 +549,7 @@ export function ClinicalRecordSection({ patientId, patientAge = null }: Clinical
           />
         </div>
 
-        {/* ── Psyque IA ── */}
+        {/* ── PsyCent IA ── */}
         <div className="border-t pt-6 space-y-8" style={{ borderColor: "var(--psy-line)" }}>
           <AiDiagnosisSection
             patientId={patientId}

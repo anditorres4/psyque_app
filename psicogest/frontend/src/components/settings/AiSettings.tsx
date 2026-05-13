@@ -81,7 +81,7 @@ export function AiSettings() {
       <CardHeader>
         <CardTitle>Configuración de IA</CardTitle>
         <CardDescription>
-          Configura el proveedor de IA para usar las funcionalidades de Psyque IA.
+          Configura el proveedor de IA para usar las funcionalidades de PsyCent IA.
           Necesitas una API key del proveedor seleccionado.
         </CardDescription>
       </CardHeader>
