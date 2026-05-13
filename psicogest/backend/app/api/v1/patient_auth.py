@@ -70,22 +70,16 @@ def invite_patient_to_portal(
             timeout=15.0,
         )
 
-        if resp.status_code == 422 and "email_exists" in resp.text:
-            # User already exists — fetch and update app_metadata instead
-            existing = _find_user_by_email(patient.email)
-            if not existing:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Email ya registrado en otro contexto. Usa un email diferente.",
-                )
-            auth_user_id = uuid.UUID(existing["id"])
-            _update_user_metadata(str(auth_user_id), str(patient.id), str(patient.tenant_id))
-        else:
+        email_already_existed = resp.status_code == 422 and "email_exists" in resp.text
+
+        if not email_already_existed:
             resp.raise_for_status()
             auth_user_id = uuid.UUID(resp.json()["id"])
+        else:
+            auth_user_id = None  # resolved from generate_link response below
 
-        # Generate a recovery link via Admin API and send it via Resend
-        # (more reliable than POST /recover which uses Supabase's SMTP with rate limits)
+        # Generate a recovery link — response includes the user object with its ID,
+        # which lets us resolve auth_user_id when the Supabase user already existed.
         link_resp = httpx.post(
             f"{settings.supabase_url}/auth/v1/admin/generate_link",
             json={"type": "recovery", "email": patient.email},
@@ -93,8 +87,26 @@ def invite_patient_to_portal(
             timeout=10.0,
         )
         if link_resp.is_success:
-            action_link = link_resp.json().get("action_link", "")
-            if action_link:
+            link_data = link_resp.json()
+            action_link = link_data.get("action_link", "")
+
+            if email_already_existed:
+                user_data = link_data.get("user", {})
+                if user_data and user_data.get("id"):
+                    auth_user_id = uuid.UUID(user_data["id"])
+                    _update_user_metadata(str(auth_user_id), str(patient.id), str(patient.tenant_id))
+                else:
+                    # generate_link didn't return user — fall back to search
+                    existing = _find_user_by_email(patient.email)
+                    if not existing:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="Email ya registrado en otro contexto. Usa un email diferente.",
+                        )
+                    auth_user_id = uuid.UUID(existing["id"])
+                    _update_user_metadata(str(auth_user_id), str(patient.id), str(patient.tenant_id))
+
+            if action_link and auth_user_id:
                 tenant = ctx.db.get(Tenant, uuid.UUID(ctx.tenant.tenant_id))
                 try:
                     EmailService().send_portal_invite(
@@ -106,9 +118,12 @@ def invite_patient_to_portal(
                 except Exception:
                     logger.exception("Failed to send portal invite email to %s", patient.email)
         else:
-            logger.warning(
-                "generate_link failed for %s: %s", patient.email, link_resp.text
-            )
+            logger.warning("generate_link failed for %s: %s", patient.email, link_resp.text)
+            if auth_user_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Email ya registrado en otro contexto. Usa un email diferente.",
+                )
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
@@ -125,7 +140,7 @@ def invite_patient_to_portal(
 def _find_user_by_email(email: str) -> dict | None:
     resp = httpx.get(
         f"{settings.supabase_url}/auth/v1/admin/users",
-        params={"filter": f"email={email}"},
+        params={"filter": email},
         headers=_SUPABASE_ADMIN_HEADERS,
         timeout=10.0,
     )
