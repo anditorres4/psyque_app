@@ -31,6 +31,7 @@ const PortalDashboardPage = lazy(() => import("@/pages/portal/PortalDashboardPag
 const PortalAppointmentsPage = lazy(() => import("@/pages/portal/PortalAppointmentsPage").then((m) => ({ default: m.PortalAppointmentsPage })));
 const PortalSessionsPage = lazy(() => import("@/pages/portal/PortalSessionsPage").then((m) => ({ default: m.PortalSessionsPage })));
 const PortalInvoicesPage = lazy(() => import("@/pages/portal/PortalInvoicesPage").then((m) => ({ default: m.PortalInvoicesPage })));
+const PortalOnboardingPage = lazy(() => import("@/pages/portal/PortalOnboardingPage").then((m) => ({ default: m.PortalOnboardingPage })));
 
 function PageLoader() {
   return (
@@ -118,6 +119,7 @@ export default function App() {
             </PatientRoute>
           }
         >
+          <Route path="/portal/onboarding" element={<PortalOnboardingPage />} />
           <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
           <Route path="/portal/appointments" element={<PortalAppointmentsPage />} />
           <Route path="/portal/sessions" element={<PortalSessionsPage />} />

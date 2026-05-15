@@ -679,6 +679,21 @@ export interface PortalMe {
   phone: string;
   psychologist_name: string;
   psychologist_city: string;
+  onboarding_status: "active" | "pending";
+}
+
+export interface OnboardingSignedDoc {
+  doc_type: string;
+  signed_at: string;
+  content_version: string;
+}
+
+export interface OnboardingStatus {
+  status: "active" | "pending";
+  age_group: "adult" | "minor_u13" | "minor_13_18";
+  required_docs: string[];
+  signed_docs: OnboardingSignedDoc[];
+  pending_docs: string[];
 }
 
 export interface PortalAppointment {
@@ -1199,6 +1214,9 @@ referrals: {
     appointments: () => request<PortalAppointment[]>("GET", "/portal/appointments"),
     sessions: () => request<PortalSession[]>("GET", "/portal/sessions"),
     invoices: () => request<PortalInvoice[]>("GET", "/portal/invoices"),
+    onboardingStatus: () => request<OnboardingStatus>("GET", "/portal/onboarding/status"),
+    signDocument: (doc_type: string) =>
+      request<{ ok: boolean; onboarding_complete: boolean }>("POST", "/portal/onboarding/sign", { doc_type }),
   },
   // --- Triage ----------------------------------------------------------
   triage: {

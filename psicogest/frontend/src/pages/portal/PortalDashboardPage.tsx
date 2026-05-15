@@ -39,6 +39,23 @@ export function PortalDashboardPage() {
         </p>
       </div>
 
+      {me?.onboarding_status === "active" && (sessions ?? []).length === 0 && (upcoming ?? []).length === 0 && (
+        <div
+          className="rounded-xl p-4 border"
+          style={{
+            background: "var(--psy-primary-faint, #EEF4FF)",
+            borderColor: "var(--psy-primary-light, #BFDBFE)",
+          }}
+        >
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--psy-primary, #1E3A5F)" }}>
+            Tu proceso está listo para comenzar
+          </p>
+          <p className="text-xs" style={{ color: "var(--psy-ink-3)" }}>
+            Has completado todos los documentos requeridos. Tu psicólogo agendará la primera sesión contigo.
+          </p>
+        </div>
+      )}
+
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--psy-ink-4)" }}>
           Próximas citas

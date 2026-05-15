@@ -27,6 +27,7 @@ class PortalMe(BaseModel):
     phone: str
     psychologist_name: str
     psychologist_city: str
+    onboarding_status: str  # "active" | "pending" — null DB value treated as "active"
 
 class PortalAppointment(BaseModel):
     id: str
@@ -75,6 +76,7 @@ def portal_me(ctx: Annotated[PatientDB, Depends(get_patient_db)]) -> PortalMe:
         phone=patient.phone,
         psychologist_name=tenant.full_name if tenant else "",
         psychologist_city=tenant.city if tenant else "",
+        onboarding_status=patient.onboarding_status or "active",
     )
 
 

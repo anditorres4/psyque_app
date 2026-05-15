@@ -65,6 +65,11 @@ class Patient(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(sa.Boolean(), nullable=False, default=True)
     # Portal — links this patient record to a Supabase auth user (auth.users UUID)
     auth_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True)
+    # Onboarding gate — null means legacy patient (treated as active)
+    onboarding_status: Mapped[str | None] = mapped_column(
+        sa.Enum("pending", "active", name="onboarding_status_enum"),
+        nullable=True,
+    )
 
     @property
     def full_name(self) -> str:

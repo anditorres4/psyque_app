@@ -19,6 +19,7 @@ from app.models.ai_clinical_record_summary import AiClinicalRecordSummary
 from app.models.ai_document_analysis import AiDocumentAnalysis
 from app.models.nps_survey import NpsSurvey
 from app.models.patient_registration import PatientRegistration
+from app.models.patient_document import PatientDocument
 
 __all__ = [
     "Base",
@@ -44,4 +45,5 @@ __all__ = [
     "AiDocumentAnalysis",
     "NpsSurvey",
     "PatientRegistration",
+    "PatientDocument",
 ]

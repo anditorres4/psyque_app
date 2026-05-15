@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Calendar, FileText, CreditCard, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,15 +14,28 @@ const portalNav = [
 
 export function PatientPortalLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: me } = useQuery({
     queryKey: ["portal", "me"],
     queryFn: () => api.portal.me(),
   });
 
+  // Redirect to onboarding if patient hasn't completed it yet.
+  // Skip when already on /portal/onboarding to avoid infinite redirect.
+  const isOnboarding = location.pathname === "/portal/onboarding";
+  if (me && me.onboarding_status === "pending" && !isOnboarding) {
+    navigate("/portal/onboarding", { replace: true });
+  }
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/login");
   };
+
+  // Onboarding page handles its own full-page layout
+  if (isOnboarding) {
+    return <Outlet />;
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--psy-bg, #F4F1EC)" }}>
