@@ -1,7 +1,7 @@
 """Appointments router — RF-AGE-01 to RF-AGE-05."""
 import logging
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -16,7 +16,11 @@ from app.schemas.appointment import (
     AppointmentUpdate,
     CancelRequest,
     PaginatedAppointments,
+    SeriesCreate,
+    SeriesOut,
 )
+from app.models.appointment import Appointment
+from app.models.appointment_series import AppointmentSeries
 from app.services.appointment_service import (
     AppointmentConflictError,
     AppointmentNotFoundError,
@@ -202,3 +206,120 @@ def noshow_appointment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada.")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+# ── Recurring series ──────────────────────────────────────────────────────────
+
+@router.post("/series", response_model=SeriesOut, status_code=status.HTTP_201_CREATED)
+def create_appointment_series(
+    body: SeriesCreate,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    background_tasks: BackgroundTasks,
+) -> SeriesOut:
+    """Create a recurring series and generate N individual appointments.
+
+    Skips slots with conflicts rather than aborting the whole series.
+    """
+    tenant_id = uuid.UUID(ctx.tenant.tenant_id)
+
+    series = AppointmentSeries(
+        tenant_id=tenant_id,
+        patient_id=body.patient_id,
+        day_of_week=body.day_of_week,
+        time_hour=body.time_hour,
+        time_minute=body.time_minute,
+        duration_minutes=body.duration_minutes,
+        session_type=body.session_type,
+        modality=body.modality,
+        n_repetitions=body.n_repetitions,
+        first_date=body.first_date,
+        notes=body.notes,
+        status="active",
+    )
+    ctx.db.add(series)
+    ctx.db.flush()
+
+    svc = _service(ctx)
+    created = 0
+    current = body.first_date
+
+    # Advance to the target day_of_week on or after first_date
+    days_ahead = (body.day_of_week - current.weekday()) % 7
+    current = current + timedelta(days=days_ahead)
+
+    patient = ctx.db.get(Patient, body.patient_id)
+    tenant = ctx.db.get(Tenant, tenant_id)
+
+    for _ in range(body.n_repetitions):
+        start_dt = datetime(
+            current.year, current.month, current.day,
+            body.time_hour, body.time_minute, tzinfo=timezone.utc,
+        )
+        end_dt = start_dt + timedelta(minutes=body.duration_minutes)
+        try:
+            appt = svc.create({
+                "patient_id": body.patient_id,
+                "scheduled_start": start_dt,
+                "scheduled_end": end_dt,
+                "session_type": body.session_type,
+                "modality": body.modality,
+                "notes": body.notes,
+            })
+            appt.series_id = series.id
+            ctx.db.flush()
+            created += 1
+
+            if patient and patient.email:
+                background_tasks.add_task(
+                    _send_confirmation_email,
+                    to_email=patient.email,
+                    patient_name=patient.full_name,
+                    psychologist_name=tenant.full_name if tenant else "tu psicólogo",
+                    appointment_start=start_dt,
+                    modality=body.modality,
+                )
+        except AppointmentConflictError:
+            pass  # Skip conflicting slot, continue series
+
+        current = current + timedelta(weeks=1)
+
+    ctx.db.commit()
+    ctx.db.refresh(series)
+
+    result = SeriesOut.model_validate(series)
+    result.appointments_created = created
+    return result
+
+
+@router.delete("/series/{series_id}", status_code=status.HTTP_200_OK)
+def cancel_appointment_series(
+    series_id: uuid.UUID,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> dict:
+    """Cancel a series and all its future scheduled appointments."""
+    tenant_id = uuid.UUID(ctx.tenant.tenant_id)
+    series = ctx.db.get(AppointmentSeries, series_id)
+    if not series or series.tenant_id != tenant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Serie no encontrada.")
+
+    series.status = "cancelled"
+
+    now = datetime.now(timezone.utc)
+    future_appts = (
+        ctx.db.query(Appointment)
+        .filter(
+            Appointment.series_id == series_id,
+            Appointment.status == "scheduled",
+            Appointment.scheduled_start > now,
+        )
+        .all()
+    )
+    cancelled_count = 0
+    for appt in future_appts:
+        appt.status = "cancelled"
+        appt.cancelled_by = "psychologist"
+        appt.cancellation_reason = "Serie cancelada"
+        cancelled_count += 1
+
+    ctx.db.commit()
+    return {"ok": True, "appointments_cancelled": cancelled_count}

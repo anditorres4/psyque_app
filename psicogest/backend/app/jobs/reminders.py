@@ -20,16 +20,16 @@ class ReminderService:
     postgres superuser connection bypassing RLS to scan across all tenants.
     """
 
-    def get_due_48h(self, db: Session) -> list[Appointment]:
-        """Return scheduled appointments starting in [now+47h45m, now+48h], reminder not sent."""
+    def get_due_24h(self, db: Session) -> list[Appointment]:
+        """Return scheduled appointments starting in [now+23h45m, now+24h], day-before reminder not sent."""
         now = datetime.now(tz=timezone.utc)
-        window_start = now + timedelta(hours=47, minutes=45)
-        window_end = now + timedelta(hours=48)
+        window_start = now + timedelta(hours=23, minutes=45)
+        window_end = now + timedelta(hours=24)
         return (
             db.query(Appointment)
             .filter(
                 Appointment.status == "scheduled",
-                Appointment.reminder_sent_48h.is_(False),
+                Appointment.reminder_sent_24h.is_(False),
                 Appointment.scheduled_start >= window_start,
                 Appointment.scheduled_start < window_end,
             )
@@ -55,8 +55,8 @@ class ReminderService:
     def get_patient(self, db: Session, patient_id) -> Patient | None:
         return db.get(Patient, patient_id)
 
-    def mark_48h_sent(self, db: Session, appt: Appointment) -> None:
-        appt.reminder_sent_48h = True
+    def mark_24h_sent(self, db: Session, appt: Appointment) -> None:
+        appt.reminder_sent_24h = True
         db.flush()
 
     def mark_2h_sent(self, db: Session, appt: Appointment) -> None:
@@ -75,7 +75,7 @@ def run_reminder_check(
     svc = ReminderService()
     db = session_factory()
     try:
-        for appt in svc.get_due_48h(db):
+        for appt in svc.get_due_24h(db):
             patient = svc.get_patient(db, appt.patient_id)
             if patient and patient.email:
                 try:
@@ -83,11 +83,12 @@ def run_reminder_check(
                         to_email=patient.email,
                         patient_name=patient.full_name,
                         appointment_start=appt.scheduled_start,
-                        hours_ahead=48,
+                        hours_ahead=24,
+                        modality=appt.modality,
                     )
                 except Exception:
-                    logger.exception("Failed to send 48h reminder for appt %s", appt.id)
-            svc.mark_48h_sent(db, appt)
+                    logger.exception("Failed to send 24h reminder for appt %s", appt.id)
+            svc.mark_24h_sent(db, appt)
 
         for appt in svc.get_due_2h(db):
             patient = svc.get_patient(db, appt.patient_id)
@@ -98,6 +99,7 @@ def run_reminder_check(
                         patient_name=patient.full_name,
                         appointment_start=appt.scheduled_start,
                         hours_ahead=2,
+                        modality=appt.modality,
                     )
                 except Exception:
                     logger.exception("Failed to send 2h reminder for appt %s", appt.id)

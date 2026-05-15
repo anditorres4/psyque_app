@@ -40,7 +40,7 @@ class Appointment(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     cancelled_by: Mapped[str | None] = mapped_column(
         sa.Enum("psychologist", "patient", name="cancelled_by"), nullable=True
     )
-    reminder_sent_48h: Mapped[bool] = mapped_column(
+    reminder_sent_24h: Mapped[bool] = mapped_column(
         sa.Boolean(), nullable=False, server_default=sa.text("false")
     )
     reminder_sent_2h: Mapped[bool] = mapped_column(
@@ -52,3 +52,4 @@ class Appointment(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     patient_join_key: Mapped[str | None] = mapped_column(
         sa.String(36), nullable=True, unique=True, index=True
     )
+    series_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)

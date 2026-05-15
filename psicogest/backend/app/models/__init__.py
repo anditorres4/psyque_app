@@ -20,6 +20,7 @@ from app.models.ai_document_analysis import AiDocumentAnalysis
 from app.models.nps_survey import NpsSurvey
 from app.models.patient_registration import PatientRegistration
 from app.models.patient_document import PatientDocument
+from app.models.appointment_series import AppointmentSeries
 
 __all__ = [
     "Base",
@@ -46,4 +47,5 @@ __all__ = [
     "NpsSurvey",
     "PatientRegistration",
     "PatientDocument",
+    "AppointmentSeries",
 ]

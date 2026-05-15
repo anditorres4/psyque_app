@@ -181,10 +181,41 @@ export interface AppointmentSummary {
 export interface AppointmentDetail extends AppointmentSummary {
   cancellation_reason: string | null;
   cancelled_by: CancelledBy | null;
-  reminder_sent_48h: boolean;
+  reminder_sent_24h: boolean;
   reminder_sent_2h: boolean;
   updated_at: string;
   video_room_id: string | null;
+  series_id: string | null;
+}
+
+export interface AppointmentSeriesCreate {
+  patient_id: string;
+  day_of_week: number;
+  time_hour: number;
+  time_minute: number;
+  duration_minutes: number;
+  session_type: SessionType;
+  modality: Modality;
+  n_repetitions: number;
+  first_date: string;
+  notes?: string;
+}
+
+export interface AppointmentSeriesOut {
+  id: string;
+  patient_id: string;
+  day_of_week: number;
+  time_hour: number;
+  time_minute: number;
+  duration_minutes: number;
+  session_type: string;
+  modality: string;
+  n_repetitions: number;
+  first_date: string;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  appointments_created: number;
 }
 
 export interface PaginatedAppointments {
@@ -1045,6 +1076,10 @@ export const api = {
       request<AppointmentDetail>("PUT", `/appointments/${id}`, body),
     cancel: (id: string, body: CancelPayload) =>
       request<AppointmentDetail>("POST", `/appointments/${id}/cancel`, body),
+    createSeries: (body: AppointmentSeriesCreate) =>
+      request<AppointmentSeriesOut>("POST", "/appointments/series", body),
+    cancelSeries: (seriesId: string) =>
+      request<{ ok: boolean; appointments_cancelled: number }>("DELETE", `/appointments/series/${seriesId}`),
   },
   dashboard: {
     getStats: () => request<DashboardStats>("GET", "/dashboard/stats"),

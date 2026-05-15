@@ -19,25 +19,44 @@ class EmailService:
         patient_name: str,
         appointment_start: datetime,
         hours_ahead: int,
+        modality: str = "virtual",
     ) -> bool:
         """POST reminder email to Resend. Returns True if sent, False if skipped."""
         if not settings.resend_api_key:
             return False
 
-        label = "48 horas" if hours_ahead == 48 else "2 horas"
+        label = "mañana" if hours_ahead >= 20 else "en 2 horas"
         date_str = appointment_start.strftime("%A %d de %B de %Y")
         time_str = appointment_start.strftime("%H:%M")
+
+        if modality == "virtual":
+            recommendations = (
+                "<p><strong>Antes de conectarte:</strong></p><ul>"
+                "<li>Verifica que tu cámara y micrófono funcionen correctamente.</li>"
+                "<li>Busca un espacio bien iluminado y sin ruido de fondo.</li>"
+                "<li>Asegúrate de tener una conexión a internet estable.</li>"
+                "<li>No te conectes desde transporte público ni mientras conduces.</li>"
+                "<li>Conéctate 2–3 minutos antes para verificar el video.</li>"
+                "</ul>"
+            )
+        else:
+            recommendations = (
+                "<p><strong>Recuerda:</strong></p><ul>"
+                "<li>Llega con 5 minutos de anticipación.</li>"
+                "<li>Si necesitas cancelar o reprogramar, avisa con al menos 24 horas.</li>"
+                "</ul>"
+            )
 
         payload = {
             "from": settings.resend_from_email,
             "to": [to_email],
-            "subject": f"Recordatorio de cita — {label}",
+            "subject": f"Tu cita es {label} — {time_str}",
             "html": (
                 f"<p>Hola {patient_name},</p>"
-                f"<p>Te recordamos que tienes una cita programada en "
-                f"<strong>{label}</strong>:</p>"
+                f"<p>Te recordamos que tienes una cita <strong>{label}</strong>:</p>"
                 f"<p><strong>Fecha:</strong> {date_str}<br>"
                 f"<strong>Hora:</strong> {time_str}</p>"
+                f"{recommendations}"
                 f"<p>Si necesitas cancelar o reprogramar, contacta a tu psicólogo.</p>"
             ),
         }

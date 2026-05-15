@@ -1,6 +1,6 @@
 """Pydantic schemas for appointment endpoints."""
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -74,11 +74,12 @@ class AppointmentSummary(BaseModel):
 class AppointmentDetail(AppointmentSummary):
     cancellation_reason: str | None
     cancelled_by: str | None
-    reminder_sent_48h: bool
+    reminder_sent_24h: bool
     reminder_sent_2h: bool
     updated_at: datetime
     video_room_id: str | None = None
     patient_join_key: str | None = None
+    series_id: uuid.UUID | None = None
 
 
 class PaginatedAppointments(BaseModel):
@@ -87,3 +88,37 @@ class PaginatedAppointments(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+# ── Appointment Series ────────────────────────────────────────────────────────
+
+class SeriesCreate(BaseModel):
+    patient_id: uuid.UUID
+    day_of_week: int = Field(..., ge=0, le=6, description="0=Lunes … 6=Domingo")
+    time_hour: int = Field(..., ge=0, le=23)
+    time_minute: int = Field(0, ge=0, le=59)
+    duration_minutes: int = Field(50, ge=15, le=180)
+    session_type: SessionType
+    modality: Modality
+    n_repetitions: int = Field(..., ge=1, le=52)
+    first_date: date
+    notes: str | None = Field(None, max_length=1000)
+
+
+class SeriesOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    patient_id: uuid.UUID
+    day_of_week: int
+    time_hour: int
+    time_minute: int
+    duration_minutes: int
+    session_type: str
+    modality: str
+    n_repetitions: int
+    first_date: date
+    notes: str | None
+    status: str
+    created_at: datetime
+    appointments_created: int = 0
