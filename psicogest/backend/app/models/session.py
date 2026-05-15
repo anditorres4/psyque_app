@@ -64,6 +64,10 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     )
     homework_assigned: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     ai_context_summary: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    patient_summary_text: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    patient_summary_sent_at: Mapped[datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=True
+    )
 
 
 class SessionNote(Base, UUIDPrimaryKey, TenantMixin):

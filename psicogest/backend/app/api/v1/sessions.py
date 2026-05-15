@@ -1,4 +1,5 @@
 """Sessions router — clinical notes CRUD, sign, and append-only notes."""
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -243,3 +244,56 @@ def list_notes(
         return [SessionNoteDetail.model_validate(n) for n in notes]
     except SessionNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada.")
+
+
+@router.post("/{session_id}/send-patient-summary", response_model=SessionDetail)
+def send_patient_summary(
+    session_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> SessionDetail:
+    """Send patient_summary_text via email and mark patient_summary_sent_at."""
+    import uuid as _uuid
+    from datetime import timezone
+    from app.models.patient import Patient as PatientModel
+    from app.models.tenant import Tenant
+
+    svc = _service(ctx)
+    try:
+        sess = svc.get_by_id(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada.")
+
+    if not sess.patient_summary_text or not sess.patient_summary_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El resumen para el paciente está vacío.",
+        )
+    if sess.patient_summary_sent_at:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El resumen ya fue enviado al paciente.",
+        )
+
+    patient = ctx.db.get(PatientModel, sess.patient_id)
+    if not patient or not patient.email:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El paciente no tiene email registrado.",
+        )
+
+    tenant = ctx.db.query(Tenant).filter(Tenant.id == _uuid.UUID(ctx.tenant.tenant_id)).first()
+    psychologist_name = getattr(tenant, "full_name", "Tu psicólogo/a") if tenant else "Tu psicólogo/a"
+
+    email_svc = EmailService()
+    email_svc.send_patient_session_summary(
+        to_email=patient.email,
+        patient_name=patient.first_name,
+        psychologist_name=psychologist_name,
+        summary_text=sess.patient_summary_text,
+        session_date=sess.actual_start,
+    )
+
+    sess.patient_summary_sent_at = datetime.now(tz=timezone.utc)
+    ctx.db.commit()
+    ctx.db.refresh(sess)
+    return SessionDetail.model_validate(sess)

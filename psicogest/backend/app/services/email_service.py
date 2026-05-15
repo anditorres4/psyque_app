@@ -323,3 +323,34 @@ class EmailService:
         )
         response.raise_for_status()
         return True
+
+    def send_patient_session_summary(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        summary_text: str,
+        session_date: datetime,
+    ) -> bool:
+        """Send session summary to the patient before the session is signed."""
+        if not settings.resend_api_key:
+            return False
+        date_str = session_date.strftime("%A %d de %B de %Y")
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Resumen de tu sesión del {date_str} — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Tu psicólogo/a <strong>{psychologist_name}</strong> ha preparado este resumen "
+                f"de la sesión del <strong>{date_str}</strong>:</p>"
+                f"<div style='background:#f8fafc;padding:20px;border-radius:10px;"
+                f"border-left:4px solid #4A90A4;margin:16px 0;'>"
+                f"<p style='margin:0;white-space:pre-wrap;font-size:15px;line-height:1.6;"
+                f"color:#1a2332;'>{summary_text}</p></div>"
+                f"<p style='font-size:13px;color:#6B7A7E;'>Si tienes preguntas sobre este resumen, "
+                f"puedes comentarlo en tu próxima sesión.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })

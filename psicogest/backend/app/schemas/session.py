@@ -26,6 +26,7 @@ class SessionCreate(BaseModel):
     evolution: str | None = None
     next_session_plan: str | None = None
     homework_assigned: str | None = None
+    patient_summary_text: str | None = None
     session_fee: int = Field(..., ge=0)
     authorization_number: str | None = Field(None, max_length=30)
     tipo_dx_principal: str = Field(default="1", max_length=1)
@@ -69,6 +70,7 @@ class SessionUpdate(BaseModel):
     evolution: str | None = None
     next_session_plan: str | None = None
     homework_assigned: str | None = None
+    patient_summary_text: str | None = None
     session_fee: int | None = Field(None, ge=0)
     authorization_number: str | None = Field(None, max_length=30)
     tipo_dx_principal: str | None = Field(None, max_length=1)
@@ -132,6 +134,8 @@ class SessionDetail(SessionSummary):
     mental_exam: dict | None
     is_emergency: bool
     ai_context_summary: str | None
+    patient_summary_text: str | None
+    patient_summary_sent_at: datetime | None
     updated_at: datetime
 
 

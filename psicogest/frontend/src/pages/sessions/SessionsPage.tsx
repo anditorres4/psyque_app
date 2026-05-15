@@ -74,8 +74,8 @@ export function SessionsPage() {
     setCreateError(null);
     try {
       const sess = await createMutation.mutateAsync(payload);
-      setSelectedSessionId(sess.id);
-      navigate("/sessions", { replace: true });
+      // Redirect to the two-panel documentation view
+      navigate(`/sessions/${sess.id}/doc`, { replace: true });
     } catch (err) {
       setCreateError(err instanceof ApiError ? err.message : "Error al crear la sesión.");
     }
@@ -91,6 +91,14 @@ export function SessionsPage() {
       </div>
     );
   }
+
+  const handleRowClick = (sess: SessionSummary) => {
+    if (sess.status === "draft") {
+      navigate(`/sessions/${sess.id}/doc`);
+    } else {
+      setSelectedSessionId(sess.id);
+    }
+  };
 
   if (isNewMode) {
     return (
@@ -212,7 +220,7 @@ export function SessionsPage() {
                   {items.map((sess) => (
                     <tr
                       key={sess.id}
-                      onClick={() => setSelectedSessionId(sess.id)}
+                      onClick={() => handleRowClick(sess)}
                       className="cursor-pointer transition-colors hover:bg-[var(--psy-bg-soft)]"
                       style={{ borderBottom: "1px solid var(--psy-line)" }}
                     >
@@ -257,7 +265,7 @@ export function SessionsPage() {
               <SessionCard
                 key={sess.id}
                 session={sess}
-                onClick={() => setSelectedSessionId(sess.id)}
+                onClick={() => handleRowClick(sess)}
               />
             ))}
             {signedCount > 0 && (

@@ -21,6 +21,7 @@ from app.models.nps_survey import NpsSurvey
 from app.models.patient_registration import PatientRegistration
 from app.models.patient_document import PatientDocument
 from app.models.appointment_series import AppointmentSeries
+from app.models.therapeutic_goal import TherapeuticGoal
 
 __all__ = [
     "Base",
@@ -48,4 +49,5 @@ __all__ = [
     "PatientRegistration",
     "PatientDocument",
     "AppointmentSeries",
+    "TherapeuticGoal",
 ]

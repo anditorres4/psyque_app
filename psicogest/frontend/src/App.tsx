@@ -12,6 +12,7 @@ const PatientsPage = lazy(() => import("@/pages/patients/PatientsPage").then((m)
 const PatientDetailPage = lazy(() => import("@/pages/patients/PatientDetailPage").then((m) => ({ default: m.PatientDetailPage })));
 const AgendaPage = lazy(() => import("@/pages/agenda/AgendaPage").then((m) => ({ default: m.AgendaPage })));
 const SessionsPage = lazy(() => import("@/pages/sessions/SessionsPage").then((m) => ({ default: m.SessionsPage })));
+const SessionDocPage = lazy(() => import("@/pages/sessions/SessionDocPage").then((m) => ({ default: m.SessionDocPage })));
 const RipsPage = lazy(() => import("@/pages/rips/RipsPage").then((m) => ({ default: m.RipsPage })));
 const InvoicesPage = lazy(() => import("@/pages/invoices/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
 const InvoiceBulkPage = lazy(() => import("@/pages/invoices/InvoiceBulkPage").then((m) => ({ default: m.InvoiceBulkPage })));
@@ -101,6 +102,7 @@ export default function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/sessions/new" element={<SessionsPage />} />
+          <Route path="/sessions/:sessionId/doc" element={<SessionDocPage />} />
           <Route path="/rips" element={<RipsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/bulk" element={<InvoiceBulkPage />} />

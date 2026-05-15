@@ -302,7 +302,23 @@ export interface SessionDetail extends SessionSummary {
   is_emergency: boolean;
   tipo_dx_principal: string;
   ai_context_summary: string | null;
+  patient_summary_text: string | null;
+  patient_summary_sent_at: string | null;
   updated_at: string;
+}
+
+export interface TherapeuticGoal {
+  id: string;
+  patient_id: string;
+  goal_text: string;
+  status: "active" | "achieved" | "abandoned";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TherapeuticGoalCreate {
+  patient_id: string;
+  goal_text: string;
 }
 
 export interface SessionContext {
@@ -355,6 +371,7 @@ export interface SessionUpdatePayload {
   evolution?: string;
   next_session_plan?: string;
   homework_assigned?: string;
+  patient_summary_text?: string;
   session_fee?: number;
   authorization_number?: string;
   tipo_dx_principal?: string;
@@ -1109,6 +1126,19 @@ export const api = {
       request<SessionNoteDetail>("POST", `/sessions/${id}/notes`, { content }),
     listNotes: (id: string) =>
       request<SessionNoteDetail[]>("GET", `/sessions/${id}/notes`),
+    sendPatientSummary: (id: string) =>
+      request<SessionDetail>("POST", `/sessions/${id}/send-patient-summary`),
+  },
+  // --- Therapeutic Goals -------------------------------------------------------
+  therapeuticGoals: {
+    list: (patientId: string) =>
+      request<TherapeuticGoal[]>("GET", `/therapeutic-goals?patient_id=${patientId}`),
+    create: (body: TherapeuticGoalCreate) =>
+      request<TherapeuticGoal>("POST", "/therapeutic-goals", body),
+    update: (id: string, status: "active" | "achieved" | "abandoned") =>
+      request<TherapeuticGoal>("PUT", `/therapeutic-goals/${id}`, { status }),
+    delete: (id: string) =>
+      request<void>("DELETE", `/therapeutic-goals/${id}`),
   },
   appointments_status: {
     complete: (id: string) =>

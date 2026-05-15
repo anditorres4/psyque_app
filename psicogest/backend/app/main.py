@@ -33,6 +33,7 @@ from app.api.v1.patient_auth import router as patient_auth_router
 from app.api.v1.portal_api import router as portal_api_router
 from app.api.v1.portal_onboarding import router as portal_onboarding_router
 from app.api.v1.patient_portal import router as patient_portal_router
+from app.api.v1.therapeutic_goals import router as therapeutic_goals_router
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.jobs.reminders import run_reminder_check
@@ -115,3 +116,4 @@ app.include_router(patient_auth_router, prefix="/api/v1")
 app.include_router(portal_api_router, prefix="/api/v1")
 app.include_router(portal_onboarding_router, prefix="/api/v1")
 app.include_router(patient_portal_router, prefix="/api/v1")
+app.include_router(therapeutic_goals_router, prefix="/api/v1")

@@ -27,6 +27,9 @@ class AiSessionSummary(Base):
         JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")
     )
     model_version: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    is_sent_to_patient: Mapped[bool] = mapped_column(
+        sa.Boolean(), nullable=False, server_default=sa.text("false")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
