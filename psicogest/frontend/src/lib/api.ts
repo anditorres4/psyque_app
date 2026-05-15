@@ -321,6 +321,31 @@ export interface TherapeuticGoalCreate {
   goal_text: string;
 }
 
+export interface PatientTask {
+  id: string;
+  tenant_id: string;
+  patient_id: string;
+  session_id: string | null;
+  title: string;
+  description: string;
+  due_date: string | null;
+  status: "pending" | "submitted" | "reviewed";
+  submission_text: string | null;
+  submission_file_path: string | null;
+  reviewed_at: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientTaskCreate {
+  patient_id: string;
+  title: string;
+  description: string;
+  due_date?: string | null;
+  session_id?: string | null;
+}
+
 export interface SessionContext {
   consultation_reason: string | null;
   last_mental_exam: Record<string, string> | null;
@@ -1140,6 +1165,19 @@ export const api = {
     delete: (id: string) =>
       request<void>("DELETE", `/therapeutic-goals/${id}`),
   },
+  // --- Patient Tasks -----------------------------------------------------------
+  patientTasks: {
+    listForPatient: (patientId: string, sessionId?: string) => {
+      const q = sessionId ? `?session_id=${sessionId}` : "";
+      return request<PatientTask[]>("GET", `/patients/${patientId}/tasks${q}`);
+    },
+    create: (sessionId: string, body: PatientTaskCreate) =>
+      request<PatientTask>("POST", `/sessions/${sessionId}/tasks`, body),
+    review: (taskId: string, reviewer_notes?: string) =>
+      request<PatientTask>("PUT", `/tasks/${taskId}`, { reviewer_notes }),
+    delete: (taskId: string) =>
+      request<void>("DELETE", `/tasks/${taskId}`),
+  },
   appointments_status: {
     complete: (id: string) =>
       request<AppointmentDetail>("POST", `/appointments/${id}/complete`),
@@ -1282,6 +1320,9 @@ referrals: {
     onboardingStatus: () => request<OnboardingStatus>("GET", "/portal/onboarding/status"),
     signDocument: (doc_type: string) =>
       request<{ ok: boolean; onboarding_complete: boolean }>("POST", "/portal/onboarding/sign", { doc_type }),
+    tasks: () => request<PatientTask[]>("GET", "/portal/tasks"),
+    submitTask: (taskId: string, submission_text: string) =>
+      request<PatientTask>("POST", `/portal/tasks/${taskId}/submit`, { submission_text }),
   },
   // --- Triage ----------------------------------------------------------
   triage: {

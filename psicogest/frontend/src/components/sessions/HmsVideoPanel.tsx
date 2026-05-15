@@ -20,7 +20,7 @@ export function HmsVideoPanel({ appointmentId }: Props) {
   const joinMutation = useMutation({
     mutationFn: async () => {
       if (!appointmentId) throw new Error("Sin cita asociada");
-      const room = await api.video.createOrGetRoom(appointmentId);
+      const room = await api.video.createRoom(appointmentId);
       return room;
     },
     onSuccess: (room) => {

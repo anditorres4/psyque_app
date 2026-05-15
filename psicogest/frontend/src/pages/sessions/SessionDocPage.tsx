@@ -12,6 +12,7 @@ import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle } from "lucide-rea
 import { api, type SessionDetail, type SessionUpdatePayload, ApiError } from "@/lib/api";
 import { HmsVideoPanel } from "@/components/sessions/HmsVideoPanel";
 import { TherapeuticGoals } from "@/components/sessions/TherapeuticGoals";
+import { SessionTasks } from "@/components/sessions/SessionTasks";
 import { MentalExamDropdowns, type MentalExamData } from "@/components/sessions/MentalExamDropdowns";
 import { searchCie11, type Cie11Entry } from "@/data/cie11_codes";
 
@@ -512,25 +513,12 @@ export function SessionDocPage() {
             )}
           </div>
 
-          {/* Tareas asignadas al paciente */}
-          <div
-            className="rounded-xl p-4 space-y-3"
-            style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
-          >
-            <label className={labelClass} style={labelStyle}>Tareas para el paciente</label>
-            <textarea
-              className={`${inputClass} resize-none`}
-              style={inputStyle(readOnly)}
-              rows={4}
-              value={homework}
-              onChange={(e) => setHomework(e.target.value)}
-              disabled={readOnly}
-              placeholder="Describe las actividades o reflexiones para trabajar entre sesiones…"
-            />
-            <p className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-3)" }}>
-              Se enviarán al paciente por email al firmar la sesión.
-            </p>
-          </div>
+          {/* Tareas estructuradas */}
+          <SessionTasks
+            sessionId={sessionId!}
+            patientId={String(sess.patient_id)}
+            readOnly={readOnly}
+          />
 
           {/* Firmar sesión */}
           {!readOnly && (

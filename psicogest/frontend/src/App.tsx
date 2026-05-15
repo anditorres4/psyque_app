@@ -33,6 +33,7 @@ const PortalAppointmentsPage = lazy(() => import("@/pages/portal/PortalAppointme
 const PortalSessionsPage = lazy(() => import("@/pages/portal/PortalSessionsPage").then((m) => ({ default: m.PortalSessionsPage })));
 const PortalInvoicesPage = lazy(() => import("@/pages/portal/PortalInvoicesPage").then((m) => ({ default: m.PortalInvoicesPage })));
 const PortalOnboardingPage = lazy(() => import("@/pages/portal/PortalOnboardingPage").then((m) => ({ default: m.PortalOnboardingPage })));
+const PortalTasksPage = lazy(() => import("@/pages/portal/PortalTasksPage").then((m) => ({ default: m.PortalTasksPage })));
 
 function PageLoader() {
   return (
@@ -126,6 +127,7 @@ export default function App() {
           <Route path="/portal/appointments" element={<PortalAppointmentsPage />} />
           <Route path="/portal/sessions" element={<PortalSessionsPage />} />
           <Route path="/portal/invoices" element={<PortalInvoicesPage />} />
+          <Route path="/portal/tasks" element={<PortalTasksPage />} />
           <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
         </Route>
 

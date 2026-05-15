@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, OnboardingStatus } from "@/lib/api";
+import { api } from "@/lib/api";
 import { CheckCircle2, Circle, ChevronRight, AlertTriangle } from "lucide-react";
 
 // ── Document content ─────────────────────────────────────────────────────────

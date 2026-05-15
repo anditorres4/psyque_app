@@ -188,7 +188,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
     query: string; setQuery: (v: string) => void;
     showRes: boolean; setShowRes: (v: boolean) => void;
     results: PatientSummary[] | undefined; fetching: boolean;
-    ref: React.RefObject<HTMLDivElement | null>;
+    ref: React.RefObject<HTMLDivElement>;
     error: string | null;
   }) {
     return (

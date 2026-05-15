@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Calendar, FileText, CreditCard, Home } from "lucide-react";
+import { LogOut, Calendar, FileText, CreditCard, Home, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
@@ -9,6 +9,7 @@ const portalNav = [
   { to: "/portal/dashboard", label: "Inicio", Icon: Home },
   { to: "/portal/appointments", label: "Citas", Icon: Calendar },
   { to: "/portal/sessions", label: "Sesiones", Icon: FileText },
+  { to: "/portal/tasks", label: "Tareas", Icon: ClipboardList },
   { to: "/portal/invoices", label: "Facturas", Icon: CreditCard },
 ];
 

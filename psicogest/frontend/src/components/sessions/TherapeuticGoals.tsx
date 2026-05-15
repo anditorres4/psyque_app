@@ -4,12 +4,6 @@ import { Plus, Check, Minus, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { TherapeuticGoal } from "@/lib/api";
 
-const STATUS_LABELS: Record<TherapeuticGoal["status"], string> = {
-  active: "Activo",
-  achieved: "Logrado",
-  abandoned: "Abandonado",
-};
-
 const STATUS_COLORS: Record<TherapeuticGoal["status"], string> = {
   active: "var(--psy-primary)",
   achieved: "var(--psy-sage)",

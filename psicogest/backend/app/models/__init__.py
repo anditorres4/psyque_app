@@ -22,6 +22,7 @@ from app.models.patient_registration import PatientRegistration
 from app.models.patient_document import PatientDocument
 from app.models.appointment_series import AppointmentSeries
 from app.models.therapeutic_goal import TherapeuticGoal
+from app.models.patient_task import PatientTask
 
 __all__ = [
     "Base",
@@ -50,4 +51,5 @@ __all__ = [
     "PatientDocument",
     "AppointmentSeries",
     "TherapeuticGoal",
+    "PatientTask",
 ]

@@ -324,6 +324,41 @@ class EmailService:
         response.raise_for_status()
         return True
 
+    def send_task_assigned(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        task_title: str,
+        task_description: str,
+        due_date=None,
+    ) -> bool:
+        """Notify patient that a new task has been assigned by the psychologist."""
+        if not settings.resend_api_key:
+            return False
+        due_line = (
+            f"<p><strong>Fecha límite:</strong> {due_date.strftime('%d/%m/%Y')}</p>"
+            if due_date else ""
+        )
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Nueva tarea asignada: {task_title} — {psychologist_name}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p>Tu psicólogo/a <strong>{psychologist_name}</strong> te ha asignado una nueva tarea:</p>"
+                f"<div style='background:#f8fafc;padding:20px;border-radius:10px;"
+                f"border-left:4px solid #4A90A4;margin:16px 0;'>"
+                f"<h3 style='margin:0 0 8px 0;font-size:16px;color:#1a2332;'>{task_title}</h3>"
+                f"<p style='margin:0;white-space:pre-wrap;font-size:14px;line-height:1.6;"
+                f"color:#374151;'>{task_description}</p></div>"
+                f"{due_line}"
+                f"<p>Ingresa a tu portal de paciente para responder la tarea.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })
+
     def send_patient_session_summary(
         self,
         *,
