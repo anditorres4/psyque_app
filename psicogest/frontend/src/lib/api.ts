@@ -1090,11 +1090,13 @@ export const api = {
       request("POST", `/patients/${id}/invite-to-portal`),
     exportAttendanceCertificate: async (
       id: string,
-      opts: { include_session_count?: boolean; include_dates?: boolean } = {},
+      opts: { include_session_count?: boolean; include_dates?: boolean; from_date?: string; to_date?: string } = {},
     ) => {
       const params = new URLSearchParams();
       if (opts.include_session_count !== undefined) params.set("include_session_count", String(opts.include_session_count));
       if (opts.include_dates !== undefined) params.set("include_dates", String(opts.include_dates));
+      if (opts.from_date) params.set("from_date", opts.from_date);
+      if (opts.to_date) params.set("to_date", opts.to_date);
       const qs = params.toString();
       return downloadBlob("GET", `/patients/${id}/certificate-attendance${qs ? `?${qs}` : ""}`);
     },
@@ -1153,6 +1155,8 @@ export const api = {
       request<SessionNoteDetail[]>("GET", `/sessions/${id}/notes`),
     sendPatientSummary: (id: string) =>
       request<SessionDetail>("POST", `/sessions/${id}/send-patient-summary`),
+    downloadCertificate: (id: string) =>
+      downloadBlob("GET", `/sessions/${id}/certificate`),
   },
   // --- Therapeutic Goals -------------------------------------------------------
   therapeuticGoals: {
@@ -1323,6 +1327,15 @@ referrals: {
     tasks: () => request<PatientTask[]>("GET", "/portal/tasks"),
     submitTask: (taskId: string, submission_text: string) =>
       request<PatientTask>("POST", `/portal/tasks/${taskId}/submit`, { submission_text }),
+    downloadSessionCertificate: (sessionId: string) =>
+      downloadBlob("GET", `/portal/sessions/${sessionId}/certificate`),
+    downloadGlobalCertificate: (opts: { from_date?: string; to_date?: string } = {}) => {
+      const params = new URLSearchParams();
+      if (opts.from_date) params.set("from_date", opts.from_date);
+      if (opts.to_date) params.set("to_date", opts.to_date);
+      const qs = params.toString();
+      return downloadBlob("GET", `/portal/certificate${qs ? `?${qs}` : ""}`);
+    },
   },
   // --- Triage ----------------------------------------------------------
   triage: {

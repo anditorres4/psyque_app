@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.core.deps import CurrentPatientDB, PatientDB, get_patient_db
@@ -14,6 +15,7 @@ from app.models.invoice import Invoice
 from app.models.patient import Patient
 from app.models.session import Session
 from app.models.tenant import Tenant
+from app.services.certificate_service import CertificateService
 
 router = APIRouter(prefix="/portal", tags=["patient-portal"])
 
@@ -160,3 +162,48 @@ def portal_invoices(ctx: Annotated[PatientDB, Depends(get_patient_db)]) -> list[
         )
         for inv in invoices
     ]
+
+
+@router.get("/sessions/{session_id}/certificate")
+def portal_session_certificate(
+    session_id: str,
+    ctx: Annotated[PatientDB, Depends(get_patient_db)],
+) -> StreamingResponse:
+    """Download a single-session attendance certificate for the authenticated patient."""
+    patient = _get_patient(ctx)
+    try:
+        pdf_bytes = CertificateService(ctx.db, str(patient.tenant_id)).generate_single_session(session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    filename = f"constancia_{session_id[:8]}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/certificate")
+def portal_global_certificate(
+    ctx: Annotated[PatientDB, Depends(get_patient_db)],
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None),
+) -> StreamingResponse:
+    """Download a global attendance certificate for the authenticated patient."""
+    patient = _get_patient(ctx)
+    try:
+        pdf_bytes = CertificateService(ctx.db, str(patient.tenant_id)).generate_attendance(
+            str(patient.id),
+            from_date=from_date,
+            to_date=to_date,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    filename = f"constancia_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

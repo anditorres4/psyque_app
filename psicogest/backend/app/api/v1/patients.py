@@ -1,6 +1,6 @@
 """Patients router — RF-PAC-01, RF-PAC-02, RF-PAC-03 from PRD §7.1."""
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -257,8 +257,10 @@ def export_attendance_certificate(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
     include_session_count: bool = Query(True),
     include_dates: bool = Query(True),
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None),
 ) -> StreamingResponse:
-    """Generate attendance certificate PDF for a patient."""
+    """Generate attendance certificate PDF for a patient, optionally filtered by date range."""
     try:
         _service(ctx).get_by_id(patient_id)
     except PatientNotFoundError:
@@ -269,6 +271,8 @@ def export_attendance_certificate(
             patient_id,
             include_session_count=include_session_count,
             include_dates=include_dates,
+            from_date=from_date,
+            to_date=to_date,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -276,10 +280,8 @@ def export_attendance_certificate(
     filename = f"constancia_{patient_id}_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         iter([pdf_bytes]),
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Type": "application/pdf",
-        },
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

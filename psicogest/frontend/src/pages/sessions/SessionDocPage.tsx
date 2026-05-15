@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown } from "lucide-react";
 
 import { api, type SessionDetail, type SessionUpdatePayload, ApiError } from "@/lib/api";
 import { HmsVideoPanel } from "@/components/sessions/HmsVideoPanel";
@@ -240,6 +240,23 @@ export function SessionDocPage() {
             <Lock size={10} />
             Firmada
           </span>
+        )}
+        {readOnly && (
+          <button
+            type="button"
+            onClick={async () => {
+              const { blob, filename } = await api.sessions.downloadCertificate(sessionId!);
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = filename; a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="psy-mono text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors ml-auto"
+            style={{ background: "var(--psy-bg-soft)", color: "var(--psy-primary)", border: "1px solid var(--psy-primary)" }}
+          >
+            <FileDown size={12} />
+            Constancia PDF
+          </button>
         )}
       </div>
 

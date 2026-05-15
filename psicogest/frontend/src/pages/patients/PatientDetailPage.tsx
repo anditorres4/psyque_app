@@ -109,6 +109,8 @@ export function PatientDetailPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [isCertExporting, setIsCertExporting] = useState(false);
   const [certIncludeCount, setCertIncludeCount] = useState(true);
+  const [certFromDate, setCertFromDate] = useState("");
+  const [certToDate, setCertToDate] = useState("");
 
   const { data: patient, isLoading, isError } = usePatient(id ?? "");
   const updateMutation = useUpdatePatient(id ?? "");
@@ -173,6 +175,8 @@ export function PatientDetailPage() {
       const result = await api.patients.exportAttendanceCertificate(id, {
         include_session_count: certIncludeCount,
         include_dates: true,
+        from_date: certFromDate || undefined,
+        to_date: certToDate || undefined,
       });
       triggerDownload(result.blob, result.filename);
     } catch (err) {
@@ -338,6 +342,26 @@ export function PatientDetailPage() {
                     <Label htmlFor="cert_count" className="text-sm font-normal cursor-pointer">
                       Incluir número de sesiones
                     </Label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Desde (opcional)</Label>
+                      <input
+                        type="date"
+                        value={certFromDate}
+                        onChange={(e) => setCertFromDate(e.target.value)}
+                        className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Hasta (opcional)</Label>
+                      <input
+                        type="date"
+                        value={certToDate}
+                        onChange={(e) => setCertToDate(e.target.value)}
+                        className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm"
+                      />
+                    </div>
                   </div>
                   <Button
                     variant="outline"

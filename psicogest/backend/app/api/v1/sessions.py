@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.deps import get_tenant_db, TenantDB
@@ -16,6 +17,7 @@ from app.schemas.session import (
     SessionNoteDetail,
     SessionUpdate,
 )
+from app.services.certificate_service import CertificateService
 from app.services.email_service import EmailService
 from app.services.nps_service import NpsService
 from app.services.session_service import (
@@ -297,3 +299,23 @@ def send_patient_summary(
     ctx.db.commit()
     ctx.db.refresh(sess)
     return SessionDetail.model_validate(sess)
+
+
+@router.get("/{session_id}/certificate")
+def download_session_certificate(
+    session_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> StreamingResponse:
+    """Download a single-session attendance certificate PDF."""
+    try:
+        pdf_bytes = CertificateService(ctx.db, ctx.tenant.tenant_id).generate_single_session(session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    from datetime import timezone as _tz
+    filename = f"constancia_{session_id[:8]}_{datetime.now(tz=_tz.utc).strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
