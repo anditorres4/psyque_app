@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Video, VideoOff, Copy, Check } from "lucide-react";
 import { api } from "@/lib/api";
@@ -9,9 +9,10 @@ const HMSPrebuilt = lazy(() =>
 
 interface Props {
   appointmentId: string | null;
+  autoStart?: boolean;
 }
 
-export function HmsVideoPanel({ appointmentId }: Props) {
+export function HmsVideoPanel({ appointmentId, autoStart }: Props) {
   const [token, setToken] = useState<string | null>(null);
   const [patientUrl, setPatientUrl] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
@@ -29,6 +30,13 @@ export function HmsVideoPanel({ appointmentId }: Props) {
       setJoined(true);
     },
   });
+
+  useEffect(() => {
+    if (autoStart && appointmentId && !joined && !joinMutation.isPending) {
+      joinMutation.mutate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, appointmentId]);
 
   const handleCopyLink = () => {
     if (!patientUrl) return;

@@ -18,16 +18,16 @@ class SessionCreate(BaseModel):
     patient_id: uuid.UUID
     actual_start: datetime
     actual_end: datetime
-    diagnosis_cie11: str = Field(..., max_length=20)
-    diagnosis_description: str = Field(..., min_length=5)
-    cups_code: str = Field(..., max_length=10)
-    consultation_reason: str = Field(..., min_length=10)
-    intervention: str = Field(..., min_length=10)
+    diagnosis_cie11: str = Field(default="", max_length=20)
+    diagnosis_description: str = Field(default="", max_length=500)
+    cups_code: str = Field(default="", max_length=10)
+    consultation_reason: str = Field(default="")
+    intervention: str = Field(default="")
     evolution: str | None = None
     next_session_plan: str | None = None
     homework_assigned: str | None = None
     patient_summary_text: str | None = None
-    session_fee: int = Field(..., ge=0)
+    session_fee: int = Field(default=0, ge=0)
     authorization_number: str | None = Field(None, max_length=30)
     tipo_dx_principal: str = Field(default="1", max_length=1)
     mental_exam: dict | None = None
@@ -48,11 +48,11 @@ class SessionCreate(BaseModel):
 
     @model_validator(mode="after")
     def codes_format(self) -> "SessionCreate":
-        if not _CIE11_RE.match(self.diagnosis_cie11):
+        if self.diagnosis_cie11 and not _CIE11_RE.match(self.diagnosis_cie11):
             raise ValueError(
                 "diagnosis_cie11 must follow CIE-11 format (e.g. 6A70, 6A70.1, 11A6/Z)"
             )
-        if not _CUPS_RE.match(self.cups_code):
+        if self.cups_code and not _CUPS_RE.match(self.cups_code):
             raise ValueError(
                 "cups_code must be a 6-digit numeric code (e.g. 890403)"
             )

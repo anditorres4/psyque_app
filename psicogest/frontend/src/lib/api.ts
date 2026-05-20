@@ -370,15 +370,15 @@ export interface SessionCreatePayload {
   patient_id: string;
   actual_start: string;
   actual_end: string;
-  diagnosis_cie11: string;
-  diagnosis_description: string;
-  cups_code: string;
-  consultation_reason: string;
-  intervention: string;
+  diagnosis_cie11?: string;
+  diagnosis_description?: string;
+  cups_code?: string;
+  consultation_reason?: string;
+  intervention?: string;
   evolution?: string;
   next_session_plan?: string;
   homework_assigned?: string;
-  session_fee: number;
+  session_fee?: number;
   authorization_number?: string;
   tipo_dx_principal?: string;
   mental_exam?: Record<string, string>;
@@ -1120,6 +1120,10 @@ export const api = {
       request<AppointmentDetail>("PUT", `/appointments/${id}`, body),
     cancel: (id: string, body: CancelPayload) =>
       request<AppointmentDetail>("POST", `/appointments/${id}/cancel`, body),
+    complete: (id: string) =>
+      request<AppointmentDetail>("POST", `/appointments/${id}/complete`),
+    sendVideoLink: (id: string) =>
+      request<VideoRoomResponse>("POST", `/appointments/${id}/send-video-link`),
     createSeries: (body: AppointmentSeriesCreate) =>
       request<AppointmentSeriesOut>("POST", "/appointments/series", body),
     cancelSeries: (seriesId: string) =>

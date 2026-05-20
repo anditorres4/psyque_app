@@ -102,6 +102,26 @@ def sign_session(
     background_tasks: BackgroundTasks,
 ) -> SessionDetail:
     try:
+        sess_pre = _service(ctx).get_by_id(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada.")
+
+    missing = [
+        f for f, v in [
+            ("Diagnóstico CIE-11", sess_pre.diagnosis_cie11),
+            ("Descripción diagnóstico", sess_pre.diagnosis_description),
+            ("Código CUPS", sess_pre.cups_code),
+            ("Motivo de consulta", sess_pre.consultation_reason),
+            ("Intervención realizada", sess_pre.intervention),
+        ] if not v or not str(v).strip()
+    ]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Campos requeridos vacíos antes de firmar: {', '.join(missing)}",
+        )
+
+    try:
         sess = _service(ctx).sign(session_id)
         ctx.db.commit()
         ctx.db.refresh(sess)
@@ -109,6 +129,14 @@ def sign_session(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada.")
     except SessionAlreadySignedError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+    # Complete linked appointment if present
+    if sess.appointment_id:
+        from app.models.appointment import Appointment
+        appt = ctx.db.get(Appointment, sess.appointment_id)
+        if appt and appt.tenant_id == ctx.tenant.tenant_id and appt.status == "scheduled":
+            appt.status = "completed"
+            ctx.db.commit()
 
     # Post-sign background tasks: homework email + NPS survey
     background_tasks.add_task(

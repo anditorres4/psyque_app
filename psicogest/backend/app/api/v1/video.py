@@ -13,6 +13,8 @@ from app.core.config import settings
 from app.core.deps import get_tenant_db, TenantDB
 from app.models.appointment import Appointment
 from app.models.patient import Patient
+from app.models.tenant import Tenant
+from app.services.email_service import EmailService
 from app.services.hms_service import HmsService
 
 router = APIRouter(prefix="/appointments", tags=["video"])
@@ -123,6 +125,52 @@ def refresh_video_token(
     patient_join_key = _ensure_patient_join_key(appt, ctx.db)
     patient_name = _get_patient_name(appt.patient_id, ctx.db)
     return _build_response(appt.video_room_id, appointment_id, patient_join_key, patient_name, svc)
+
+
+@router.post("/{appointment_id}/send-video-link", response_model=VideoRoomResponse)
+def send_video_link(
+    appointment_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> VideoRoomResponse:
+    """Create (or reuse) the video room and email the patient join link."""
+    if not settings.hms_app_key:
+        raise HTTPException(status_code=503, detail="Video no configurado")
+
+    appt = _get_appointment(appointment_id, ctx)
+    svc = HmsService()
+
+    if not appt.video_room_id:
+        try:
+            room_id = svc.create_room(appointment_id)
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=502, detail=f"Error al crear sala: {e.response.text}")
+        appt.video_room_id = room_id
+        ctx.db.commit()
+    else:
+        room_id = appt.video_room_id
+
+    patient_join_key = _ensure_patient_join_key(appt, ctx.db)
+    patient = ctx.db.get(Patient, appt.patient_id)
+    patient_name = patient.full_name if patient else "Paciente"
+
+    response = _build_response(room_id, appointment_id, patient_join_key, patient_name, svc)
+
+    if patient and patient.email:
+        tenant = ctx.db.query(Tenant).filter(Tenant.id == ctx.tenant.tenant_id).first()
+        psychologist_name = tenant.full_name if tenant else "Tu psicólogo"
+        try:
+            EmailService().send_appointment_confirmation(
+                to_email=patient.email,
+                patient_name=patient_name,
+                psychologist_name=psychologist_name,
+                appointment_start=appt.scheduled_start,
+                join_url=response.patient_join_url,
+                modality="virtual",
+            )
+        except Exception:
+            pass  # Email failure does not block the response
+
+    return response
 
 
 @router.get("/public/{appointment_id}/video-room/token", response_model=PublicVideoTokenResponse)

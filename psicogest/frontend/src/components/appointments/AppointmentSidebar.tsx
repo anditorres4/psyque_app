@@ -1,12 +1,14 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAppointment, useCancelAppointment } from "@/hooks/useAppointments";
+import { useAppointment, useCancelAppointment, useUpdateAppointment } from "@/hooks/useAppointments";
 import { useProfile } from "@/hooks/useProfile";
-import { useCompleteAppointment, useNoshowAppointment } from "@/hooks/useSessions";
-import { useCreateVideoRoom, useRefreshVideoToken } from "@/hooks/useVideo";
-import type { CancelledBy, VideoRoomResponse } from "@/lib/api";
+import { useNoshowAppointment, useCreateSession } from "@/hooks/useSessions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { AppointmentUpdatePayload, CancelledBy } from "@/lib/api";
 import { ApiError } from "@/lib/api";
+import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 
 interface Props {
   appointmentId: string;
@@ -29,16 +31,24 @@ const STATUS_COLORS: Record<string, { background: string; color: string }> = {
 
 export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: appt, isLoading } = useAppointment(appointmentId);
-  const { data: profile } = useProfile();
+  const { data: _profile } = useProfile();
+
   const cancelMutation = useCancelAppointment(appointmentId);
-  const completeMutation = useCompleteAppointment(appointmentId);
   const noshowMutation = useNoshowAppointment(appointmentId);
-  const createRoomMutation = useCreateVideoRoom(appointmentId);
-  const refreshTokenMutation = useRefreshVideoToken(appointmentId);
-  const [videoRoom, setVideoRoom] = useState<VideoRoomResponse | null>(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const videoPopupRef = useRef<Window | null>(null);
+  const updateMutation = useUpdateAppointment(appointmentId);
+  const createSessionMutation = useCreateSession();
+
+  const sendVideoLinkMutation = useMutation({
+    mutationFn: () => api.appointments.sendVideoLink(appointmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appointment", appointmentId] });
+    },
+  });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelledBy, setCancelledBy] = useState<CancelledBy>("psychologist");
@@ -54,6 +64,16 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
   const start = new Date(appt.scheduled_start);
   const end = new Date(appt.scheduled_end);
 
+  const handleUpdate = async (payload: AppointmentUpdatePayload) => {
+    setUpdateError(null);
+    try {
+      await updateMutation.mutateAsync(payload);
+      setIsEditing(false);
+    } catch (err) {
+      setUpdateError(err instanceof ApiError ? err.message : "Error al actualizar la cita.");
+    }
+  };
+
   const handleCancel = async (e: React.FormEvent) => {
     e.preventDefault();
     setCancelError(null);
@@ -62,16 +82,6 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
       setShowCancelForm(false);
     } catch (err) {
       setCancelError(err instanceof ApiError ? err.message : "Error al cancelar la cita.");
-    }
-  };
-
-  const handleComplete = async () => {
-    setActionError(null);
-    try {
-      await completeMutation.mutateAsync();
-      navigate(`/sessions/new?appointment_id=${appointmentId}&patient_id=${appt.patient_id}&start=${encodeURIComponent(appt.scheduled_start)}&end=${encodeURIComponent(appt.scheduled_end)}`);
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Error al completar la cita.");
     }
   };
 
@@ -84,56 +94,81 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
     }
   };
 
-  const handleStartVideo = async () => {
-    setVideoError(null);
-    const popup = window.open(
-      "",
-      `video-call-${appointmentId}`,
-      "popup=yes,width=1400,height=900,resizable=yes,scrollbars=yes"
-    );
-
-    if (!popup) {
-      setVideoError("Tu navegador bloqueó la ventana emergente. Habilítala e intenta de nuevo.");
-      return;
-    }
-
-    popup.document.write(`
-      <html>
-        <head><title>Videollamada</title></head>
-        <body style="margin:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#0b0b0b;color:#fff;">
-          <div>Iniciando videollamada...</div>
-        </body>
-      </html>
-    `);
-    popup.document.close();
-    videoPopupRef.current = popup;
-
+  const handleStartSession = async () => {
+    setActionError(null);
     try {
-      const room = appt.video_room_id
-        ? await refreshTokenMutation.mutateAsync()
-        : await createRoomMutation.mutateAsync();
-      setVideoRoom(room);
-      const psychologistName = profile?.full_name?.trim() || "Psicólogo";
-      const hostJoinUrl = `${window.location.origin}/join/${appointmentId}?t=${encodeURIComponent(room.host_token)}&role=session&name=${encodeURIComponent(psychologistName)}`;
-      popup.location.href = hostJoinUrl;
-      popup.focus();
-    } catch {
-      popup.close();
-      videoPopupRef.current = null;
-      setVideoError("No se pudo iniciar la videollamada. Intenta de nuevo.");
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const sess = await createSessionMutation.mutateAsync({
+        patient_id: appt.patient_id,
+        appointment_id: appointmentId,
+        actual_start: now.toISOString(),
+        actual_end: oneHourLater.toISOString(),
+      });
+      navigate(`/sessions/${sess.id}/doc?autostart=1`);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Error al iniciar la sesión.");
     }
   };
 
-  const handleCopyPatientLink = async () => {
-    if (!videoRoom) return;
-    await navigator.clipboard.writeText(videoRoom.patient_join_url);
+  const handleSendVideoLink = async () => {
+    setActionError(null);
+    try {
+      await sendVideoLinkMutation.mutateAsync();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Error al enviar el link.");
+    }
   };
 
+  // ── Edit mode ────────────────────────────────────────────────────────────────
+  if (isEditing) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--psy-line)" }}>
+          <h2 className="font-semibold text-[14px]" style={{ color: "var(--psy-ink-1)" }}>Editando cita</h2>
+          <button
+            type="button"
+            onClick={() => { setIsEditing(false); setUpdateError(null); }}
+            className="text-[13px] transition-colors"
+            style={{ color: "var(--psy-ink-3)" }}
+          >
+            Cancelar
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {updateError && (
+            <p className="text-[12px] mb-3" style={{ color: "var(--psy-danger)" }}>{updateError}</p>
+          )}
+          <AppointmentForm
+            mode="edit"
+            initialValues={appt}
+            onSubmit={() => {}}
+            onUpdate={handleUpdate}
+            isSubmitting={updateMutation.isPending}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Detail view ──────────────────────────────────────────────────────────────
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="font-semibold" style={{ color: "var(--psy-ink-1)" }}>Detalle de cita</h2>
-        <button type="button" onClick={onClose} className="text-xl transition-colors" style={{ color: "var(--psy-ink-3)" }}>✕</button>
+      <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--psy-line)" }}>
+        <h2 className="font-semibold text-[14px]" style={{ color: "var(--psy-ink-1)" }}>Detalle de cita</h2>
+        <div className="flex items-center gap-3">
+          {appt.status === "scheduled" && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="text-[12px] font-medium transition-colors"
+              style={{ color: "var(--psy-primary)" }}
+            >
+              Editar
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="text-xl transition-colors" style={{ color: "var(--psy-ink-3)" }}>✕</button>
+        </div>
       </div>
 
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -179,40 +214,42 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
 
         {appt.status === "scheduled" && !showCancelForm && (
           <div className="flex flex-col gap-2">
+            {/* Primary: start session */}
+            <Button
+              size="sm"
+              className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white"
+              onClick={handleStartSession}
+              disabled={createSessionMutation.isPending}
+            >
+              {createSessionMutation.isPending ? "Iniciando..." : "▶ Iniciar sesión"}
+            </Button>
+
+            {/* Virtual only: send link to patient */}
             {appt.modality === "virtual" && (
               <>
-                <Button
-                  size="sm"
-                  className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)] text-white"
-                  onClick={handleStartVideo}
-                  disabled={createRoomMutation.isPending || refreshTokenMutation.isPending}
-                >
-                  {createRoomMutation.isPending || refreshTokenMutation.isPending
-                    ? "Iniciando..."
-                    : "Iniciar videollamada"}
-                </Button>
-                {videoRoom && (
+                {sendVideoLinkMutation.isSuccess ? (
+                  <p className="text-[12px] text-center py-1" style={{ color: "var(--psy-ok)" }}>
+                    ✓ Link enviado al paciente
+                  </p>
+                ) : (
                   <Button
-                    type="button"
                     size="sm"
                     variant="outline"
                     className="text-[var(--psy-info)] border-[var(--psy-info)] hover:bg-[var(--psy-bg-soft)]"
-                    onClick={handleCopyPatientLink}
+                    onClick={handleSendVideoLink}
+                    disabled={sendVideoLinkMutation.isPending}
                   >
-                    Copiar link del paciente
+                    {sendVideoLinkMutation.isPending ? "Enviando..." : "Enviar link al paciente"}
                   </Button>
                 )}
-                {videoError && <p className="text-xs" style={{ color: "var(--psy-danger)" }}>{videoError}</p>}
+                {sendVideoLinkMutation.isError && (
+                  <p className="text-xs" style={{ color: "var(--psy-danger)" }}>
+                    {(sendVideoLinkMutation.error as Error).message}
+                  </p>
+                )}
               </>
             )}
-            <Button
-              size="sm"
-              className="bg-[var(--psy-ok)] hover:opacity-90 text-white"
-              onClick={handleComplete}
-              disabled={completeMutation.isPending}
-            >
-              {completeMutation.isPending ? "Procesando..." : "✓ Completar y registrar sesión"}
-            </Button>
+
             <Button
               size="sm"
               variant="outline"

@@ -18,6 +18,10 @@ interface Props {
   onSubmit: (payload: AppointmentCreatePayload) => void;
   isSubmitting: boolean;
   error?: string | null;
+  // Edit mode
+  mode?: "create" | "edit";
+  initialValues?: import("@/lib/api").AppointmentDetail;
+  onUpdate?: (payload: AppointmentUpdatePayload) => void;
 }
 
 const SESSION_TYPE_LABELS: Record<SessionType, string> = {
@@ -63,7 +67,7 @@ function todayISO(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSubmitting, error }: Props) {
+export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSubmitting, error, mode: formMode = "create", initialValues, onUpdate }: Props) {
   const qc = useQueryClient();
   const now = defaultDate ?? new Date();
   const endDefault = new Date(now.getTime() + 50 * 60 * 1000);
@@ -78,11 +82,15 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
   const debouncedQuery = useDebounce(searchQuery, 300);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [start, setStart] = useState(toLocalDatetimeValue(now));
-  const [end, setEnd] = useState(toLocalDatetimeValue(endDefault));
-  const [sessionType, setSessionType] = useState<SessionType>("individual");
-  const [modality, setModality] = useState<Modality>("presential");
-  const [notes, setNotes] = useState("");
+  const [start, setStart] = useState(
+    initialValues ? toLocalDatetimeValue(new Date(initialValues.scheduled_start)) : toLocalDatetimeValue(now)
+  );
+  const [end, setEnd] = useState(
+    initialValues ? toLocalDatetimeValue(new Date(initialValues.scheduled_end)) : toLocalDatetimeValue(endDefault)
+  );
+  const [sessionType, setSessionType] = useState<SessionType>(initialValues?.session_type ?? "individual");
+  const [modality, setModality] = useState<Modality>(initialValues?.modality ?? "presential");
+  const [notes, setNotes] = useState(initialValues?.notes ?? "");
 
   // ── Recurring series state ────────────────────────────────────────────────
   const [seriesPatient, setSeriesPatient] = useState<PatientSummary | null>(null);
@@ -146,6 +154,16 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formMode === "edit") {
+      onUpdate?.({
+        scheduled_start: toISOWithOffset(start),
+        scheduled_end: toISOWithOffset(end),
+        session_type: sessionType,
+        modality,
+        notes: notes || undefined,
+      });
+      return;
+    }
     if (!patientId) { setPatientError("Selecciona un paciente"); return; }
     setPatientError(null);
     onSubmit({
@@ -237,32 +255,34 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
 
   return (
     <div className="space-y-4">
-      {/* Mode toggle */}
-      <div className="flex rounded-lg border border-input overflow-hidden text-sm">
-        <button
-          type="button"
-          onClick={() => setMode("single")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 transition-colors ${
-            mode === "single" ? "bg-[var(--psy-primary)] text-white font-semibold" : "bg-white text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <CalendarDays size={15} />
-          Cita única
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("recurring")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 transition-colors ${
-            mode === "recurring" ? "bg-[var(--psy-primary)] text-white font-semibold" : "bg-white text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <Repeat size={15} />
-          Cita recurrente
-        </button>
-      </div>
+      {/* Mode toggle — hidden in edit mode */}
+      {formMode === "create" && (
+        <div className="flex rounded-lg border border-input overflow-hidden text-sm">
+          <button
+            type="button"
+            onClick={() => setMode("single")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 transition-colors ${
+              mode === "single" ? "bg-[var(--psy-primary)] text-white font-semibold" : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <CalendarDays size={15} />
+            Cita única
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("recurring")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 transition-colors ${
+              mode === "recurring" ? "bg-[var(--psy-primary)] text-white font-semibold" : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Repeat size={15} />
+            Cita recurrente
+          </button>
+        </div>
+      )}
 
-      {/* ── Single appointment ── */}
-      {mode === "single" && (
+      {/* ── Single appointment (also used in edit mode) ── */}
+      {(mode === "single" || formMode === "edit") && (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>
@@ -270,14 +290,16 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
             </div>
           )}
 
-          <PatientPicker
-            selected={selectedPatient} onSelect={(p) => { setSelectedPatient(p); setSearchQuery(""); setShowResults(false); setPatientError(null); }}
-            onClear={() => { setSelectedPatient(null); setSearchQuery(""); }}
-            query={searchQuery} setQuery={setSearchQuery}
-            showRes={showResults} setShowRes={setShowResults}
-            results={searchResults?.items} fetching={isFetching}
-            ref={containerRef} error={patientError}
-          />
+          {formMode === "create" && (
+            <PatientPicker
+              selected={selectedPatient} onSelect={(p) => { setSelectedPatient(p); setSearchQuery(""); setShowResults(false); setPatientError(null); }}
+              onClear={() => { setSelectedPatient(null); setSearchQuery(""); }}
+              query={searchQuery} setQuery={setSearchQuery}
+              showRes={showResults} setShowRes={setShowResults}
+              results={searchResults?.items} fetching={isFetching}
+              ref={containerRef} error={patientError}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -311,13 +333,13 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
           </div>
 
           <Button type="submit" className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]" disabled={isSubmitting}>
-            {isSubmitting ? "Guardando..." : "Agendar cita"}
+            {isSubmitting ? "Guardando..." : formMode === "edit" ? "Guardar cambios" : "Agendar cita"}
           </Button>
         </form>
       )}
 
-      {/* ── Recurring series ── */}
-      {mode === "recurring" && (
+      {/* ── Recurring series (create mode only) ── */}
+      {mode === "recurring" && formMode === "create" && (
         <form onSubmit={handleSubmitSeries} className="space-y-4">
           {seriesError && (
             <div className="rounded-md p-3 text-sm" role="alert" style={{ background: "color-mix(in srgb, var(--psy-danger) 8%, var(--psy-surface))", color: "var(--psy-danger)" }}>

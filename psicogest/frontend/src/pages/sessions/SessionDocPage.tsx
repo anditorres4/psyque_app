@@ -5,7 +5,7 @@
  * Todos los campos editables mientras status=draft. Inmutables tras firmar.
  */
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown } from "lucide-react";
 
@@ -54,6 +54,8 @@ export function SessionDocPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const autoStart = searchParams.get("autostart") === "1";
 
   const {
     data: sess,
@@ -181,9 +183,13 @@ export function SessionDocPage() {
       await saveMutation.mutateAsync();
       return api.sessions.sign(sessionId!);
     },
-    onSuccess: () => {
+    onSuccess: (signed) => {
       qc.invalidateQueries({ queryKey: ["session", sessionId] });
       qc.invalidateQueries({ queryKey: ["sessions"] });
+      if (signed.appointment_id) {
+        qc.invalidateQueries({ queryKey: ["appointment", String(signed.appointment_id)] });
+        qc.invalidateQueries({ queryKey: ["appointments"] });
+      }
       setSignConfirm(false);
       setSignError(null);
     },
@@ -484,7 +490,7 @@ export function SessionDocPage() {
         <div className="flex flex-col gap-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 140px)" }}>
 
           {/* Video call */}
-          <HmsVideoPanel appointmentId={sess.appointment_id ? String(sess.appointment_id) : null} />
+          <HmsVideoPanel appointmentId={sess.appointment_id ? String(sess.appointment_id) : null} autoStart={autoStart} />
 
           {/* Resumen para el paciente */}
           <div
