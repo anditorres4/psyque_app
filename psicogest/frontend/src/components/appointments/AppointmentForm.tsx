@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type {
   AppointmentCreatePayload,
+  AppointmentUpdatePayload,
   AppointmentSeriesCreate,
   Modality,
   PatientSummary,
