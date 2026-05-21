@@ -102,7 +102,7 @@ async def stripe_webhook(
         event = stripe.Webhook.construct_event(
             payload, stripe_signature, settings.stripe_webhook_secret
         )
-    except stripe.error.SignatureVerificationError:
+    except (stripe.error.SignatureVerificationError, ValueError):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid Stripe signature")
 
     event_type = event["type"]

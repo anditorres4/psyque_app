@@ -59,8 +59,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (user.app_metadata?.role === "patient") return <Navigate to="/portal/dashboard" replace />;
   if (!tenantReady) return <Navigate to="/complete-profile" replace />;
 
-  // Redirect to paywall if subscription expired beyond grace period
-  if (billing && billing.subscription_status !== "trial" && billing.days_remaining === 0 && !billing.in_grace_period) {
+  // Redirect to paywall when subscription is fully expired (beyond 3-day grace period).
+  // Covers both free_trial expirations (subscription_status stays "trial") and paid plan cancellations.
+  if (billing && billing.days_remaining === 0 && !billing.in_grace_period && billing.subscription_status !== "active") {
     return <Navigate to="/paywall" replace />;
   }
 
