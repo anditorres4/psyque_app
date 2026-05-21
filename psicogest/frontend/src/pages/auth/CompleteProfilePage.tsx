@@ -85,7 +85,7 @@ export function CompleteProfilePage() {
 
     // Refresh again to get tenant_id in app_metadata
     await supabase.auth.refreshSession();
-    navigate("/dashboard", { replace: true });
+    navigate("/select-plan", { replace: true });
   };
 
   return (

@@ -217,7 +217,7 @@ export function RegisterPage() {
               className="w-full"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creando cuenta..." : "Crear cuenta — 30 días gratis"}
+              {isSubmitting ? "Creando cuenta..." : "Crear cuenta — 14 días gratis"}
             </Button>
           </form>
 
