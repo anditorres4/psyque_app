@@ -1,10 +1,13 @@
 """Thin wrapper around Resend REST API for sending transactional emails."""
 import base64
+import logging
 from datetime import datetime
 
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class EmailService:
@@ -61,21 +64,43 @@ class EmailService:
             ),
         }
 
-        response = httpx.post(
-            self.RESEND_URL,
-            json=payload,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-            timeout=10.0,
-        )
-        response.raise_for_status()
+        try:
+            response = httpx.post(
+                self.RESEND_URL,
+                json=payload,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "Resend email failed (status %d): %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            return False
+        except Exception as exc:
+            logger.warning("Resend email failed: %s", exc)
+            return False
         return True
 
     def _post(self, payload: dict) -> bool:
-        response = httpx.post(
-            self.RESEND_URL, json=payload,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
-        )
-        response.raise_for_status()
+        try:
+            response = httpx.post(
+                self.RESEND_URL, json=payload,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "Resend email failed (status %d): %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            return False
+        except Exception as exc:
+            logger.warning("Resend email failed: %s", exc)
+            return False
         return True
 
     def send_welcome(
@@ -242,11 +267,22 @@ class EmailService:
                 f"<p>Ingresa a PsyCent para confirmar o rechazar.</p>"
             ),
         }
-        response = httpx.post(
-            self.RESEND_URL, json=payload,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
-        )
-        response.raise_for_status()
+        try:
+            response = httpx.post(
+                self.RESEND_URL, json=payload,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"}, timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "Resend email failed (status %d): %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            return False
+        except Exception as exc:
+            logger.warning("Resend email failed: %s", exc)
+            return False
         return True
 
     def send_portal_invite(
@@ -315,13 +351,24 @@ class EmailService:
             ],
         }
 
-        response = httpx.post(
-            self.RESEND_URL,
-            json=payload,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-            timeout=10.0,
-        )
-        response.raise_for_status()
+        try:
+            response = httpx.post(
+                self.RESEND_URL,
+                json=payload,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "Resend email failed (status %d): %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            return False
+        except Exception as exc:
+            logger.warning("Resend email failed: %s", exc)
+            return False
         return True
 
     def send_task_assigned(
