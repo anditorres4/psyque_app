@@ -73,10 +73,10 @@ def setup_profile(
                 text("""
                     INSERT INTO tenants (
                         id, auth_user_id, full_name, colpsic_number, reps_code,
-                        plan, plan_expires_at, city, nit
+                        plan, plan_expires_at, city, nit, subscription_status
                     ) VALUES (
                         :id, :uid, :name, :colpsic, :reps,
-                        'starter', NOW() + INTERVAL '30 days', :city, :nit
+                        'free_trial', NOW() + INTERVAL '14 days', :city, :nit, 'trial'
                     )
                 """),
                 {
@@ -118,3 +118,34 @@ def setup_profile(
         )
 
     return {"tenant_id": tenant_id, "status": "configured"}
+
+
+@router.post("/auth/setup-patient-profile", status_code=200)
+def setup_patient_profile(
+    user: Annotated[AuthUser, Depends(get_auth_user)],
+) -> dict:
+    """Set app_metadata.role = 'patient' for a newly registered patient.
+
+    Does NOT create a tenants row — patients are linked to a psychologist's
+    tenant via patient records, not via the tenants table.
+    """
+    supabase_admin_url = (
+        f"{settings.supabase_url}/auth/v1/admin/users/{user.user_id}"
+    )
+    try:
+        with httpx.Client(timeout=10) as client:
+            resp = client.put(
+                supabase_admin_url,
+                headers={
+                    "Authorization": f"Bearer {settings.supabase_service_key}",
+                    "apikey": settings.supabase_service_key,
+                },
+                json={"app_metadata": {"role": "patient"}},
+            )
+            resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"No se pudo configurar el perfil de paciente: {exc}",
+        )
+    return {"role": "patient", "status": "configured"}
