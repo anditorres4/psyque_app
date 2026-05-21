@@ -26,12 +26,17 @@ class Tenant(Base, UUIDPrimaryKey):
     reps_code: Mapped[str | None] = mapped_column(sa.String(30), nullable=True)
     nit: Mapped[str | None] = mapped_column(sa.String(15), nullable=True)
     plan: Mapped[str] = mapped_column(
-        sa.Enum("starter", "pro", "clinic", name="saas_plan"),
+        sa.Enum("free_trial", "estandar", "premium", name="saas_plan"),
         nullable=False,
-        default="starter",
+        default="free_trial",
     )
     plan_expires_at: Mapped[datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=False
+    )
+    stripe_customer_id: Mapped[str | None] = mapped_column(sa.String(50), nullable=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(sa.String(50), nullable=True)
+    subscription_status: Mapped[str] = mapped_column(
+        sa.String(20), nullable=False, server_default=sa.text("'trial'")
     )
     city: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     session_duration_min: Mapped[int] = mapped_column(sa.Integer(), nullable=False, default=50)
