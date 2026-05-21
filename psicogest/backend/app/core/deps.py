@@ -1,7 +1,9 @@
 """Combined FastAPI dependencies for authenticated, tenant-scoped DB access."""
+from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status as http_status
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db, set_tenant_context
@@ -56,3 +58,40 @@ def get_patient_db(
 
 
 CurrentPatientDB = Annotated[PatientDB, Depends(get_patient_db)]
+
+
+def require_active_subscription(
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> None:
+    """Raise 402 if subscription has expired beyond the 3-day grace period."""
+    row = ctx.db.execute(
+        text("SELECT plan_expires_at FROM tenants WHERE id = :tid"),
+        {"tid": ctx.tenant.tenant_id},
+    ).fetchone()
+    if row is None:
+        raise HTTPException(http_status.HTTP_401_UNAUTHORIZED, "Tenant no encontrado")
+    if datetime.now(timezone.utc) > row.plan_expires_at + timedelta(days=3):
+        raise HTTPException(
+            http_status.HTTP_402_PAYMENT_REQUIRED,
+            "Suscripción vencida. Renueva tu plan en /select-plan",
+        )
+
+
+def require_plan(required: str):
+    """Return a dependency that raises 403 if tenant plan is not free_trial or the required plan.
+
+    free_trial always passes — tenants can evaluate all features during their trial.
+    """
+    def _check(ctx: Annotated[TenantDB, Depends(get_tenant_db)]) -> None:
+        row = ctx.db.execute(
+            text("SELECT plan FROM tenants WHERE id = :tid"),
+            {"tid": ctx.tenant.tenant_id},
+        ).fetchone()
+        if row is None:
+            raise HTTPException(http_status.HTTP_401_UNAUTHORIZED, "Tenant no encontrado")
+        if row.plan not in ("free_trial", required):
+            raise HTTPException(
+                http_status.HTTP_403_FORBIDDEN,
+                "Se requiere plan Premium para usar esta función",
+            )
+    return _check
