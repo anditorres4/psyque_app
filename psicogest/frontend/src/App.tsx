@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useBillingStatus } from "@/hooks/useBillingStatus";
 
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("@/pages/auth/RegisterPage").then((m) => ({ default: m.RegisterPage })));
@@ -34,6 +35,12 @@ const PortalSessionsPage = lazy(() => import("@/pages/portal/PortalSessionsPage"
 const PortalInvoicesPage = lazy(() => import("@/pages/portal/PortalInvoicesPage").then((m) => ({ default: m.PortalInvoicesPage })));
 const PortalOnboardingPage = lazy(() => import("@/pages/portal/PortalOnboardingPage").then((m) => ({ default: m.PortalOnboardingPage })));
 const PortalTasksPage = lazy(() => import("@/pages/portal/PortalTasksPage").then((m) => ({ default: m.PortalTasksPage })));
+const TerapeutaLoginPage = lazy(() => import("@/pages/auth/TerapeutaLoginPage").then((m) => ({ default: m.TerapeutaLoginPage })));
+const PacienteLoginPage = lazy(() => import("@/pages/auth/PacienteLoginPage").then((m) => ({ default: m.PacienteLoginPage })));
+const PacienteRegisterPage = lazy(() => import("@/pages/auth/PacienteRegisterPage").then((m) => ({ default: m.PacienteRegisterPage })));
+const PlanSelectPage = lazy(() => import("@/pages/billing/PlanSelectPage").then((m) => ({ default: m.PlanSelectPage })));
+const BillingSuccessPage = lazy(() => import("@/pages/billing/BillingSuccessPage").then((m) => ({ default: m.BillingSuccessPage })));
+const PaywallPage = lazy(() => import("@/pages/billing/PaywallPage").then((m) => ({ default: m.PaywallPage })));
 
 function PageLoader() {
   return (
@@ -45,11 +52,18 @@ function PageLoader() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, tenantReady } = useAuth();
+  const { data: billing } = useBillingStatus();
 
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.app_metadata?.role === "patient") return <Navigate to="/portal/dashboard" replace />;
   if (!tenantReady) return <Navigate to="/complete-profile" replace />;
+
+  // Redirect to paywall if subscription expired beyond grace period
+  if (billing && billing.subscription_status !== "trial" && billing.days_remaining === 0 && !billing.in_grace_period) {
+    return <Navigate to="/paywall" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -81,7 +95,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/complete-profile" element={<CompleteProfilePage />} />
@@ -89,6 +102,20 @@ export default function App() {
         <Route path="/join/:appointmentId" element={<JoinPage />} />
         <Route path="/nps/:token" element={<NpsPage />} />
         <Route path="/registro/:slug" element={<PatientRegistrationPage />} />
+
+        {/* Differentiated auth routes */}
+        <Route path="/login/terapeuta" element={<TerapeutaLoginPage />} />
+        <Route path="/login/paciente" element={<PacienteLoginPage />} />
+        <Route path="/register/terapeuta" element={<RegisterPage />} />
+        <Route path="/register/paciente" element={<PacienteRegisterPage />} />
+
+        {/* Post-registration flow (no subscription guard needed) */}
+        <Route path="/select-plan" element={<PlanSelectPage />} />
+        <Route path="/billing/success" element={<BillingSuccessPage />} />
+        <Route path="/paywall" element={<PaywallPage />} />
+
+        {/* Backward compatibility alias */}
+        <Route path="/register" element={<Navigate to="/register/terapeuta" replace />} />
 
         <Route
           element={
