@@ -16,6 +16,7 @@ from app.schemas.patient_task import PatientTaskCreate, PatientTaskOut, PatientT
 from app.services.email_service import EmailService
 
 router = APIRouter(tags=["patient-tasks"])
+portal_router = APIRouter(tags=["portal-tasks"])
 
 
 # ── Psychologist endpoints ────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ def create_task(
         ctx.db.query(Session)
         .filter(
             Session.id == _uuid.UUID(session_id),
-            Session.psychologist_id == _uuid.UUID(ctx.tenant.tenant_id),
+            Session.tenant_id == _uuid.UUID(ctx.tenant.tenant_id),
         )
         .first()
     )
@@ -135,7 +136,7 @@ def delete_task(
 
 # ── Patient portal endpoints ──────────────────────────────────────────────────
 
-@router.get("/portal/tasks", response_model=list[PatientTaskOut])
+@portal_router.get("/portal/tasks", response_model=list[PatientTaskOut])
 def portal_list_tasks(ctx: CurrentPatientDB) -> list[PatientTaskOut]:
     tasks = (
         ctx.db.query(PatientTask)
@@ -146,7 +147,7 @@ def portal_list_tasks(ctx: CurrentPatientDB) -> list[PatientTaskOut]:
     return [PatientTaskOut.model_validate(t) for t in tasks]
 
 
-@router.post("/portal/tasks/{task_id}/submit", response_model=PatientTaskOut)
+@portal_router.post("/portal/tasks/{task_id}/submit", response_model=PatientTaskOut)
 def portal_submit_task(
     task_id: str,
     body: dict,

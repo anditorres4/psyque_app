@@ -70,7 +70,10 @@ def require_active_subscription(
     ).fetchone()
     if row is None:
         raise HTTPException(http_status.HTTP_401_UNAUTHORIZED, "Tenant no encontrado")
-    if datetime.now(timezone.utc) > row.plan_expires_at + timedelta(days=3):
+    expires = row.plan_expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires + timedelta(days=3):
         raise HTTPException(
             http_status.HTTP_402_PAYMENT_REQUIRED,
             "Suscripción vencida. Renueva tu plan en /select-plan",

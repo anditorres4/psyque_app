@@ -225,7 +225,8 @@ class InvoiceService:
         sessions = (
             self.db.query(Session)
             .filter(
-                Session.id.in_([uuid.UUID(sid) for sid in invoice.session_ids])
+                Session.id.in_([uuid.UUID(sid) for sid in invoice.session_ids]),
+                Session.tenant_id == self._tenant_uuid,
             )
             .order_by(Session.actual_start)
             .all()
