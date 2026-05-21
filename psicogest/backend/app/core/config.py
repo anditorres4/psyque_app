@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     resend_api_key: str = ""
-    resend_from_email: str = "noreply@psyque.app"
+    resend_from_email: str = "noreply@psycent.com"
 
     # --- Google Calendar OAuth2 ---
     google_client_id: str = ""
