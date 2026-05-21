@@ -48,7 +48,7 @@ def _make_tenant(db: Session) -> Tenant:
         colpsic_number="123456",
         reps_code="RPS001",
         nit="901234567",
-        plan="starter",
+        plan="free_trial",
         plan_expires_at=datetime.now(tz=timezone.utc) + timedelta(days=30),
         city="Bogotá",
     )

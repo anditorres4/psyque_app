@@ -59,7 +59,7 @@ def _create_tenant(db: Session, *, name: str) -> dict:
         text("""
             INSERT INTO tenants (auth_user_id, full_name, colpsic_number, plan,
                                  plan_expires_at, city)
-            VALUES (:auth_user_id, :full_name, 'TEST-001', 'starter',
+            VALUES (:auth_user_id, :full_name, 'TEST-001', 'free_trial',
                     NOW() + INTERVAL '30 days', 'Bogotá')
             RETURNING id, auth_user_id
         """),

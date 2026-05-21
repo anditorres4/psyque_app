@@ -23,7 +23,7 @@ def _tenant(db: Session) -> str:
         text("""
             INSERT INTO tenants (auth_user_id, full_name, colpsic_number, plan,
                                  plan_expires_at, city)
-            VALUES (:auth_id, 'Test Psicólogo', 'TEST-001', 'starter',
+            VALUES (:auth_id, 'Test Psicólogo', 'TEST-001', 'free_trial',
                     NOW() + INTERVAL '30 days', 'Bogotá')
             RETURNING id
         """),

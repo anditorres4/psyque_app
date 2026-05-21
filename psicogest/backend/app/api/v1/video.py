@@ -46,7 +46,7 @@ def _ensure_patient_join_key(appt: Appointment, db: Session) -> str:
 def _get_appointment(appointment_id: str, ctx: TenantDB) -> Appointment:
     appt = ctx.db.query(Appointment).filter(
         Appointment.id == appointment_id,
-        Appointment.tenant_id == ctx.tenant.tenant_id,
+        Appointment.tenant_id == uuid.UUID(ctx.tenant.tenant_id),
     ).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Cita no encontrada")

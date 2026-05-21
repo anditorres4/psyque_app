@@ -18,7 +18,7 @@ class CustomerPortalResponse(BaseModel):
 
 
 class BillingStatusResponse(BaseModel):
-    plan: str
+    plan: Literal["free_trial", "estandar", "premium"]
     subscription_status: str
     plan_expires_at: datetime
     days_remaining: int

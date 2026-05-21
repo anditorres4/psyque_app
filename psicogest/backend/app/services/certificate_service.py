@@ -1,6 +1,7 @@
 """Attendance certificate PDF generator for patients."""
 from __future__ import annotations
 
+import calendar
 import io
 import uuid
 from datetime import date, datetime, timezone
@@ -125,7 +126,14 @@ class CertificateService:
         if from_date:
             q = q.where(ClinicalSession.actual_start >= datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc))
         if to_date:
-            q = q.where(ClinicalSession.actual_start < datetime(to_date.year, to_date.month, to_date.day + 1 if to_date.day < 28 else to_date.month, tzinfo=timezone.utc))
+            last_day = calendar.monthrange(to_date.year, to_date.month)[1]
+            if to_date.day < last_day:
+                end_dt = datetime(to_date.year, to_date.month, to_date.day + 1, tzinfo=timezone.utc)
+            else:
+                next_month = to_date.month % 12 + 1
+                next_year = to_date.year + (1 if to_date.month == 12 else 0)
+                end_dt = datetime(next_year, next_month, 1, tzinfo=timezone.utc)
+            q = q.where(ClinicalSession.actual_start < end_dt)
         q = q.order_by(ClinicalSession.actual_start)
         sessions = list(self.db.execute(q).scalars())
 

@@ -71,7 +71,7 @@ class PatientRegistrationOut(BaseModel):
     created_at: str
     first_name: str | None = None
     first_surname: str | None = None
-    email: str
+    email: str | None
 
 
 class RegistrationPublicOut(BaseModel):
@@ -109,7 +109,7 @@ def submit_registration(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Debe aceptar el consentimiento informado.")
 
     token = hashlib.sha256(f"{tenant.id}{os.urandom(16).hex()}".encode()).hexdigest()[:48]
-    email = str(body.email) if body.email else ""
+    email = str(body.email) if body.email else None
 
     reg = PatientRegistration(
         id=uuid.uuid4(),
@@ -123,14 +123,15 @@ def submit_registration(
     db.add(reg)
     db.commit()
 
-    try:
-        EmailService().send_welcome(
-            to_email=email,
-            patient_name=body.first_name,
-            psychologist_name=tenant.full_name,
-        )
-    except Exception:
-        pass
+    if email:
+        try:
+            EmailService().send_welcome(
+                to_email=email,
+                patient_name=body.first_name,
+                psychologist_name=tenant.full_name,
+            )
+        except Exception:
+            pass
 
     return {"ok": True, "token": token}
 

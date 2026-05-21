@@ -80,6 +80,8 @@ def handle_checkout_completed(db: Session, event_data: dict) -> None:
     obj = event_data["object"]
     tenant_id = obj.get("metadata", {}).get("tenant_id")
     plan = obj.get("metadata", {}).get("plan", "estandar")
+    if plan not in {"estandar", "premium"}:
+        plan = "estandar"
     subscription_id = obj.get("subscription")
     if not tenant_id or not subscription_id:
         return

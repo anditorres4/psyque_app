@@ -3,8 +3,6 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
 from app.core.deps import get_tenant_db, TenantDB
 from app.models.tenant import Tenant
 from app.schemas.ai_schemas import (
@@ -34,7 +32,10 @@ router = APIRouter(prefix="/ai", tags=["AI"])
 
 def _get_tenant_from_ctx(ctx: TenantDB) -> Tenant:
     """Get Tenant model from TenantDB context."""
-    return ctx.db.query(Tenant).filter(Tenant.id == uuid.UUID(ctx.tenant.tenant_id)).first()
+    tenant = ctx.db.query(Tenant).filter(Tenant.id == uuid.UUID(ctx.tenant.tenant_id)).first()
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    return tenant
 
 
 @router.get("/config", response_model=AIConfigRead)
