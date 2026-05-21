@@ -542,62 +542,62 @@ export function SessionDocPage() {
             patientId={String(sess.patient_id)}
             readOnly={readOnly}
           />
-
-          {/* Firmar sesión */}
-          {!readOnly && (
-            <div
-              className="rounded-xl p-4 space-y-3"
-              style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-warn, #f39c12)" }}
-            >
-              <div className="flex items-start gap-2">
-                <Lock size={14} className="mt-0.5 flex-shrink-0" style={{ color: "var(--psy-warn, #f39c12)" }} />
-                <p className="psy-mono text-[11px] leading-relaxed" style={{ color: "var(--psy-ink-2)" }}>
-                  Al firmar la sesión, todos los campos quedan <strong>inmutables</strong> según la Resolución 1995/1999.
-                  Asegúrate de enviar el resumen al paciente antes de firmar.
-                </p>
-              </div>
-
-              {!signConfirm ? (
-                <button
-                  type="button"
-                  onClick={() => setSignConfirm(true)}
-                  className="w-full py-2.5 rounded-lg psy-mono text-[13px] font-semibold flex items-center justify-center gap-2 transition-opacity"
-                  style={{ background: "var(--psy-primary)", color: "#fff" }}
-                >
-                  <PenLine size={14} />
-                  Firmar sesión
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="psy-mono text-[12px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
-                    ¿Confirmar firma? Esta acción no se puede deshacer.
-                  </p>
-                  {signError && <p className="psy-mono text-[11px]" style={{ color: "var(--psy-danger, #e74c3c)" }}>{signError}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => signMutation.mutate()}
-                      disabled={signMutation.isPending}
-                      className="flex-1 py-2 rounded-lg psy-mono text-[12px] font-semibold disabled:opacity-60 transition-opacity"
-                      style={{ background: "var(--psy-primary)", color: "#fff" }}
-                    >
-                      {signMutation.isPending ? "Firmando…" : "Sí, firmar"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignConfirm(false)}
-                      className="flex-1 py-2 rounded-lg psy-mono text-[12px] transition-colors"
-                      style={{ background: "var(--psy-surface)", color: "var(--psy-ink-2)", border: "1px solid var(--psy-line)" }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Firmar sesión — sección full-width al final */}
+      {!readOnly && (
+        <div
+          className="rounded-xl p-4"
+          style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-warn, #f39c12)" }}
+        >
+          <div className="flex items-center justify-between gap-6 flex-wrap">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <Lock size={14} className="mt-0.5 flex-shrink-0" style={{ color: "var(--psy-warn, #f39c12)" }} />
+              <p className="psy-mono text-[11px] leading-relaxed" style={{ color: "var(--psy-ink-2)" }}>
+                Al firmar la sesión, todos los campos quedan <strong>inmutables</strong> según la Resolución 1995/1999.
+                Asegúrate de enviar el resumen al paciente antes de firmar.
+              </p>
+            </div>
+
+            {!signConfirm ? (
+              <button
+                type="button"
+                onClick={() => setSignConfirm(true)}
+                className="py-2.5 px-6 rounded-lg psy-mono text-[13px] font-semibold flex items-center gap-2 transition-opacity flex-shrink-0"
+                style={{ background: "var(--psy-primary)", color: "#fff" }}
+              >
+                <PenLine size={14} />
+                Firmar sesión
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {signError && <p className="psy-mono text-[11px]" style={{ color: "var(--psy-danger, #e74c3c)" }}>{signError}</p>}
+                <p className="psy-mono text-[12px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>
+                  ¿Confirmar? Esta acción no se puede deshacer.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => signMutation.mutate()}
+                  disabled={signMutation.isPending}
+                  className="py-2 px-5 rounded-lg psy-mono text-[12px] font-semibold disabled:opacity-60 transition-opacity"
+                  style={{ background: "var(--psy-primary)", color: "#fff" }}
+                >
+                  {signMutation.isPending ? "Firmando…" : "Sí, firmar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSignConfirm(false)}
+                  className="py-2 px-4 rounded-lg psy-mono text-[12px] transition-colors"
+                  style={{ background: "var(--psy-surface)", color: "var(--psy-ink-2)", border: "1px solid var(--psy-line)" }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

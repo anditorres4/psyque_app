@@ -109,7 +109,7 @@ export function HmsVideoPanel({ appointmentId, autoStart }: Props) {
       </div>
 
       {/* Video embed */}
-      <div style={{ height: "340px", position: "relative" }}>
+      <div style={{ height: "520px", position: "relative" }}>
         <Suspense
           fallback={
             <div className="h-full flex items-center justify-center psy-mono text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
