@@ -151,3 +151,49 @@ def handle_subscription_deleted(db: Session, event_data: dict) -> None:
         {"cid": customer_id},
     )
     db.commit()
+
+
+def sync_from_stripe(db: Session, tenant_id: str) -> dict:
+    """Fetch the tenant's active Stripe subscription and sync plan/status/expiry to DB.
+
+    Use when the DB plan is out of sync with Stripe (e.g. webhook delivery failure).
+    """
+    _init_stripe()
+
+    row = db.execute(
+        text("SELECT stripe_subscription_id FROM tenants WHERE id = :tid"),
+        {"tid": tenant_id},
+    ).fetchone()
+
+    if not row or not row.stripe_subscription_id:
+        raise ValueError("No hay suscripción activa de Stripe para sincronizar")
+
+    subscription = stripe.Subscription.retrieve(
+        row.stripe_subscription_id,
+        expand=["items.data.price"],
+    )
+
+    price_id = subscription["items"]["data"][0]["price"]["id"]
+
+    if price_id == settings.stripe_price_id_premium:
+        plan = "premium"
+    elif price_id == settings.stripe_price_id_estandar:
+        plan = "estandar"
+    else:
+        raise ValueError(f"Price ID desconocido en Stripe: {price_id}")
+
+    period_end: int = subscription["current_period_end"]
+
+    db.execute(
+        text("""
+            UPDATE tenants
+            SET plan = :plan,
+                subscription_status = 'active',
+                plan_expires_at = to_timestamp(:period_end)
+            WHERE id = :tid
+        """),
+        {"plan": plan, "period_end": period_end, "tid": tenant_id},
+    )
+    db.commit()
+
+    return {"plan": plan, "synced": True}

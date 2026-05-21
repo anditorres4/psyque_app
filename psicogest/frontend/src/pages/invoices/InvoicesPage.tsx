@@ -8,6 +8,8 @@ import { api, type InvoiceStatus, type InvoiceSummary, type PatientSummary } fro
 import { Download, Send, CheckCircle, FileMinus, Layers } from "lucide-react";
 import { InvoiceNoteDialog } from "./InvoiceNoteDialog";
 import { BulkInvoiceDialog } from "./BulkInvoiceDialog";
+import { useUpgradePrompt } from "@/hooks/useUpgradePrompt";
+import { UpgradePromptDialog } from "@/components/billing/UpgradePromptDialog";
 
 const SPARK_REVENUE = [8, 12, 11, 15, 14, 18, 20, 17, 22, 20, 25, 28];
 
@@ -220,6 +222,7 @@ export function InvoicesPage() {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [noteDialog, setNoteDialog] = useState<{ id: string; number: string } | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const { upgradePromptOpen, closeUpgradePrompt, handleQueryError } = useUpgradePrompt();
 
   const { data: invoicesData, isLoading, isError } = useQuery({
     queryKey: ["invoices", selectedPatient?.id, filterStatus],
@@ -232,11 +235,13 @@ export function InvoicesPage() {
   const issueMutation = useMutation({
     mutationFn: (id: string) => api.invoices.issue(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoices"] }),
+    onError: handleQueryError,
   });
 
   const payMutation = useMutation({
     mutationFn: (id: string) => api.invoices.pay(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoices"] }),
+    onError: handleQueryError,
   });
 
   const handleDownload = async (id: string, invoiceNumber: string) => {
@@ -467,6 +472,7 @@ export function InvoicesPage() {
       />
     )}
     {bulkOpen && <BulkInvoiceDialog onClose={() => setBulkOpen(false)} />}
+    <UpgradePromptDialog open={upgradePromptOpen} onClose={closeUpgradePrompt} />
     </>
   );
 }

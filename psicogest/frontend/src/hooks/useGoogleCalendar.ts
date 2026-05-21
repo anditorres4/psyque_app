@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 export function useGCalStatus() {
   return useQuery({
@@ -13,8 +13,15 @@ export function useGCalStatus() {
 export function useGCalConnect() {
   return useMutation({
     mutationFn: async () => {
-      const { auth_url } = await api.googleCalendar.getAuthUrl();
-      window.location.href = auth_url;
+      try {
+        const { auth_url } = await api.googleCalendar.getAuthUrl();
+        window.location.href = auth_url;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 503) {
+          throw new Error("Google Calendar no está disponible en este momento. Contacta al soporte.");
+        }
+        throw err;
+      }
     },
   });
 }

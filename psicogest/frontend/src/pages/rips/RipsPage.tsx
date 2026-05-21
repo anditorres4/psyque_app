@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type RipsValidateResponse } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, PsyButton, PsyCard, Tag } from "@/components/ui/psy";
 import { Download, CheckCircle, AlertCircle } from "lucide-react";
+import { useUpgradePrompt } from "@/hooks/useUpgradePrompt";
+import { UpgradePromptDialog } from "@/components/billing/UpgradePromptDialog";
 
 const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const MONTH_NAMES_LONG = [
@@ -29,11 +31,16 @@ export function RipsPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [validation, setValidation] = useState<RipsValidateResponse | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const { upgradePromptOpen, closeUpgradePrompt, handleQueryError } = useUpgradePrompt();
 
-  const { data: exports, isLoading } = useQuery({
+  const { data: exports, isLoading, error: exportsError } = useQuery({
     queryKey: ["rips"],
     queryFn: () => api.rips.list(20),
   });
+
+  useEffect(() => {
+    if (exportsError) handleQueryError(exportsError);
+  }, [exportsError]);
 
   const validateMutation = useMutation({
     mutationFn: ({ year, month }: { year: number; month: number }) =>
@@ -42,6 +49,7 @@ export function RipsPage() {
       setValidation(data);
       setShowValidation(true);
     },
+    onError: handleQueryError,
   });
 
   const generateMutation = useMutation({
@@ -52,6 +60,7 @@ export function RipsPage() {
       setShowValidation(false);
       setValidation(null);
     },
+    onError: handleQueryError,
   });
 
   const handleDownload = async (id: string) => {
@@ -281,5 +290,6 @@ export function RipsPage() {
         </PsyCard>
       </div>
     </div>
+    <UpgradePromptDialog open={upgradePromptOpen} onClose={closeUpgradePrompt} />
   );
 }

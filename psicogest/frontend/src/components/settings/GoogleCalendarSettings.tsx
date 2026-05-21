@@ -43,13 +43,22 @@ export function GoogleCalendarSettings() {
       </div>
 
       {!status?.connected ? (
-        <Button
-          onClick={() => connectMutation.mutate()}
-          disabled={connectMutation.isPending}
-          className="w-full bg-[#1E3A5F] hover:bg-[#162d4a] text-white"
-        >
-          {connectMutation.isPending ? "Redirigiendo..." : "Conectar con Google Calendar"}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={() => connectMutation.mutate()}
+            disabled={connectMutation.isPending}
+            className="w-full bg-[#1E3A5F] hover:bg-[#162d4a] text-white"
+          >
+            {connectMutation.isPending ? "Redirigiendo..." : "Conectar con Google Calendar"}
+          </Button>
+          {connectMutation.isError && (
+            <p className="text-sm text-red-600">
+              {connectMutation.error instanceof Error
+                ? connectMutation.error.message
+                : "Error al conectar con Google Calendar. Intenta de nuevo."}
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           <div className="rounded-lg border p-4 bg-white space-y-3">

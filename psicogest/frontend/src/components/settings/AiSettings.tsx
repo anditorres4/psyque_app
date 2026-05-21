@@ -140,7 +140,8 @@ export function AiSettings() {
               <Label htmlFor="apiKey">API Key</Label>
               <Input
                 id="apiKey"
-                type="password"
+                type="text"
+                autoComplete="off"
                 placeholder="Ingresa tu API key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}

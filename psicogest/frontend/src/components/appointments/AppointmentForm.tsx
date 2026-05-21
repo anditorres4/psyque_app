@@ -68,6 +68,63 @@ function todayISO(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Module-scope component — prevents focus loss caused by React unmounting on every parent re-render
+function PatientPicker({
+  selected, onSelect, onClear, query, setQuery, showRes, setShowRes,
+  results, fetching, ref: pRef, error: pErr, defaultPatientId,
+}: {
+  selected: PatientSummary | null;
+  onSelect: (p: PatientSummary) => void;
+  onClear: () => void;
+  query: string; setQuery: (v: string) => void;
+  showRes: boolean; setShowRes: (v: boolean) => void;
+  results: PatientSummary[] | undefined; fetching: boolean;
+  ref: React.RefObject<HTMLDivElement>;
+  error: string | null;
+  defaultPatientId?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">Paciente</label>
+      {defaultPatientId ? (
+        <div className="h-10 flex items-center px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">
+          Paciente preseleccionado
+        </div>
+      ) : selected ? (
+        <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-slate-50 text-sm">
+          <span className="flex-1 truncate">{patientLabel(selected)}</span>
+          <button type="button" className="text-muted-foreground hover:text-foreground shrink-0" onClick={onClear}>✕</button>
+        </div>
+      ) : (
+        <div ref={pRef} className="relative">
+          <Input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setShowRes(true); }}
+            onFocus={() => setShowRes(true)}
+            placeholder="Buscar por nombre, apellido o documento..."
+            autoComplete="off"
+          />
+          {showRes && query.length >= 2 && (
+            <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-md shadow-lg max-h-52 overflow-y-auto">
+              {fetching && <p className="text-xs text-muted-foreground p-3">Buscando...</p>}
+              {!fetching && results?.length === 0 && <p className="text-xs text-muted-foreground p-3">Sin resultados para "{query}"</p>}
+              {results?.map((p) => (
+                <button key={p.id} type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 border-b last:border-b-0"
+                  onMouseDown={(e) => e.preventDefault()} onClick={() => onSelect(p)}>
+                  <span className="font-medium">{[p.first_surname, p.second_surname].filter(Boolean).join(" ")}, {p.first_name}</span>
+                  <span className="text-muted-foreground ml-2 text-xs">{p.doc_type} {p.doc_number}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {pErr && <p className="mt-1 text-xs" style={{ color: "var(--psy-danger)" }}>{pErr}</p>}
+    </div>
+  );
+}
+
 export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSubmitting, error, mode: formMode = "create", initialValues, onUpdate }: Props) {
   const qc = useQueryClient();
   const now = defaultDate ?? new Date();
@@ -196,62 +253,6 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
     });
   };
 
-  // ── Patient search helpers ────────────────────────────────────────────────
-  function PatientPicker({
-    selected, onSelect, onClear, query, setQuery, showRes, setShowRes,
-    results, fetching, ref: pRef, error: pErr,
-  }: {
-    selected: PatientSummary | null;
-    onSelect: (p: PatientSummary) => void;
-    onClear: () => void;
-    query: string; setQuery: (v: string) => void;
-    showRes: boolean; setShowRes: (v: boolean) => void;
-    results: PatientSummary[] | undefined; fetching: boolean;
-    ref: React.RefObject<HTMLDivElement>;
-    error: string | null;
-  }) {
-    return (
-      <div>
-        <label className="block text-sm font-medium mb-1">Paciente</label>
-        {defaultPatientId ? (
-          <div className="h-10 flex items-center px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">
-            Paciente preseleccionado
-          </div>
-        ) : selected ? (
-          <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-slate-50 text-sm">
-            <span className="flex-1 truncate">{patientLabel(selected)}</span>
-            <button type="button" className="text-muted-foreground hover:text-foreground shrink-0" onClick={onClear}>✕</button>
-          </div>
-        ) : (
-          <div ref={pRef} className="relative">
-            <Input
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setShowRes(true); }}
-              onFocus={() => setShowRes(true)}
-              placeholder="Buscar por nombre, apellido o documento..."
-              autoComplete="off"
-            />
-            {showRes && query.length >= 2 && (
-              <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-md shadow-lg max-h-52 overflow-y-auto">
-                {fetching && <p className="text-xs text-muted-foreground p-3">Buscando...</p>}
-                {!fetching && results?.length === 0 && <p className="text-xs text-muted-foreground p-3">Sin resultados para "{query}"</p>}
-                {results?.map((p) => (
-                  <button key={p.id} type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 border-b last:border-b-0"
-                    onMouseDown={(e) => e.preventDefault()} onClick={() => onSelect(p)}>
-                    <span className="font-medium">{[p.first_surname, p.second_surname].filter(Boolean).join(" ")}, {p.first_name}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">{p.doc_type} {p.doc_number}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {pErr && <p className="mt-1 text-xs" style={{ color: "var(--psy-danger)" }}>{pErr}</p>}
-      </div>
-    );
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -299,6 +300,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
               showRes={showResults} setShowRes={setShowResults}
               results={searchResults?.items} fetching={isFetching}
               ref={containerRef} error={patientError}
+              defaultPatientId={defaultPatientId}
             />
           )}
 
@@ -360,6 +362,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, onSubmit, isSub
             showRes={seriesShowResults} setShowRes={setSeriesShowResults}
             results={seriesSearchResults?.items} fetching={isFetchingSeries}
             ref={seriesContainerRef} error={seriesPatientError}
+            defaultPatientId={defaultPatientId}
           />
 
           <div className="grid grid-cols-2 gap-3">

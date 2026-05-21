@@ -118,3 +118,19 @@ async def stripe_webhook(
         billing_service.handle_subscription_deleted(db, event_data)
 
     return {"received": True}
+
+
+@router.post("/sync-from-stripe")
+def sync_from_stripe_endpoint(
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> dict:
+    """Force-sync the DB plan from Stripe — use when plan is out of sync after webhook failure."""
+    try:
+        return billing_service.sync_from_stripe(
+            db=ctx.db,
+            tenant_id=ctx.tenant.tenant_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except Exception as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al consultar Stripe: {exc}")
