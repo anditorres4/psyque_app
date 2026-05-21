@@ -978,6 +978,7 @@ export interface DashboardSummary {
 export const api = {
   auth: {
     setupProfile: () => request<{ tenant_id: string; status: string }>("POST", "/auth/setup-profile"),
+    setupPatientProfile: () => request<{ role: string; status: string }>("POST", "/auth/setup-patient-profile"),
   },
   caja: {
     listSessions: () => request<CashSessionListResponse>("GET", "/caja/sessions"),
@@ -1368,4 +1369,20 @@ referrals: {
         `/appointments/public/${appointmentId}/video-room/token?join_key=${encodeURIComponent(joinKey)}`
       ),
   },
+  // --- Billing ---------------------------------------------------------
+  billing: {
+    getStatus: () => request<import("@/services/billing").BillingStatus>("GET", "/billing/status"),
+    createCheckoutSession: (plan: "estandar" | "premium") =>
+      request<import("@/services/billing").CheckoutSessionResponse>(
+        "POST",
+        "/billing/create-checkout-session",
+        { plan }
+      ),
+    createCustomerPortal: () =>
+      request<import("@/services/billing").CustomerPortalResponse>(
+        "POST",
+        "/billing/customer-portal"
+      ),
+  },
+  // --- Auth helpers ----------------------------------------------------
 };
