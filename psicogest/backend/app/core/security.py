@@ -102,6 +102,11 @@ def get_current_tenant(
             raise credentials_exception
 
         app_metadata: dict = payload.get("app_metadata", {})
+        if app_metadata.get("role") == "patient":
+            raise HTTPException(
+                status_code=403,
+                detail="Acceso restringido a psicólogos",
+            )
         tenant_id: str = app_metadata.get("tenant_id", "")
         if not tenant_id:
             raise HTTPException(

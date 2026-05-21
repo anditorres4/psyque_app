@@ -171,6 +171,18 @@ def portal_session_certificate(
 ) -> StreamingResponse:
     """Download a single-session attendance certificate for the authenticated patient."""
     patient = _get_patient(ctx)
+    # SECURITY: verify the session belongs to the authenticated patient (BOLA prevention)
+    session_check = (
+        ctx.db.query(Session)
+        .filter(
+            Session.id == uuid.UUID(session_id),
+            Session.patient_id == patient.id,
+            Session.tenant_id == patient.tenant_id,
+        )
+        .one_or_none()
+    )
+    if not session_check:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada")
     try:
         pdf_bytes = CertificateService(ctx.db, str(patient.tenant_id)).generate_single_session(session_id)
     except ValueError as exc:
