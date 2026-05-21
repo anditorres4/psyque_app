@@ -14,7 +14,7 @@ class TenantProfileRead(BaseModel):
     nit: str | None
     city: str
     session_duration_min: int
-    plan: Literal["starter", "pro", "clinic"]
+    plan: Literal["free_trial", "estandar", "premium"]
     plan_expires_at: datetime
     booking_enabled: bool
     booking_slug: str | None
