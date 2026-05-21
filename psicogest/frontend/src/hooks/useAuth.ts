@@ -12,9 +12,28 @@ interface AuthState {
 
 async function ensureTenantConfigured(session: Session): Promise<Session> {
   if (session.user.app_metadata?.tenant_id) return session;
-  // Google OAuth users lack colpsic_number — skip auto-setup, route handles it
+  if (session.user.app_metadata?.role === "patient") return session;
+
   const meta = session.user.user_metadata ?? {};
+
+  // Patient self-registration: has register_as=patient but no colpsic_number
+  if (meta.register_as === "patient" && !meta.colpsic_number) {
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("setup-patient-profile timeout")), 8000)
+      );
+      await Promise.race([api.auth.setupPatientProfile(), timeout]);
+      const { data } = await supabase.auth.refreshSession();
+      return data.session ?? session;
+    } catch (e) {
+      console.error("[setup-patient-profile] error:", e);
+      return session;
+    }
+  }
+
+  // Google OAuth users lack colpsic_number — skip auto-setup, /complete-profile handles it
   if (!meta.colpsic_number) return session;
+
   try {
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("setup-profile timeout")), 8000)
