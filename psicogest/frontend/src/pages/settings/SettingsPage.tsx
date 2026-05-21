@@ -7,6 +7,8 @@ import { AvailabilityGrid } from "@/components/settings/AvailabilityGrid";
 import { BookingSettings } from "@/components/settings/BookingSettings";
 import { GoogleCalendarSettings } from "@/components/settings/GoogleCalendarSettings";
 import { AiSettings } from "@/components/settings/AiSettings";
+import { useBillingStatus } from "@/hooks/useBillingStatus";
+import { billingApi } from "@/services/billing";
 
 const TABS = [
   { id: "perfil", label: "Perfil profesional" },
@@ -15,15 +17,85 @@ const TABS = [
   { id: "agendamiento", label: "Agendamiento" },
   { id: "google-calendar", label: "Google Calendar" },
   { id: "psycent-ia", label: "PsyCent IA" },
+  { id: "plan", label: "Plan y facturación" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+function PlanTabContent() {
+  const { data: billing, isLoading } = useBillingStatus();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Cargando...</p>;
+  if (!billing) return null;
+
+  const planLabels: Record<string, string> = {
+    free_trial: "Prueba gratuita",
+    estandar: "Estándar",
+    premium: "Premium",
+  };
+
+  const statusLabels: Record<string, string> = {
+    trial: "Período de prueba",
+    active: "Activo",
+    past_due: "Pago pendiente",
+    canceled: "Cancelado",
+    expired: "Vencido",
+  };
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    try {
+      const { portal_url } = await billingApi.createCustomerPortal();
+      window.location.href = portal_url;
+    } catch {
+      setPortalLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[var(--radius)] p-5 space-y-4" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[var(--psy-ink-1)]">Plan actual</p>
+          <p className="text-2xl font-bold text-[var(--psy-primary)]">
+            {planLabels[billing.plan] ?? billing.plan}
+          </p>
+        </div>
+        <span className="text-xs px-3 py-1 rounded-full font-medium"
+          style={{ background: billing.subscription_status === "active" ? "var(--psy-sage-bg)" : "#fef3c7", color: billing.subscription_status === "active" ? "var(--psy-ok)" : "#92400e" }}>
+          {statusLabels[billing.subscription_status] ?? billing.subscription_status}
+        </span>
+      </div>
+
+      {billing.days_remaining > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Vence en <strong>{billing.days_remaining} día{billing.days_remaining !== 1 ? "s" : ""}</strong>
+        </p>
+      )}
+
+      <div className="flex gap-3 flex-wrap">
+        <a href="/select-plan"
+          className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[var(--psy-sage)] text-white hover:opacity-90 transition-opacity">
+          Actualizar plan
+        </a>
+        {billing.subscription_status === "active" && (
+          <button onClick={handlePortal} disabled={portalLoading}
+            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border border-[var(--psy-line)] text-[var(--psy-ink-1)] hover:bg-[var(--psy-bg)] transition-colors disabled:opacity-50">
+            {portalLoading ? "Abriendo..." : "Gestionar suscripción →"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const [active, setActive] = useState<TabId>("perfil");
   const [gcalConnected, setGcalConnected] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const gcalParam = searchParams.get("gcal");
+  const tabParam = searchParams.get("tab");
 
   useEffect(() => {
     if (gcalParam === "connected") {
@@ -32,6 +104,10 @@ export function SettingsPage() {
       setSearchParams({}, { replace: true });
     }
   }, [gcalParam, setSearchParams]);
+
+  useEffect(() => {
+    if (tabParam === "plan") setActive("plan");
+  }, [tabParam]);
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
@@ -128,6 +204,12 @@ export function SettingsPage() {
             Configura el proveedor de IA para usar las funcionalidades de PsyCent IA.
           </p>
           <AiSettings />
+        </section>
+      )}
+
+      {active === "plan" && (
+        <section className="space-y-4 max-w-md">
+          <PlanTabContent />
         </section>
       )}
     </div>
