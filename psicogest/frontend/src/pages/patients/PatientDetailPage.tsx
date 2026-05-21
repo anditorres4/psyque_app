@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientCreatePayload, SessionSummary } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { useSessions } from "@/hooks/useSessions";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import { api } from "@/lib/api";
@@ -99,6 +100,7 @@ export function PatientDetailPage() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [exportOptions, setExportOptions] = useState({
     include_diagnosis: true,
     include_treatment: true,
@@ -189,11 +191,16 @@ export function PatientDetailPage() {
   const handleInviteToPortal = async () => {
     if (!id) return;
     setIsInviting(true);
+    setInviteError(null);
     try {
       await api.patients.inviteToPortal(id);
       setInviteSent(true);
     } catch (err) {
-      console.error("Error inviting patient to portal:", err);
+      if (err instanceof ApiError && err.status === 409) {
+        setInviteSent(true);
+      } else {
+        setInviteError(err instanceof Error ? err.message : "Error al enviar la invitación");
+      }
     } finally {
       setIsInviting(false);
     }
@@ -250,6 +257,11 @@ export function PatientDetailPage() {
             >
               {inviteSent ? "Invitación enviada" : isInviting ? "Enviando..." : "Invitar al portal"}
             </Button>
+          )}
+          {inviteError && (
+            <span className="psy-mono text-[11px] self-center" style={{ color: "var(--psy-danger)" }}>
+              {inviteError}
+            </span>
           )}
           <Button
             variant="outline"
