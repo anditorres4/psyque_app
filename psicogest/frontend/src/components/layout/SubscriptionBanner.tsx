@@ -5,7 +5,7 @@ export function SubscriptionBanner() {
   const navigate = useNavigate();
   const { data: billing } = useBillingStatus();
 
-  if (!billing || billing.days_remaining > 3) return null;
+  if (!billing || billing.days_remaining > 3 || billing.subscription_status === "active") return null;
 
   const message =
     billing.days_remaining === 0 && billing.in_grace_period

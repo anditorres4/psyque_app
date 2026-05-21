@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { AvailabilityGrid } from "@/components/settings/AvailabilityGrid";
@@ -49,6 +48,8 @@ function PlanTabContent() {
       const { portal_url } = await billingApi.createCustomerPortal();
       window.location.href = portal_url;
     } catch {
+      // error handled silently
+    } finally {
       setPortalLoading(false);
     }
   };
@@ -75,10 +76,10 @@ function PlanTabContent() {
       )}
 
       <div className="flex gap-3 flex-wrap">
-        <a href="/select-plan"
+        <Link to="/select-plan"
           className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-[var(--psy-sage)] text-white hover:opacity-90 transition-opacity">
           Actualizar plan
-        </a>
+        </Link>
         {billing.subscription_status === "active" && (
           <button onClick={handlePortal} disabled={portalLoading}
             className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border border-[var(--psy-line)] text-[var(--psy-ink-1)] hover:bg-[var(--psy-bg)] transition-colors disabled:opacity-50">

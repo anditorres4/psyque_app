@@ -74,7 +74,7 @@ export function useAuth(): AuthState {
           const finalSession = await ensureTenantConfigured(session);
           setState({ user: finalSession.user, session: finalSession, loading: false, tenantReady: !!finalSession.user.app_metadata?.tenant_id });
         } else {
-          setState({ user: session?.user ?? null, session, loading: false, tenantReady: !!session?.user.app_metadata?.tenant_id });
+          setState({ user: session?.user ?? null, session, loading: false, tenantReady: !!session?.user?.app_metadata?.tenant_id });
         }
       }
     );

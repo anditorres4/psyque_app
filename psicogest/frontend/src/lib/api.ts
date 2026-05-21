@@ -115,7 +115,6 @@ export interface PatientDetail extends PatientSummary {
   authorization_number: string | null;
   consent_signed_at: string;
   updated_at: string;
-  clinical_record: Record<string, unknown> | null;
 }
 
 export interface PaginatedPatients {
@@ -186,6 +185,7 @@ export interface AppointmentDetail extends AppointmentSummary {
   updated_at: string;
   video_room_id: string | null;
   series_id: string | null;
+  patient_join_key: string | null;
 }
 
 export interface AppointmentSeriesCreate {
@@ -284,6 +284,7 @@ export interface SessionSummary {
   cups_code: string;
   session_fee: number;
   status: SessionStatus;
+  tipo_dx_principal: string;
   created_at: string;
 }
 
@@ -470,6 +471,8 @@ export interface InvoiceSummary {
   subtotal_cop: number;
   tax_cop: number;
   total_cop: number;
+  amount_paid: number;
+  payment_status: "unpaid" | "partial" | "paid";
   created_at: string;
 }
 
@@ -509,7 +512,7 @@ export interface TenantProfile {
   nit: string | null;
   city: string;
   session_duration_min: number;
-  plan: "starter" | "pro" | "clinic";
+  plan: "free_trial" | "estandar" | "premium";
   plan_expires_at: string;
   booking_enabled: boolean;
   booking_slug: string | null;
@@ -1367,21 +1370,6 @@ referrals: {
       publicRequest<PublicVideoTokenResponse>(
         "GET",
         `/appointments/public/${appointmentId}/video-room/token?join_key=${encodeURIComponent(joinKey)}`
-      ),
-  },
-  // --- Billing ---------------------------------------------------------
-  billing: {
-    getStatus: () => request<import("@/services/billing").BillingStatus>("GET", "/billing/status"),
-    createCheckoutSession: (plan: "estandar" | "premium") =>
-      request<import("@/services/billing").CheckoutSessionResponse>(
-        "POST",
-        "/billing/create-checkout-session",
-        { plan }
-      ),
-    createCustomerPortal: () =>
-      request<import("@/services/billing").CustomerPortalResponse>(
-        "POST",
-        "/billing/customer-portal"
       ),
   },
   // --- Auth helpers ----------------------------------------------------
