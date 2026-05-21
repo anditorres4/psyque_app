@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { PatientSearch } from "@/components/patients/PatientSearch";
+import { SubscriptionBanner } from "./SubscriptionBanner";
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -36,6 +37,7 @@ export function AppLayout() {
       )}
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <SubscriptionBanner />
         <main className="flex-1 px-4 py-5 md:px-8 md:py-7 max-w-[1400px] w-full">
           <Outlet />
         </main>
