@@ -1,9 +1,11 @@
 """Webhook router — receives events from n8n automations."""
+import hashlib
 import hmac
+import time
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -23,8 +25,20 @@ URGENCY_LABELS = {
 }
 
 
-def _verify_secret(x_webhook_secret: str | None) -> None:
-    """Verify webhook secret via constant-time comparison.
+_MAX_TIMESTAMP_SKEW = 300   # 5 minutes — reject replays older than this
+_MAX_FUTURE_SKEW = 60       # 1 minute tolerance for clock drift
+
+
+def _verify_hmac(
+    body: bytes,
+    x_webhook_signature: str | None,
+    x_webhook_timestamp: str | None,
+) -> None:
+    """Verify HMAC-SHA256 signature + timestamp to prevent replay attacks.
+
+    Expected headers:
+      X-Webhook-Signature: sha256=<hex digest of body using WEBHOOK_TRIAGE_SECRET>
+      X-Webhook-Timestamp: <unix timestamp as decimal string>
 
     Skips verification in development when webhook_triage_secret is unset.
     """
@@ -36,13 +50,30 @@ def _verify_secret(x_webhook_secret: str | None) -> None:
             )
         return  # allow unauthenticated in dev
 
-    if not x_webhook_secret or not hmac.compare_digest(
-        x_webhook_secret, settings.webhook_triage_secret
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid webhook secret.",
-        )
+    if not x_webhook_timestamp:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing X-Webhook-Timestamp header.")
+    try:
+        request_ts = int(x_webhook_timestamp)
+    except ValueError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid X-Webhook-Timestamp value.")
+
+    now = int(time.time())
+    age = now - request_ts
+    if age > _MAX_TIMESTAMP_SKEW or age < -_MAX_FUTURE_SKEW:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Request timestamp is too old or too far in the future.")
+
+    if not x_webhook_signature or not x_webhook_signature.startswith("sha256="):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing or malformed X-Webhook-Signature header.")
+
+    provided = x_webhook_signature[len("sha256="):]
+    expected = hmac.new(
+        settings.webhook_triage_secret.encode(),
+        body,
+        hashlib.sha256,
+    ).hexdigest()
+
+    if not hmac.compare_digest(provided, expected):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid webhook signature.")
 
 
 @router.post(
@@ -50,16 +81,24 @@ def _verify_secret(x_webhook_secret: str | None) -> None:
     response_model=TriageSessionOut,
     status_code=status.HTTP_201_CREATED,
 )
-def receive_triage_webhook(
-    payload: TriageWebhookPayload,
+async def receive_triage_webhook(
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
-    x_webhook_secret: Annotated[str | None, Header()] = None,
+    x_webhook_signature: Annotated[str | None, Header()] = None,
+    x_webhook_timestamp: Annotated[str | None, Header()] = None,
 ) -> TriageSessionOut:
     """Receive a completed WhatsApp triage session from n8n.
 
-    Authentication: X-Webhook-Secret header must match WEBHOOK_TRIAGE_SECRET env var.
+    Authentication: HMAC-SHA256 via X-Webhook-Signature + X-Webhook-Timestamp headers.
     """
-    _verify_secret(x_webhook_secret)
+    body = await request.body()
+    _verify_hmac(body, x_webhook_signature, x_webhook_timestamp)
+
+    import json as _json
+    try:
+        payload = TriageWebhookPayload.model_validate(_json.loads(body))
+    except Exception:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid payload.")
 
     from app.services.triage_service import TriageService
     svc = TriageService(db)

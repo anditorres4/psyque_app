@@ -152,8 +152,8 @@ def sign_document(
         .first()
     )
     if not existing:
-        ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
-        ip = ip.split(",")[0].strip()
+        # Railway injects the real client IP into request.client.host via their proxy
+        ip = request.client.host if request.client else "unknown"
 
         doc = PatientDocument(
             patient_id=patient.id,
