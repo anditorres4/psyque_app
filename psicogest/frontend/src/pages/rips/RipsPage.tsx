@@ -76,6 +76,7 @@ export function RipsPage() {
   const selectedPeriod = `${MONTH_NAMES_LONG[month - 1]} ${year}`;
 
   return (
+    <>
     <div className="space-y-5">
       {/* Compliance band */}
       <div
@@ -291,5 +292,6 @@ export function RipsPage() {
       </div>
     </div>
     <UpgradePromptDialog open={upgradePromptOpen} onClose={closeUpgradePrompt} />
+    </>
   );
 }
