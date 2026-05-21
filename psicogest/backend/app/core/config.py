@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     # --- Webhook secrets (n8n → backend) ---
     webhook_triage_secret: str = ""  # If empty, auth is skipped in development
 
+    # --- Stripe ---
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id_estandar: str = ""
+    stripe_price_id_premium: str = ""
+
     @property
     def is_development(self) -> bool:
         """True when running in development environment."""
