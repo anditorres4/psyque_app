@@ -153,24 +153,32 @@ def handle_subscription_deleted(db: Session, event_data: dict) -> None:
     db.commit()
 
 
+def _session_to_dict(session: object) -> dict:
+    """Convert a Stripe checkout Session to a plain dict.
+
+    StripeObject v7 supports [] subscript but not .get() or dict() conversion.
+    We iterate known fields via subscript access to avoid StripeObject pitfalls.
+    """
+    return {
+        "payment_status": session["payment_status"],  # type: ignore[index]
+        "metadata": dict(session["metadata"]) if session["metadata"] else {},  # type: ignore[index]
+        "subscription": session["subscription"],  # type: ignore[index]
+    }
+
+
 def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
     """Activate plan from a Stripe Checkout Session — no JWT required.
 
     Security: tenant_id is read from Stripe-signed session metadata, not from
     client input. The session_id is an unguessable Stripe token.
-    Uses attribute access (not .get()) for Stripe SDK v7 compatibility.
     """
     _init_stripe()
-    session = stripe.checkout.Session.retrieve(session_id)
+    raw = _session_to_dict(stripe.checkout.Session.retrieve(session_id))
 
-    payment_status = getattr(session, "payment_status", None)
-    if payment_status != "paid":
-        raise ValueError(f"La sesión de pago no está completada (status: {payment_status})")
+    if raw["payment_status"] != "paid":
+        raise ValueError(f"La sesión de pago no está completada (status: {raw['payment_status']})")
 
-    # StripeObject.__getattr__ looks up keys, not methods — convert to plain dict first
-    raw_metadata = getattr(session, "metadata", None)
-    metadata: dict = dict(raw_metadata) if raw_metadata else {}
-
+    metadata = raw["metadata"]
     tenant_id = metadata.get("tenant_id")
     if not tenant_id:
         raise ValueError("Metadata de tenant no encontrada en la sesión")
@@ -179,7 +187,7 @@ def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
     if plan not in {"estandar", "premium"}:
         plan = "estandar"
 
-    subscription_id = getattr(session, "subscription", None)
+    subscription_id = raw["subscription"]
     if not subscription_id:
         raise ValueError("No hay suscripción en la sesión")
 
@@ -199,21 +207,14 @@ def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
 
 
 def activate_from_checkout_session(db: Session, tenant_id: str, session_id: str) -> dict:
-    """Retrieve a completed Checkout Session from Stripe and activate the plan in DB.
-
-    Called by BillingSuccessPage immediately after redirect so the plan is
-    activated even when the webhook hasn't arrived yet.
-    """
+    """Activate plan via authenticated endpoint — tenant verified against JWT."""
     _init_stripe()
-    session = stripe.checkout.Session.retrieve(session_id)
+    raw = _session_to_dict(stripe.checkout.Session.retrieve(session_id))
 
-    payment_status = getattr(session, "payment_status", None)
-    if payment_status != "paid":
-        raise ValueError(f"La sesión de pago no está completada (status: {payment_status})")
+    if raw["payment_status"] != "paid":
+        raise ValueError(f"La sesión de pago no está completada (status: {raw['payment_status']})")
 
-    raw_metadata = getattr(session, "metadata", None)
-    metadata: dict = dict(raw_metadata) if raw_metadata else {}
-
+    metadata = raw["metadata"]
     session_tenant = metadata.get("tenant_id")
     if session_tenant != str(tenant_id):
         raise ValueError("Session no pertenece a este tenant")
@@ -222,7 +223,7 @@ def activate_from_checkout_session(db: Session, tenant_id: str, session_id: str)
     if plan not in {"estandar", "premium"}:
         plan = "estandar"
 
-    subscription_id = getattr(session, "subscription", None)
+    subscription_id = raw["subscription"]
     if not subscription_id:
         raise ValueError("No hay suscripción en la sesión")
 
