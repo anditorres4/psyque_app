@@ -63,10 +63,10 @@ class SessionUpdate(BaseModel):
     actual_start: datetime | None = None
     actual_end: datetime | None = None
     diagnosis_cie11: str | None = Field(None, max_length=20)
-    diagnosis_description: str | None = Field(None, min_length=5)
+    diagnosis_description: str | None = Field(None, max_length=500)
     cups_code: str | None = Field(None, max_length=10)
-    consultation_reason: str | None = Field(None, min_length=10)
-    intervention: str | None = Field(None, min_length=10)
+    consultation_reason: str | None = None
+    intervention: str | None = None
     evolution: str | None = None
     next_session_plan: str | None = None
     homework_assigned: str | None = None
