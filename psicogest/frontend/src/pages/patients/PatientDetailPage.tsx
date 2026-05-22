@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientCreatePayload, SessionSummary } from "@/lib/api";
-import { ApiError } from "@/lib/api";
 import { useSessions } from "@/hooks/useSessions";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import { api } from "@/lib/api";

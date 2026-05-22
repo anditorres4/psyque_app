@@ -739,6 +739,7 @@ export interface VideoRoomResponse {
   host_token: string;
   guest_token: string;
   patient_join_url: string;
+  email_sent: boolean;
 }
 
 export interface PublicVideoTokenResponse {
