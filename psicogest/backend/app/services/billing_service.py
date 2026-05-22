@@ -167,12 +167,15 @@ def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
     if payment_status != "paid":
         raise ValueError(f"La sesión de pago no está completada (status: {payment_status})")
 
-    metadata = getattr(session, "metadata", None) or {}
-    tenant_id = metadata.get("tenant_id") if hasattr(metadata, "get") else metadata.get("tenant_id", None)
+    # StripeObject.__getattr__ looks up keys, not methods — convert to plain dict first
+    raw_metadata = getattr(session, "metadata", None)
+    metadata: dict = dict(raw_metadata) if raw_metadata else {}
+
+    tenant_id = metadata.get("tenant_id")
     if not tenant_id:
         raise ValueError("Metadata de tenant no encontrada en la sesión")
 
-    plan = metadata.get("plan", "estandar") if hasattr(metadata, "get") else "estandar"
+    plan = metadata.get("plan", "estandar")
     if plan not in {"estandar", "premium"}:
         plan = "estandar"
 
@@ -204,18 +207,22 @@ def activate_from_checkout_session(db: Session, tenant_id: str, session_id: str)
     _init_stripe()
     session = stripe.checkout.Session.retrieve(session_id)
 
-    if session.get("payment_status") != "paid":
-        raise ValueError("La sesión de pago no está completada")
+    payment_status = getattr(session, "payment_status", None)
+    if payment_status != "paid":
+        raise ValueError(f"La sesión de pago no está completada (status: {payment_status})")
 
-    session_tenant = session.get("metadata", {}).get("tenant_id")
+    raw_metadata = getattr(session, "metadata", None)
+    metadata: dict = dict(raw_metadata) if raw_metadata else {}
+
+    session_tenant = metadata.get("tenant_id")
     if session_tenant != str(tenant_id):
         raise ValueError("Session no pertenece a este tenant")
 
-    plan = session.get("metadata", {}).get("plan", "estandar")
+    plan = metadata.get("plan", "estandar")
     if plan not in {"estandar", "premium"}:
         plan = "estandar"
 
-    subscription_id = session.get("subscription")
+    subscription_id = getattr(session, "subscription", None)
     if not subscription_id:
         raise ValueError("No hay suscripción en la sesión")
 
