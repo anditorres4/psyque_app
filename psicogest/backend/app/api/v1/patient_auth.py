@@ -45,41 +45,34 @@ def invite_patient_to_portal(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="El paciente no tiene email registrado. Agrega un email primero.",
         )
-    if patient.auth_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Este paciente ya tiene acceso al portal.",
-        )
-
-    admin_url = f"{settings.supabase_url}/auth/v1/admin/users"
+    # auth_user_id may already be set (re-invite case: Resend wasn't configured on first invite)
+    auth_user_id: uuid.UUID | None = patient.auth_user_id
 
     try:
-        # Create Supabase auth user with patient metadata
-        resp = httpx.post(
-            admin_url,
-            json={
-                "email": patient.email,
-                "email_confirm": True,
-                "app_metadata": {
-                    "role": "patient",
-                    "patient_id": str(patient.id),
-                    "tenant_id": str(patient.tenant_id),
+        if not auth_user_id:
+            # First invite: create Supabase auth user
+            resp = httpx.post(
+                f"{settings.supabase_url}/auth/v1/admin/users",
+                json={
+                    "email": patient.email,
+                    "email_confirm": True,
+                    "app_metadata": {
+                        "role": "patient",
+                        "patient_id": str(patient.id),
+                        "tenant_id": str(patient.tenant_id),
+                    },
                 },
-            },
-            headers=_SUPABASE_ADMIN_HEADERS,
-            timeout=15.0,
-        )
-
-        email_already_existed = resp.status_code == 422 and "email_exists" in resp.text
-
-        if not email_already_existed:
-            resp.raise_for_status()
-            auth_user_id = uuid.UUID(resp.json()["id"])
+                headers=_SUPABASE_ADMIN_HEADERS,
+                timeout=15.0,
+            )
+            email_already_existed = resp.status_code == 422 and "email_exists" in resp.text
+            if not email_already_existed:
+                resp.raise_for_status()
+                auth_user_id = uuid.UUID(resp.json()["id"])
         else:
-            auth_user_id = None  # resolved from generate_link response below
+            email_already_existed = True  # skip create, resolve via generate_link
 
-        # Generate a recovery link — response includes the user object with its ID,
-        # which lets us resolve auth_user_id when the Supabase user already existed.
+        # Generate recovery link (works for both new and existing users)
         link_resp = httpx.post(
             f"{settings.supabase_url}/auth/v1/admin/generate_link",
             json={"type": "recovery", "email": patient.email},
@@ -90,13 +83,12 @@ def invite_patient_to_portal(
             link_data = link_resp.json()
             action_link = link_data.get("action_link", "")
 
-            if email_already_existed:
+            if email_already_existed and not auth_user_id:
                 user_data = link_data.get("user", {})
                 if user_data and user_data.get("id"):
                     auth_user_id = uuid.UUID(user_data["id"])
                     _update_user_metadata(str(auth_user_id), str(patient.id), str(patient.tenant_id))
                 else:
-                    # generate_link didn't return user — fall back to search
                     existing = _find_user_by_email(patient.email)
                     if not existing:
                         raise HTTPException(

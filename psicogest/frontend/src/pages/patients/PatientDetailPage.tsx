@@ -196,11 +196,7 @@ export function PatientDetailPage() {
       await api.patients.inviteToPortal(id);
       setInviteSent(true);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setInviteSent(true);
-      } else {
-        setInviteError(err instanceof Error ? err.message : "Error al enviar la invitación");
-      }
+      setInviteError(err instanceof Error ? err.message : "Error al enviar la invitación");
     } finally {
       setIsInviting(false);
     }
