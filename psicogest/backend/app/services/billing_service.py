@@ -158,22 +158,25 @@ def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
 
     Security: tenant_id is read from Stripe-signed session metadata, not from
     client input. The session_id is an unguessable Stripe token.
+    Uses attribute access (not .get()) for Stripe SDK v7 compatibility.
     """
     _init_stripe()
     session = stripe.checkout.Session.retrieve(session_id)
 
-    if session.get("payment_status") != "paid":
-        raise ValueError("La sesión de pago no está completada")
+    payment_status = getattr(session, "payment_status", None)
+    if payment_status != "paid":
+        raise ValueError(f"La sesión de pago no está completada (status: {payment_status})")
 
-    tenant_id = session.get("metadata", {}).get("tenant_id")
+    metadata = getattr(session, "metadata", None) or {}
+    tenant_id = metadata.get("tenant_id") if hasattr(metadata, "get") else metadata.get("tenant_id", None)
     if not tenant_id:
         raise ValueError("Metadata de tenant no encontrada en la sesión")
 
-    plan = session.get("metadata", {}).get("plan", "estandar")
+    plan = metadata.get("plan", "estandar") if hasattr(metadata, "get") else "estandar"
     if plan not in {"estandar", "premium"}:
         plan = "estandar"
 
-    subscription_id = session.get("subscription")
+    subscription_id = getattr(session, "subscription", None)
     if not subscription_id:
         raise ValueError("No hay suscripción en la sesión")
 

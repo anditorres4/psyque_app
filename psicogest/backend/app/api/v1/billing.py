@@ -136,10 +136,8 @@ def activate_from_session(
             db=db,
             session_id=session_id,
         )
-    except ValueError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     except Exception as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al activar plan: {exc}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Error al activar plan: {exc}")
 
 
 @router.post("/sync-from-stripe")

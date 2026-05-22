@@ -25,7 +25,7 @@ export function BillingSuccessPage() {
         setActivationError("No se encontró session_id en la URL");
       }
       queryClient.invalidateQueries({ queryKey: ["billing-status"] });
-      setTimeout(() => navigate("/dashboard", { replace: true }), 3000);
+      setTimeout(() => navigate("/dashboard", { replace: true }), 10000);
     };
     activate();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
