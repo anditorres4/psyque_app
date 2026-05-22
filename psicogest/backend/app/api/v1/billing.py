@@ -120,6 +120,28 @@ async def stripe_webhook(
     return {"received": True}
 
 
+@router.post("/activate-from-session")
+def activate_from_session(
+    session_id: str,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> dict:
+    """Activate plan from a completed Stripe Checkout Session ID.
+
+    Called by BillingSuccessPage immediately after redirect — makes plan
+    activation independent of webhook delivery timing.
+    """
+    try:
+        return billing_service.activate_from_checkout_session(
+            db=ctx.db,
+            tenant_id=ctx.tenant.tenant_id,
+            session_id=session_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except Exception as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al activar plan: {exc}")
+
+
 @router.post("/sync-from-stripe")
 def sync_from_stripe_endpoint(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],

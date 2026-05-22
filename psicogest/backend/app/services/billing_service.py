@@ -153,6 +153,45 @@ def handle_subscription_deleted(db: Session, event_data: dict) -> None:
     db.commit()
 
 
+def activate_from_checkout_session(db: Session, tenant_id: str, session_id: str) -> dict:
+    """Retrieve a completed Checkout Session from Stripe and activate the plan in DB.
+
+    Called by BillingSuccessPage immediately after redirect so the plan is
+    activated even when the webhook hasn't arrived yet.
+    """
+    _init_stripe()
+    session = stripe.checkout.Session.retrieve(session_id)
+
+    if session.get("payment_status") != "paid":
+        raise ValueError("La sesión de pago no está completada")
+
+    session_tenant = session.get("metadata", {}).get("tenant_id")
+    if session_tenant != str(tenant_id):
+        raise ValueError("Session no pertenece a este tenant")
+
+    plan = session.get("metadata", {}).get("plan", "estandar")
+    if plan not in {"estandar", "premium"}:
+        plan = "estandar"
+
+    subscription_id = session.get("subscription")
+    if not subscription_id:
+        raise ValueError("No hay suscripción en la sesión")
+
+    db.execute(
+        text("""
+            UPDATE tenants
+            SET plan = :plan,
+                stripe_subscription_id = :sub_id,
+                subscription_status = 'active',
+                plan_expires_at = NOW() + INTERVAL '1 month'
+            WHERE id = :tid
+        """),
+        {"plan": plan, "sub_id": subscription_id, "tid": tenant_id},
+    )
+    db.commit()
+    return {"plan": plan, "activated": True}
+
+
 def sync_from_stripe(db: Session, tenant_id: str) -> dict:
     """Fetch the tenant's active Stripe subscription and sync plan/status/expiry to DB.
 

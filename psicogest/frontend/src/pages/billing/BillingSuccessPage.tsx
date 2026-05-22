@@ -1,16 +1,28 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { billingApi } from "@/services/billing";
 
 export function BillingSuccessPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["billing-status"] });
-    const timer = setTimeout(() => navigate("/dashboard", { replace: true }), 3000);
-    return () => clearTimeout(timer);
-  }, [navigate, queryClient]);
+    const sessionId = searchParams.get("session_id");
+    const activate = async () => {
+      if (sessionId) {
+        try {
+          await billingApi.activateFromSession(sessionId);
+        } catch {
+          // webhook may have already activated the plan — ignore errors
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["billing-status"] });
+      setTimeout(() => navigate("/dashboard", { replace: true }), 2000);
+    };
+    activate();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--psy-bg)] px-4">

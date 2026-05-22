@@ -24,4 +24,10 @@ export const billingApi = {
 
   createCustomerPortal: () =>
     request<CustomerPortalResponse>("POST", "/billing/customer-portal"),
+
+  activateFromSession: (sessionId: string) =>
+    request<{ plan: string; activated: boolean }>(
+      "POST",
+      `/billing/activate-from-session?session_id=${encodeURIComponent(sessionId)}`,
+    ),
 };
