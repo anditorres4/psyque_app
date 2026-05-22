@@ -70,6 +70,10 @@ class Patient(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.Enum("pending", "active", name="onboarding_status_enum"),
         nullable=True,
     )
+    # RIPS v4.3 geographic fields (migration 0042)
+    cod_pais_residencia: Mapped[str | None] = mapped_column(sa.String(3), default="170")
+    cod_pais_origen: Mapped[str | None] = mapped_column(sa.String(3), default="170")
+    incapacidad: Mapped[str | None] = mapped_column(sa.String(10), default="NO")
 
     @property
     def full_name(self) -> str:

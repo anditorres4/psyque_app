@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_tenant_db, TenantDB
+from app.schemas.fevrips import RipsSubmitRequest, RipsSubmitResponse
 from app.schemas.rips import (
     RipsExportSummary,
     RipsGenerateRequest,
@@ -77,6 +78,43 @@ def get_rips_export(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exportación no encontrada.",
         )
+
+
+@router.post("/{export_id}/submit", response_model=RipsSubmitResponse)
+def submit_rips(
+    export_id: str,
+    body: RipsSubmitRequest,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> RipsSubmitResponse:
+    from sqlalchemy import text as sa_text
+    row = ctx.db.execute(
+        sa_text("SELECT plan FROM tenants WHERE id = :tid"),
+        {"tid": ctx.tenant.tenant_id},
+    ).fetchone()
+    if not row or row.plan != "premium":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El envío automático al MinSalud requiere plan Premium. "
+                   "Descargue el ZIP y súbalo manualmente al portal MinSalud.",
+        )
+    try:
+        export = _service(ctx).submit(export_id, body.num_factura, body.xml_fev_b64)
+        ctx.db.commit()
+    except RipsGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+    api_resp = export.fevrips_api_response or {}
+    return RipsSubmitResponse(
+        export_id=str(export.id),
+        cuv=export.cuv,
+        fecha_radicacion=str(export.fecha_radicacion) if export.fecha_radicacion else None,
+        result_state=api_resp.get("ResultState", False),
+        validation_results=api_resp.get("ResultadosValidacion", []),
+        message="RIPS enviado · CUV obtenido" if export.cuv else "Enviado con notificaciones de validación",
+    )
 
 
 @router.get("/{export_id}/download")

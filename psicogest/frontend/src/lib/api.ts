@@ -424,6 +424,18 @@ export interface RipsExportSummary {
   total_value_cop: number;
   file_hash: string | null;
   generated_at: string | null;
+  cuv?: string | null;
+  fecha_radicacion?: string | null;
+  num_factura?: string | null;
+}
+
+export interface RipsSubmitResponse {
+  export_id: string;
+  cuv: string | null;
+  fecha_radicacion: string | null;
+  result_state: boolean;
+  validation_results: Array<{ [key: string]: unknown }>;
+  message: string;
 }
 
 export interface RipsGenerateRequest {
@@ -1023,6 +1035,8 @@ export const api = {
       request<RipsExportSummary>("GET", `/rips/${id}`),
     download: (id: string) =>
       downloadBlob("GET", `/rips/${id}/download`),
+    submit: (id: string, body?: { num_factura?: string; xml_fev_b64?: string }) =>
+      request<RipsSubmitResponse>("POST", `/rips/${id}/submit`, body ?? {}),
   },
   invoices: {
     create: (body: InvoiceCreatePayload) =>

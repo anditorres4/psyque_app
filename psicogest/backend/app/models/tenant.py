@@ -90,3 +90,8 @@ class Tenant(Base, UUIDPrimaryKey):
         nullable=False,
         server_default=sa.text('\'{"ai_diagnosis": true, "ai_summaries": true, "ai_documents": true}\''),
     )
+    # --- FEV-RIPS SISPRO credentials for premium automatic submission (migration 0042) ---
+    fevrips_sispro_password: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    fevrips_tipo_usuario: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
+    fevrips_doc_type: Mapped[str | None] = mapped_column(sa.String(5), default="CC")
+    fevrips_doc_number: Mapped[str | None] = mapped_column(sa.String(20), nullable=True)

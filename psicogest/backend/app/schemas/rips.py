@@ -47,6 +47,9 @@ class RipsExportSummary(BaseModel):
     total_value_cop: int
     file_hash: str | None
     generated_at: datetime | None
+    cuv: str | None = None
+    fecha_radicacion: datetime | None = None
+    num_factura: str | None = None
 
 
 class RipsGenerationResponse(BaseModel):

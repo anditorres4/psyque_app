@@ -7,6 +7,7 @@ import { PageHeader, PsyButton, PsyCard, Tag } from "@/components/ui/psy";
 import { Download, CheckCircle, AlertCircle } from "lucide-react";
 import { useUpgradePrompt } from "@/hooks/useUpgradePrompt";
 import { UpgradePromptDialog } from "@/components/billing/UpgradePromptDialog";
+import { useProfile } from "@/hooks/useProfile";
 
 const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const MONTH_NAMES_LONG = [
@@ -32,6 +33,8 @@ export function RipsPage() {
   const [validation, setValidation] = useState<RipsValidateResponse | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const { upgradePromptOpen, closeUpgradePrompt, handleQueryError } = useUpgradePrompt();
+  const { data: profile } = useProfile();
+  const isPremium = profile?.plan === "premium";
 
   const { data: exports, isLoading, error: exportsError } = useQuery({
     queryKey: ["rips"],
@@ -59,6 +62,14 @@ export function RipsPage() {
       queryClient.invalidateQueries({ queryKey: ["rips"] });
       setShowValidation(false);
       setValidation(null);
+    },
+    onError: handleQueryError,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: (id: string) => api.rips.submit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rips"] });
     },
     onError: handleQueryError,
   });
@@ -273,14 +284,44 @@ export function RipsPage() {
                     </td>
                     <td className="px-[18px] py-3">
                       {exp.status === "generated" && (
-                        <button
-                          type="button"
-                          onClick={() => handleDownload(exp.id)}
-                          className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
-                          style={{ color: "var(--psy-primary)" }}
-                        >
-                          <Download size={12} /> ZIP
-                        </button>
+                        <div className="flex flex-col">
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(exp.id)}
+                            className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70"
+                            style={{ color: "var(--psy-primary)" }}
+                          >
+                            <Download size={12} /> ZIP
+                          </button>
+                          {!isPremium && (
+                            <div className="psy-mono text-[10px] mt-1" style={{ color: "var(--psy-ink-3)" }}>
+                              Sube el ZIP al portal MinSalud
+                            </div>
+                          )}
+                          {isPremium && (
+                            <button
+                              type="button"
+                              onClick={() => submitMutation.mutate(exp.id)}
+                              disabled={submitMutation.isPending}
+                              className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70 mt-1"
+                              style={{ color: "var(--psy-primary)" }}
+                            >
+                              {submitMutation.isPending ? "Enviando…" : "Enviar MinSalud"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {exp.cuv && (
+                        <div className="flex flex-col gap-0.5">
+                          <div className="psy-mono text-[10px]" style={{ color: "var(--psy-ok)" }}>
+                            CUV: {exp.cuv.slice(0, 12)}…
+                          </div>
+                          {exp.fecha_radicacion && (
+                            <div className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-3)" }}>
+                              {new Date(exp.fecha_radicacion).toLocaleDateString("es-CO")}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

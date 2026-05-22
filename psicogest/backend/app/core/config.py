@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     stripe_price_id_estandar: str = ""
     stripe_price_id_premium: str = ""
 
+    # --- FEV-RIPS MinSalud Docker API ---
+    fevrips_base_url: str = ""  # e.g. https://<docker-host>:9443
+
     @property
     def is_development(self) -> bool:
         """True when running in development environment."""

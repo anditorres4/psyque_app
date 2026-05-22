@@ -68,6 +68,14 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     patient_summary_sent_at: Mapped[datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
     )
+    # RIPS v4.3 clinical/billing fields (migration 0042)
+    modalidad_grupo_servicio: Mapped[str | None] = mapped_column(sa.String(2), default="01")
+    grupo_servicios: Mapped[str | None] = mapped_column(sa.String(2), default="02")
+    cod_servicio: Mapped[int | None] = mapped_column(sa.Integer(), default=706)
+    finalidad_tecnologia_salud: Mapped[str | None] = mapped_column(sa.String(2), default="44")
+    causa_motivo_atencion: Mapped[str | None] = mapped_column(sa.String(2), default="27")
+    concepto_recaudo: Mapped[str | None] = mapped_column(sa.String(2), default="05")
+    valor_pago_moderador: Mapped[int | None] = mapped_column(sa.Integer(), default=0)
 
 
 class SessionNote(Base, UUIDPrimaryKey, TenantMixin):
