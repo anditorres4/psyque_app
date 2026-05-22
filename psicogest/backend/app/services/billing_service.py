@@ -157,11 +157,19 @@ def _session_to_dict(session: object) -> dict:
     """Convert a Stripe checkout Session to a plain dict.
 
     StripeObject v7 supports [] subscript but not .get() or dict() conversion.
-    We iterate known fields via subscript access to avoid StripeObject pitfalls.
+    metadata is extracted key-by-key to avoid dict() iterating with integer indices.
     """
+    metadata_raw = session["metadata"]  # type: ignore[index]
+    metadata: dict = {}
+    if metadata_raw:
+        for key in ("tenant_id", "plan"):
+            try:
+                metadata[key] = metadata_raw[key]  # type: ignore[index]
+            except (KeyError, TypeError):
+                pass
     return {
         "payment_status": session["payment_status"],  # type: ignore[index]
-        "metadata": dict(session["metadata"]) if session["metadata"] else {},  # type: ignore[index]
+        "metadata": metadata,
         "subscription": session["subscription"],  # type: ignore[index]
     }
 
