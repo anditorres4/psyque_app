@@ -1,4 +1,5 @@
 """Video call endpoints — integración 100ms.live con auth tokens."""
+import logging
 import uuid
 from typing import Annotated
 from urllib.parse import quote
@@ -7,6 +8,8 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -25,6 +28,7 @@ class VideoRoomResponse(BaseModel):
     host_token: str
     guest_token: str
     patient_join_url: str
+    email_sent: bool = False
 
 
 class PublicVideoTokenResponse(BaseModel):
@@ -155,11 +159,16 @@ def send_video_link(
 
     response = _build_response(room_id, appointment_id, patient_join_key, patient_name, svc)
 
-    if patient and patient.email:
+    email_sent = False
+    if not patient:
+        logger.warning("send_video_link: patient not found for appointment %s", appointment_id)
+    elif not patient.email:
+        logger.warning("send_video_link: patient %s has no email, skipping", appt.patient_id)
+    else:
         tenant = ctx.db.query(Tenant).filter(Tenant.id == ctx.tenant.tenant_id).first()
         psychologist_name = tenant.full_name if tenant else "Tu psicólogo"
         try:
-            EmailService().send_appointment_confirmation(
+            email_sent = EmailService().send_appointment_confirmation(
                 to_email=patient.email,
                 patient_name=patient_name,
                 psychologist_name=psychologist_name,
@@ -167,9 +176,12 @@ def send_video_link(
                 join_url=response.patient_join_url,
                 modality="virtual",
             )
+            if not email_sent:
+                logger.warning("send_video_link: Resend returned False for %s", patient.email)
         except Exception:
-            pass  # Email failure does not block the response
+            logger.exception("send_video_link: failed to email %s", patient.email)
 
+    response.email_sent = email_sent
     return response
 
 

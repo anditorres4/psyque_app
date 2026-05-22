@@ -228,8 +228,12 @@ export function AppointmentSidebar({ appointmentId, onClose }: Props) {
             {appt.modality === "virtual" && (
               <>
                 {sendVideoLinkMutation.isSuccess ? (
-                  <p className="text-[12px] text-center py-1" style={{ color: "var(--psy-ok)" }}>
-                    ✓ Link enviado al paciente
+                  <p className="text-[12px] text-center py-1" style={{
+                    color: sendVideoLinkMutation.data?.email_sent ? "var(--psy-ok)" : "var(--psy-warn)"
+                  }}>
+                    {sendVideoLinkMutation.data?.email_sent
+                      ? "✓ Link enviado al paciente por correo"
+                      : "⚠ Sala creada — el paciente no tiene email registrado"}
                   </p>
                 ) : (
                   <Button
