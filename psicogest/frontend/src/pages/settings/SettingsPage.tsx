@@ -125,7 +125,7 @@ export function SettingsPage() {
         </div>
       )}
 
-      <div className="flex border-b gap-6 overflow-x-auto psy-no-scrollbar">
+      <div className="flex flex-wrap border-b gap-x-6 gap-y-0 overflow-x-auto psy-no-scrollbar">
         {TABS.map((tab) => (
           <button
             key={tab.id}
