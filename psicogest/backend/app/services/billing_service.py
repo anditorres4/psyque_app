@@ -279,7 +279,12 @@ def sync_from_stripe(db: Session, tenant_id: str) -> dict:
     else:
         raise ValueError(f"Price ID desconocido en Stripe: {price_id}")
 
-    period_end: int = subscription["current_period_end"]
+    try:
+        period_end: int = subscription["current_period_end"]
+    except KeyError:
+        # Stripe API >= 2024-09-30 moved current_period_end to items level
+        items_data = subscription["items"]["data"]
+        period_end = items_data[0]["current_period_end"] if items_data else 0
 
     db.execute(
         text("""
