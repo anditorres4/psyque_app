@@ -224,13 +224,17 @@ export function InvoicesPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const { upgradePromptOpen, closeUpgradePrompt, handleQueryError } = useUpgradePrompt();
 
-  const { data: invoicesData, isLoading, isError } = useQuery({
+  const { data: invoicesData, isLoading, isError, error: invoicesError } = useQuery({
     queryKey: ["invoices", selectedPatient?.id, filterStatus],
     queryFn: () => api.invoices.list({
       patient_id: selectedPatient?.id || undefined,
       status: filterStatus || undefined,
     }),
   });
+
+  useEffect(() => {
+    if (invoicesError) handleQueryError(invoicesError);
+  }, [invoicesError]);
 
   const issueMutation = useMutation({
     mutationFn: (id: string) => api.invoices.issue(id),
