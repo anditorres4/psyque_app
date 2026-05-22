@@ -153,6 +153,45 @@ def handle_subscription_deleted(db: Session, event_data: dict) -> None:
     db.commit()
 
 
+def activate_from_checkout_session_public(db: Session, session_id: str) -> dict:
+    """Activate plan from a Stripe Checkout Session — no JWT required.
+
+    Security: tenant_id is read from Stripe-signed session metadata, not from
+    client input. The session_id is an unguessable Stripe token.
+    """
+    _init_stripe()
+    session = stripe.checkout.Session.retrieve(session_id)
+
+    if session.get("payment_status") != "paid":
+        raise ValueError("La sesión de pago no está completada")
+
+    tenant_id = session.get("metadata", {}).get("tenant_id")
+    if not tenant_id:
+        raise ValueError("Metadata de tenant no encontrada en la sesión")
+
+    plan = session.get("metadata", {}).get("plan", "estandar")
+    if plan not in {"estandar", "premium"}:
+        plan = "estandar"
+
+    subscription_id = session.get("subscription")
+    if not subscription_id:
+        raise ValueError("No hay suscripción en la sesión")
+
+    db.execute(
+        text("""
+            UPDATE tenants
+            SET plan = :plan,
+                stripe_subscription_id = :sub_id,
+                subscription_status = 'active',
+                plan_expires_at = NOW() + INTERVAL '1 month'
+            WHERE id = :tid
+        """),
+        {"plan": plan, "sub_id": subscription_id, "tid": tenant_id},
+    )
+    db.commit()
+    return {"plan": plan, "activated": True}
+
+
 def activate_from_checkout_session(db: Session, tenant_id: str, session_id: str) -> dict:
     """Retrieve a completed Checkout Session from Stripe and activate the plan in DB.
 

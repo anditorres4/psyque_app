@@ -123,17 +123,17 @@ async def stripe_webhook(
 @router.post("/activate-from-session")
 def activate_from_session(
     session_id: str,
-    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    db: Session = Depends(get_db),
 ) -> dict:
-    """Activate plan from a completed Stripe Checkout Session ID.
+    """Activate plan from a completed Stripe Checkout Session — no JWT required.
 
-    Called by BillingSuccessPage immediately after redirect — makes plan
-    activation independent of webhook delivery timing.
+    tenant_id is read from Stripe-signed session metadata, not from client input.
+    Called by BillingSuccessPage immediately after Stripe redirect so activation
+    is independent of both webhook timing and Supabase session rehydration.
     """
     try:
-        return billing_service.activate_from_checkout_session(
-            db=ctx.db,
-            tenant_id=ctx.tenant.tenant_id,
+        return billing_service.activate_from_checkout_session_public(
+            db=db,
             session_id=session_id,
         )
     except ValueError as exc:

@@ -25,9 +25,16 @@ export const billingApi = {
   createCustomerPortal: () =>
     request<CustomerPortalResponse>("POST", "/billing/customer-portal"),
 
-  activateFromSession: (sessionId: string) =>
-    request<{ plan: string; activated: boolean }>(
-      "POST",
-      `/billing/activate-from-session?session_id=${encodeURIComponent(sessionId)}`,
-    ),
+  activateFromSession: async (sessionId: string): Promise<{ plan: string; activated: boolean }> => {
+    // No JWT required — tenant is identified from Stripe session metadata
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1"}/billing/activate-from-session?session_id=${encodeURIComponent(sessionId)}`,
+      { method: "POST" },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail ?? "Error al activar plan");
+    }
+    return res.json();
+  },
 };
