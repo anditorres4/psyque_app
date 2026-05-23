@@ -1,0 +1,208 @@
+<style>
+  .pricing-header {
+    text-align: center;
+    padding: 2rem 1rem 1.8rem;
+  }
+  .step-tag {
+    display: inline-block;
+    background: #e8f4f0;
+    color: #2a7a5e;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+  }
+  .pricing-header h2 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #1a3350;
+    margin: 0 0 8px;
+  }
+  .pricing-header p {
+    color: #6b7a8d;
+    font-size: 0.92rem;
+    margin: 0;
+  }
+
+  .plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 880px;
+    margin: 0 auto 1.5rem;
+    padding: 0 1rem;
+    align-items: start;
+  }
+
+  .plan-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 26px 22px 22px;
+    background: #fff;
+    position: relative;
+  }
+  .plan-card.popular {
+    border-color: #2a7a5e;
+    background: linear-gradient(155deg, #1d5c47 0%, #2e8b68 100%);
+    margin-top: -10px;
+    padding-top: 36px;
+  }
+
+  .popular-badge {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a3350;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .plan-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b7a8d;
+    margin-bottom: 10px;
+  }
+  .popular .plan-name { color: rgba(255,255,255,0.7); }
+
+  .plan-price {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #1a3350;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .popular .plan-price { color: #fff; }
+
+  .plan-period {
+    font-size: 0.75rem;
+    color: #8a96a3;
+    margin-bottom: 18px;
+  }
+  .popular .plan-period { color: rgba(255,255,255,0.65); }
+
+  .plan-divider {
+    height: 1px;
+    background: #e8edf2;
+    margin: 14px 0;
+  }
+  .popular .plan-divider { background: rgba(255,255,255,0.18); }
+
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: #374151;
+    margin-bottom: 9px;
+    line-height: 1.35;
+  }
+  .popular .feature-item { color: rgba(255,255,255,0.92); }
+
+  .check { color: #2a7a5e; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .popular .check { color: #a8e6cf; }
+  .cross { color: #c4cdd6; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+  .plan-cta {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    margin-top: 20px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .plan-cta:hover { opacity: 0.87; transform: translateY(-1px); }
+  .cta-outline {
+    background: transparent;
+    border: 2px solid #d1d9e0;
+    color: #4a5568;
+  }
+  .cta-teal { background: #2a7a5e; color: #fff; }
+  .cta-white { background: #fff; color: #1d5c47; font-weight: 700; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #9aa5b1;
+    padding-bottom: 1.5rem;
+  }
+  .footer-note a { color: #4a9d7f; text-decoration: underline; cursor: pointer; }
+</style>
+
+<div class="pricing-header">
+  <div class="step-tag">Paso 2 de 2 — Elige tu plan</div>
+  <h2>¡Cuenta creada! Elige cómo empezar</h2>
+  <p>Sin permanencia forzada. Sin sorpresas. Cancela cuando quieras.</p>
+</div>
+
+<div class="plans-grid">
+
+  <!-- Prueba gratuita -->
+  <div class="plan-card">
+    <div class="plan-name">Prueba gratuita</div>
+    <div class="plan-price">$0</div>
+    <div class="plan-period">14 días · Sin tarjeta de crédito</div>
+    <div class="plan-divider"></div>
+    <div class="feature-item"><span class="check">✓</span> Agendamiento + recordatorios</div>
+    <div class="feature-item"><span class="check">✓</span> Historia clínica digital</div>
+    <div class="feature-item"><span class="check">✓</span> Analytics básicos</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> RIPS automático MinSalud</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> Facturación electrónica DIAN</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> Funciones IA clínicas</div>
+    <button class="plan-cta cta-outline">Comenzar gratis</button>
+  </div>
+
+  <!-- Premium — popular -->
+  <div class="plan-card popular">
+    <div class="popular-badge">Más popular</div>
+    <div class="plan-name">Premium</div>
+    <div class="plan-price">$90K</div>
+    <div class="plan-period">COP / mes · ~USD 21</div>
+    <div class="plan-divider"></div>
+    <div class="feature-item"><span class="check">✓</span> Todo lo del plan Estándar</div>
+    <div class="feature-item"><span class="check">✓</span> RIPS automático MinSalud</div>
+    <div class="feature-item"><span class="check">✓</span> Facturación electrónica DIAN</div>
+    <div class="feature-item"><span class="check">✓</span> Analytics avanzados</div>
+    <div class="feature-item"><span class="check">✓</span> Funciones IA clínicas</div>
+    <div class="feature-item"><span class="check">✓</span> Soporte prioritario</div>
+    <button class="plan-cta cta-white">Empezar ahora →</button>
+  </div>
+
+  <!-- Estándar -->
+  <div class="plan-card">
+    <div class="plan-name">Estándar</div>
+    <div class="plan-price">$60K</div>
+    <div class="plan-period">COP / mes · ~USD 14</div>
+    <div class="plan-divider"></div>
+    <div class="feature-item"><span class="check">✓</span> Agendamiento + recordatorios</div>
+    <div class="feature-item"><span class="check">✓</span> Historia clínica digital</div>
+    <div class="feature-item"><span class="check">✓</span> Analytics básicos</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> RIPS automático MinSalud</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> Facturación DIAN</div>
+    <div class="feature-item" style="opacity:0.45;"><span class="cross">✕</span> Funciones IA clínicas</div>
+    <button class="plan-cta cta-teal">Elegir Estándar</button>
+  </div>
+
+</div>
+
+<p class="footer-note">
+  Al elegir un plan de pago serás redirigido a Stripe para ingresar tu tarjeta de forma segura.<br>
+  ¿Ya tienes una suscripción activa? <a>Gestiona tu plan aquí</a>
+</p>
