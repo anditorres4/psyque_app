@@ -1,7 +1,8 @@
-"""RIPS generation service (Res. 2275/2023).
+"""RIPS generation service (Res. 0948/2026).
 
 Aggregates signed sessions for a given month/year and generates the RIPS
-JSON structure (v4.3 nested format) required by Res. 2275/2023.
+JSON structure (v4.3 nested format) required by Res. 0948/2026
+(which replaced Res. 2275/2023 on 14 May 2026).
 """
 from __future__ import annotations
 
@@ -233,7 +234,7 @@ class RipsService:
         patients: dict[uuid.UUID, Patient],
         num_factura: str | None = None,
     ) -> dict[str, Any]:
-        """Build RIPS v4.3 nested JSON per Res. 2275/2023 lineamientos v3.2."""
+        """Build RIPS v4.3 nested JSON per Res. 0948/2026 (Doc. Técnico 1)."""
         patient_sessions: dict[uuid.UUID, list[Session]] = {}
         for sess in sessions:
             patient_sessions.setdefault(sess.patient_id, []).append(sess)
@@ -258,7 +259,7 @@ class RipsService:
                     "codDiagnosticoRelacionado1": None,
                     "codDiagnosticoRelacionado2": None,
                     "codDiagnosticoRelacionado3": None,
-                    "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "1",
+                    "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
                     "vrServicio": sess.session_fee,

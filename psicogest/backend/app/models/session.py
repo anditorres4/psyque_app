@@ -56,7 +56,7 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         sa.Boolean(), nullable=False, server_default=sa.text("false")
     )
     tipo_dx_principal: Mapped[str] = mapped_column(
-        sa.String(1), nullable=False, server_default=sa.text("'1'")
+        sa.String(2), nullable=False, server_default=sa.text("'01'")
     )
     mental_exam: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
     is_emergency: Mapped[bool] = mapped_column(
