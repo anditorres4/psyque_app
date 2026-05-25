@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type BookingRequestSummary, type PatientRegistrationBody } from "@/lib/api";
+import { api, type PatientRegistrationBody } from "@/lib/api";
 
 export function useBookingRequests(status?: string) {
   return useQuery({
