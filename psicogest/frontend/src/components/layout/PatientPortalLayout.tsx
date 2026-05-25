@@ -21,11 +21,16 @@ export function PatientPortalLayout() {
     queryFn: () => api.portal.me(),
   });
 
-  // Redirect to onboarding if patient hasn't completed it yet.
-  // Skip when already on /portal/onboarding to avoid infinite redirect.
+  const isCompletingProfile = location.pathname === "/portal/completar-perfil";
   const isOnboarding = location.pathname === "/portal/onboarding";
-  if (me && me.onboarding_status === "pending" && !isOnboarding) {
-    navigate("/portal/onboarding", { replace: true });
+  const isSetupRoute = isCompletingProfile || isOnboarding;
+
+  if (me) {
+    if (!me.profile_complete && !isSetupRoute) {
+      navigate("/portal/completar-perfil", { replace: true });
+    } else if (me.profile_complete && me.onboarding_status === "pending" && !isSetupRoute) {
+      navigate("/portal/onboarding", { replace: true });
+    }
   }
 
   const handleSignOut = async () => {
@@ -33,8 +38,8 @@ export function PatientPortalLayout() {
     navigate("/login");
   };
 
-  // Onboarding page handles its own full-page layout
-  if (isOnboarding) {
+  // Setup pages handle their own full-page layout
+  if (isSetupRoute) {
     return <Outlet />;
   }
 

@@ -7,6 +7,7 @@ import { CheckCircle2, Circle, ChevronRight, AlertTriangle } from "lucide-react"
 // ── Document content ─────────────────────────────────────────────────────────
 
 const DOC_LABELS: Record<string, string> = {
+  habeas_data: "Autorización de tratamiento de datos personales (Ley 1581/2012)",
   service_conditions: "Condiciones de prestación del servicio",
   consent_therapeutic: "Consentimiento informado del proceso terapéutico",
   assent_minor_u13: "Asentimiento informado (menor de 13 años)",
@@ -16,6 +17,32 @@ const DOC_LABELS: Record<string, string> = {
 };
 
 const DOC_CONTENT: Record<string, React.ReactNode> = {
+  habeas_data: (
+    <div className="space-y-3 text-sm leading-relaxed" style={{ color: "var(--psy-ink-2)" }}>
+      <p><strong>Autorización para el tratamiento de datos personales</strong></p>
+      <p>
+        De conformidad con la Ley 1581 de 2012 y el Decreto 1377 de 2013, autorizo
+        expresamente al profesional de psicología para recolectar, almacenar, usar y tratar
+        mis datos personales y datos sensibles de salud, con las siguientes finalidades:
+      </p>
+      <ul className="list-disc pl-5 space-y-1">
+        <li>Prestación del servicio de salud mental y elaboración de historia clínica.</li>
+        <li>Comunicaciones relacionadas con citas, sesiones y documentos del proceso.</li>
+        <li>Cumplimiento de obligaciones legales (RIPS, Res. 1995/1999).</li>
+        <li>Facturación y registro contable de los servicios.</li>
+      </ul>
+      <p><strong>Derechos del titular</strong><br />
+        Como titular tienes derecho a conocer, actualizar, rectificar y suprimir tus datos,
+        así como a revocar esta autorización en cualquier momento, sin que ello afecte
+        la conservación legal de la historia clínica (mínimo 20 años).
+      </p>
+      <p><strong>Datos sensibles</strong><br />
+        Los datos de salud mental tienen la máxima protección bajo la ley colombiana.
+        No serán compartidos con terceros sin tu consentimiento, salvo obligación legal.
+      </p>
+    </div>
+  ),
+
   service_conditions: (
     <div className="space-y-3 text-sm leading-relaxed" style={{ color: "var(--psy-ink-2)" }}>
       <p><strong>1. Modalidad del servicio</strong><br />
@@ -158,6 +185,7 @@ const DOC_CONTENT: Record<string, React.ReactNode> = {
 };
 
 const ACCEPT_LABELS: Record<string, string> = {
+  habeas_data: "He leído y autorizo expresamente el tratamiento de mis datos personales y de salud conforme a la Ley 1581/2012.",
   service_conditions: "He leído y acepto las condiciones de prestación del servicio.",
   consent_therapeutic: "He leído y acepto el consentimiento informado del proceso terapéutico. Autorizo el tratamiento de mis datos personales y de salud.",
   assent_minor_u13: "Estoy de acuerdo con participar en las sesiones.",

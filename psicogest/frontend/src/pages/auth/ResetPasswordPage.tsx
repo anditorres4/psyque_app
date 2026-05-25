@@ -55,14 +55,20 @@ export function ResetPasswordPage() {
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
-    const { error } = await supabase.auth.updateUser({ password: data.password });
+    const { data: { user }, error } = await supabase.auth.updateUser({ password: data.password });
     if (error) {
       setServerError("Error al actualizar la contraseña. El enlace puede haber expirado.");
       return;
     }
     setSuccess(true);
-    await supabase.auth.signOut();
-    setTimeout(() => navigate("/login"), 2000);
+    const isPatient = user?.app_metadata?.role === "patient";
+    if (isPatient) {
+      // Keep session active — patient goes directly to their portal
+      setTimeout(() => navigate("/portal", { replace: true }), 1500);
+    } else {
+      await supabase.auth.signOut();
+      setTimeout(() => navigate("/login"), 2000);
+    }
   };
 
   if (success) {
@@ -70,8 +76,8 @@ export function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Contraseña actualizada</CardTitle>
-            <CardDescription>Tu contraseña fue cambiada exitosamente. Redirigiendo al login...</CardDescription>
+            <CardTitle className="text-2xl font-bold text-[var(--psy-primary)]">Contraseña creada</CardTitle>
+            <CardDescription>Tu contraseña fue guardada exitosamente. Redirigiendo...</CardDescription>
           </CardHeader>
         </Card>
       </div>

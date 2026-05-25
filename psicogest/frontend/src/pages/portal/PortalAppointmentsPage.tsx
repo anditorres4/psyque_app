@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Video } from "lucide-react";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   individual: "Individual", couple: "Pareja", family: "Familia", followup: "Seguimiento",
@@ -64,6 +65,18 @@ export function PortalAppointmentsPage() {
                     {STATUS_LABELS[a.status] ?? a.status}
                   </span>
                 </div>
+                {a.patient_join_key && a.status === "scheduled" && (
+                  <a
+                    href={`/join/${a.id}?k=${encodeURIComponent(a.patient_join_key)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex items-center gap-2 justify-center w-full py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "var(--psy-primary, #1E3A5F)" }}
+                  >
+                    <Video size={14} />
+                    Unirme a la sesión virtual
+                  </a>
+                )}
                 {a.notes && (
                   <p className="text-xs mt-2 border-t pt-2" style={{ color: "var(--psy-ink-3)", borderColor: "var(--psy-line)" }}>
                     {a.notes}

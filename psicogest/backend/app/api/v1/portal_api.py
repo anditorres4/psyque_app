@@ -30,6 +30,17 @@ class PortalMe(BaseModel):
     psychologist_name: str
     psychologist_city: str
     onboarding_status: str  # "active" | "pending" — null DB value treated as "active"
+    profile_complete: bool
+
+class PatientProfileUpdate(BaseModel):
+    marital_status: str | None = None
+    occupation: str | None = None
+    address: str | None = None
+    municipality_dane: str | None = None
+    zone: str | None = None
+    payer_type: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
 
 class PortalAppointment(BaseModel):
     id: str
@@ -39,6 +50,7 @@ class PortalAppointment(BaseModel):
     modality: str
     status: str
     notes: str | None
+    patient_join_key: str | None
 
 class PortalSession(BaseModel):
     id: str
@@ -66,6 +78,19 @@ def _get_patient(ctx: PatientDB) -> Patient:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+def _profile_complete(patient: Patient) -> bool:
+    return all([
+        patient.marital_status,
+        patient.occupation,
+        patient.address,
+        patient.municipality_dane,
+        patient.zone,
+        patient.payer_type,
+        patient.emergency_contact_name,
+        patient.emergency_contact_phone,
+    ])
+
+
 @router.get("/me", response_model=PortalMe)
 def portal_me(ctx: Annotated[PatientDB, Depends(get_patient_db)]) -> PortalMe:
     """Return the authenticated patient's own profile."""
@@ -79,6 +104,31 @@ def portal_me(ctx: Annotated[PatientDB, Depends(get_patient_db)]) -> PortalMe:
         psychologist_name=tenant.full_name if tenant else "",
         psychologist_city=tenant.city if tenant else "",
         onboarding_status=patient.onboarding_status or "active",
+        profile_complete=_profile_complete(patient),
+    )
+
+
+@router.patch("/me/profile", response_model=PortalMe)
+def update_profile(
+    body: PatientProfileUpdate,
+    ctx: Annotated[PatientDB, Depends(get_patient_db)],
+) -> PortalMe:
+    """Update nullable profile fields. Returns updated PortalMe."""
+    patient = _get_patient(ctx)
+    for field, value in body.model_dump(exclude_none=True).items():
+        setattr(patient, field, value)
+    ctx.db.commit()
+    ctx.db.refresh(patient)
+    tenant = ctx.db.get(Tenant, patient.tenant_id)
+    return PortalMe(
+        patient_id=str(patient.id),
+        full_name=patient.full_name,
+        email=patient.email,
+        phone=patient.phone,
+        psychologist_name=tenant.full_name if tenant else "",
+        psychologist_city=tenant.city if tenant else "",
+        onboarding_status=patient.onboarding_status or "active",
+        profile_complete=_profile_complete(patient),
     )
 
 
@@ -105,6 +155,7 @@ def portal_appointments(ctx: Annotated[PatientDB, Depends(get_patient_db)]) -> l
             modality=a.modality,
             status=a.status,
             notes=a.notes,
+            patient_join_key=a.patient_join_key,
         )
         for a in appts
     ]

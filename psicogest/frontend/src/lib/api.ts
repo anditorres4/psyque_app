@@ -792,6 +792,18 @@ export interface PortalMe {
   psychologist_name: string;
   psychologist_city: string;
   onboarding_status: "active" | "pending";
+  profile_complete: boolean;
+}
+
+export interface PatientProfileUpdate {
+  marital_status?: string | null;
+  occupation?: string | null;
+  address?: string | null;
+  municipality_dane?: string | null;
+  zone?: string | null;
+  payer_type?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
 }
 
 export interface OnboardingSignedDoc {
@@ -816,6 +828,7 @@ export interface PortalAppointment {
   modality: string;
   status: string;
   notes: string | null;
+  patient_join_key: string | null;
 }
 
 export interface PortalSession {
@@ -1372,6 +1385,7 @@ referrals: {
   // --- Patient Portal API (patient-scoped auth) ----------------------------
   portal: {
     me: () => request<PortalMe>("GET", "/portal/me"),
+    updateProfile: (data: PatientProfileUpdate) => request<PortalMe>("PATCH", "/portal/me/profile", data),
     appointments: () => request<PortalAppointment[]>("GET", "/portal/appointments"),
     sessions: () => request<PortalSession[]>("GET", "/portal/sessions"),
     invoices: () => request<PortalInvoice[]>("GET", "/portal/invoices"),

@@ -35,6 +35,7 @@ const PortalAppointmentsPage = lazy(() => import("@/pages/portal/PortalAppointme
 const PortalSessionsPage = lazy(() => import("@/pages/portal/PortalSessionsPage").then((m) => ({ default: m.PortalSessionsPage })));
 const PortalInvoicesPage = lazy(() => import("@/pages/portal/PortalInvoicesPage").then((m) => ({ default: m.PortalInvoicesPage })));
 const PortalOnboardingPage = lazy(() => import("@/pages/portal/PortalOnboardingPage").then((m) => ({ default: m.PortalOnboardingPage })));
+const PortalCompleteProfilePage = lazy(() => import("@/pages/portal/PortalCompleteProfilePage").then((m) => ({ default: m.PortalCompleteProfilePage })));
 const PortalTasksPage = lazy(() => import("@/pages/portal/PortalTasksPage").then((m) => ({ default: m.PortalTasksPage })));
 const TerapeutaLoginPage = lazy(() => import("@/pages/auth/TerapeutaLoginPage").then((m) => ({ default: m.TerapeutaLoginPage })));
 const PacienteLoginPage = lazy(() => import("@/pages/auth/PacienteLoginPage").then((m) => ({ default: m.PacienteLoginPage })));
@@ -152,6 +153,7 @@ export default function App() {
             </PatientRoute>
           }
         >
+          <Route path="/portal/completar-perfil" element={<PortalCompleteProfilePage />} />
           <Route path="/portal/onboarding" element={<PortalOnboardingPage />} />
           <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
           <Route path="/portal/appointments" element={<PortalAppointmentsPage />} />

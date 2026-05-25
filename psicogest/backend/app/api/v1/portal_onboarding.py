@@ -26,7 +26,7 @@ def _age(birth_date: date) -> int:
 
 def _required_docs(birth_date: date) -> list[str]:
     age = _age(birth_date)
-    docs = ["service_conditions", "consent_therapeutic"]
+    docs = ["habeas_data", "service_conditions", "consent_therapeutic"]
     if age < 13:
         docs += ["assent_minor_u13", "consent_guardian"]
     elif age < 18:
