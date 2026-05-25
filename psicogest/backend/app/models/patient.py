@@ -34,34 +34,34 @@ class Patient(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
         nullable=False,
     )
     gender_identity: Mapped[str | None] = mapped_column(sa.String(50), nullable=True)
-    marital_status: Mapped[str] = mapped_column(
+    marital_status: Mapped[str | None] = mapped_column(
         sa.Enum("S", "C", "U", "D", "V", "SE", name="marital_status"),
-        nullable=False,
+        nullable=True,
     )
-    occupation: Mapped[str] = mapped_column(sa.String(150), nullable=False)
-    address: Mapped[str] = mapped_column(sa.Text(), nullable=False)
-    municipality_dane: Mapped[str] = mapped_column(sa.String(10), nullable=False)
-    zone: Mapped[str] = mapped_column(
+    occupation: Mapped[str | None] = mapped_column(sa.String(150), nullable=True)
+    address: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    municipality_dane: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
+    zone: Mapped[str | None] = mapped_column(
         sa.Enum("U", "R", name="zone"),
-        nullable=False,
+        nullable=True,
     )
     phone: Mapped[str] = mapped_column(sa.String(20), nullable=False)
     email: Mapped[str | None] = mapped_column(sa.String(255), nullable=True)
     emergency_contact_name: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
     emergency_contact_phone: Mapped[str | None] = mapped_column(sa.String(20), nullable=True)
-    payer_type: Mapped[str] = mapped_column(
+    payer_type: Mapped[str | None] = mapped_column(
         sa.Enum("PA", "CC", "SS", "PE", "SE", name="payer_type"),
-        nullable=False,
+        nullable=True,
     )
     eps_name: Mapped[str | None] = mapped_column(sa.String(200), nullable=True)
     eps_code: Mapped[str | None] = mapped_column(sa.String(10), nullable=True)
     authorization_number: Mapped[str | None] = mapped_column(sa.String(30), nullable=True)
     current_diagnosis_cie11: Mapped[str | None] = mapped_column(sa.String(20), nullable=True)
-    # Consentimiento informado — inmutable tras creación (Ley 1581/2012)
-    consent_signed_at: Mapped[datetime] = mapped_column(
-        sa.TIMESTAMP(timezone=True), nullable=False
+    # Consentimiento informado — inmutable tras creación (Ley 1581/2012); nullable para pacientes creados desde registro mínimo
+    consent_signed_at: Mapped[datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=True
     )
-    consent_ip: Mapped[str] = mapped_column(INET(), nullable=False)
+    consent_ip: Mapped[str | None] = mapped_column(INET(), nullable=True)
     is_active: Mapped[bool] = mapped_column(sa.Boolean(), nullable=False, default=True)
     # Portal — links this patient record to a Supabase auth user (auth.users UUID)
     auth_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True)

@@ -9,6 +9,7 @@ from app.models.appointment import Appointment
 from app.models.availability import AvailabilityBlock
 from app.models.booking_request import BookingRequest
 from app.models.gcal_external_block import GCalExternalBlock
+from app.models.patient import Patient
 from app.models.tenant import Tenant
 
 BOGOTA_TZ = ZoneInfo("America/Bogota")
@@ -143,9 +144,137 @@ class BookingService:
     def confirm(self, request_id: uuid.UUID, tenant_id: uuid.UUID) -> BookingRequest:
         req = self._get(request_id, tenant_id)
         req.status = "confirmed"
+
+        valid_session_types = {"individual", "couple", "family", "followup"}
+        session_type = req.session_type if req.session_type in valid_session_types else "individual"
+
+        patient = (
+            self.db.query(Patient)
+            .filter(Patient.tenant_id == tenant_id, Patient.email == req.patient_email)
+            .first()
+        ) if req.patient_email else None
+
+        if patient:
+            appt = Appointment(
+                tenant_id=tenant_id,
+                patient_id=patient.id,
+                scheduled_start=req.requested_start,
+                scheduled_end=req.requested_end,
+                session_type=session_type,
+                modality="virtual",
+                status="scheduled",
+                notes=req.notes,
+            )
+            self.db.add(appt)
+        else:
+            # Patient unknown — generate 48h registration token
+            req.registration_token = str(uuid.uuid4())
+            req.registration_token_expires_at = datetime.now(tz=timezone.utc) + timedelta(hours=48)
+
         self.db.flush()
         self.db.refresh(req)
         return req
+
+    def resend_registration(self, request_id: uuid.UUID, tenant_id: uuid.UUID) -> BookingRequest:
+        """Regenerate registration token and reset 48h expiry."""
+        req = self._get(request_id, tenant_id)
+        if req.status != "confirmed" or req.registration_token_used_at is not None:
+            raise BookingNotFoundError(str(request_id))
+        req.registration_token = str(uuid.uuid4())
+        req.registration_token_expires_at = datetime.now(tz=timezone.utc) + timedelta(hours=48)
+        req.registration_token_used_at = None
+        self.db.flush()
+        self.db.refresh(req)
+        return req
+
+    def get_registration_info(self, token: str) -> tuple[BookingRequest, Tenant]:
+        """Validate token and return booking request + tenant for form pre-fill."""
+        req = (
+            self.db.query(BookingRequest)
+            .filter(BookingRequest.registration_token == token)
+            .first()
+        )
+        self._validate_token(req)
+        tenant = self.db.get(Tenant, req.tenant_id)
+        return req, tenant
+
+    def complete_registration(
+        self,
+        token: str,
+        *,
+        doc_type: str,
+        doc_number: str,
+        birth_date,
+        biological_sex: str,
+        phone: str,
+    ) -> tuple[BookingRequest, Patient, Appointment]:
+        """Create Patient + Appointment from token. Marks token as used."""
+        from app.services.patient_service import PatientService
+
+        req = (
+            self.db.query(BookingRequest)
+            .filter(BookingRequest.registration_token == token)
+            .first()
+        )
+        self._validate_token(req)
+
+        valid_session_types = {"individual", "couple", "family", "followup"}
+        session_type = req.session_type if req.session_type in valid_session_types else "individual"
+
+        # Idempotency: reuse existing patient on race condition
+        patient = (
+            self.db.query(Patient)
+            .filter(Patient.tenant_id == req.tenant_id, Patient.email == req.patient_email)
+            .first()
+        )
+
+        if not patient:
+            parts = req.patient_name.strip().split()
+            first_name = " ".join(parts[:-1]) if len(parts) > 1 else parts[0]
+            first_surname = parts[-1] if len(parts) > 1 else "N/A"
+
+            hc_number = PatientService(self.db, str(req.tenant_id))._next_hc_number()
+
+            patient = Patient(
+                tenant_id=req.tenant_id,
+                hc_number=hc_number,
+                doc_type=doc_type,
+                doc_number=doc_number,
+                first_name=first_name,
+                first_surname=first_surname,
+                birth_date=birth_date,
+                biological_sex=biological_sex,
+                phone=phone,
+                email=req.patient_email,
+            )
+            self.db.add(patient)
+            self.db.flush()
+            self.db.refresh(patient)
+
+        appt = Appointment(
+            tenant_id=req.tenant_id,
+            patient_id=patient.id,
+            scheduled_start=req.requested_start,
+            scheduled_end=req.requested_end,
+            session_type=session_type,
+            modality="virtual",
+            status="scheduled",
+            notes=req.notes,
+        )
+        self.db.add(appt)
+
+        req.registration_token_used_at = datetime.now(tz=timezone.utc)
+        self.db.flush()
+        self.db.refresh(appt)
+        return req, patient, appt
+
+    def _validate_token(self, req: BookingRequest | None) -> None:
+        if req is None:
+            raise BookingNotFoundError("token_not_found")
+        if req.registration_token_used_at is not None:
+            raise BookingNotFoundError("token_used")
+        if req.registration_token_expires_at and req.registration_token_expires_at < datetime.now(tz=timezone.utc):
+            raise BookingNotFoundError("token_expired")
 
     def reject(self, request_id: uuid.UUID, tenant_id: uuid.UUID) -> BookingRequest:
         req = self._get(request_id, tenant_id)

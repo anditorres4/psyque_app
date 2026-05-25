@@ -22,6 +22,7 @@ const CarteraPage = lazy(() => import("@/pages/cartera/CarteraPage").then((m) =>
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const BookingPage = lazy(() => import("@/pages/booking/BookingPage").then((m) => ({ default: m.BookingPage })));
+const BookingRegistrationPage = lazy(() => import("@/pages/booking/BookingRegistrationPage").then((m) => ({ default: m.BookingRegistrationPage })));
 const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m.JoinPage })));
 const NpsPage = lazy(() => import("@/pages/NpsPage").then((m) => ({ default: m.NpsPage })));
 const PatientRegistrationPage = lazy(() => import("@/pages/PatientRegistrationPage").then((m) => ({ default: m.PatientRegistrationPage })));
@@ -103,6 +104,7 @@ export default function App() {
         <Route path="/join/:appointmentId" element={<JoinPage />} />
         <Route path="/nps/:token" element={<NpsPage />} />
         <Route path="/registro/:slug" element={<PatientRegistrationPage />} />
+        <Route path="/completar-registro/:token" element={<BookingRegistrationPage />} />
 
         {/* Differentiated auth routes */}
         <Route path="/login/terapeuta" element={<TerapeutaLoginPage />} />

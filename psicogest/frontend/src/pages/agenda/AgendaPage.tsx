@@ -5,7 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, EventClickArg, DatesSetArg } from "@fullcalendar/core";
 import { useAppointmentsByRange, useCreateAppointment } from "@/hooks/useAppointments";
-import { useBookingRequests, useConfirmBookingRequest, useRejectBookingRequest } from "@/hooks/useBooking";
+import { useBookingRequests, useConfirmBookingRequest, useRejectBookingRequest, useResendRegistration } from "@/hooks/useBooking";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
 import { AppointmentSidebar } from "@/components/appointments/AppointmentSidebar";
 import { ApiError, type AppointmentCreatePayload, type BookingRequestSummary } from "@/lib/api";
@@ -41,10 +41,14 @@ export function AgendaPage() {
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedBookingRequest, setSelectedBookingRequest] = useState<BookingRequestSummary | null>(null);
+  const [selectedRegistrationRequest, setSelectedRegistrationRequest] = useState<BookingRequestSummary | null>(null);
 
   const { data: bookingRequests = [] } = useBookingRequests("pending");
+  const { data: confirmedRequests = [] } = useBookingRequests("confirmed");
+  const registrationPendingRequests = confirmedRequests.filter((r) => r.registration_pending);
   const confirmMutation = useConfirmBookingRequest();
   const rejectMutation = useRejectBookingRequest();
+  const resendMutation = useResendRegistration();
 
   const handleDatesSet = useCallback((info: DatesSetArg) => {
     setRangeStart(info.start.toISOString());
@@ -63,11 +67,18 @@ export function AgendaPage() {
       const req = bookingRequests.find((r) => r.id === requestId) ?? null;
       setSelectedBookingRequest(req);
       setSelectedAppointmentId(null);
+      setSelectedRegistrationRequest(null);
+    } else if (type === "registration_pending") {
+      const req = registrationPendingRequests.find((r) => r.id === requestId) ?? null;
+      setSelectedRegistrationRequest(req);
+      setSelectedBookingRequest(null);
+      setSelectedAppointmentId(null);
     } else {
       setSelectedAppointmentId(info.event.id);
       setSelectedBookingRequest(null);
+      setSelectedRegistrationRequest(null);
     }
-  }, [bookingRequests]);
+  }, [bookingRequests, registrationPendingRequests]);
 
   const handleCreate = async (payload: AppointmentCreatePayload) => {
     setFormError(null);
@@ -104,6 +115,16 @@ export function AgendaPage() {
       textColor: "#fff",
       extendedProps: { type: "booking_request", requestId: req.id },
     })),
+    ...registrationPendingRequests.map((req) => ({
+      id: `rp-${req.id}`,
+      title: `📋 ${req.patient_name}`,
+      start: req.requested_start,
+      end: req.requested_end,
+      backgroundColor: "#7C4DFF",
+      borderColor: "#5B2ECC",
+      textColor: "#fff",
+      extendedProps: { type: "registration_pending", requestId: req.id },
+    })),
   ];
 
   const totalAppts = appointments.length;
@@ -122,6 +143,9 @@ export function AgendaPage() {
               {totalAppts} cita{totalAppts !== 1 ? "s" : ""} cargadas
               {pendingRequests > 0 && (
                 <> · <span style={{ color: "var(--psy-warn)" }}>{pendingRequests} solicitud{pendingRequests !== 1 ? "es" : ""} pendiente{pendingRequests !== 1 ? "s" : ""}</span></>
+              )}
+              {registrationPendingRequests.length > 0 && (
+                <> · <span style={{ color: "#7C4DFF" }}>{registrationPendingRequests.length} registro{registrationPendingRequests.length !== 1 ? "s" : ""} pendiente{registrationPendingRequests.length !== 1 ? "s" : ""}</span></>
               )}
             </div>
           </div>
@@ -205,6 +229,9 @@ export function AgendaPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#B0463A" }} /> Cancelada
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#7C4DFF" }} /> Registro pendiente
           </span>
         </div>
       </div>
@@ -308,7 +335,89 @@ export function AgendaPage() {
               </button>
             </div>
             <p className="text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
-              Al confirmar, crea la cita manualmente en la agenda.
+              Si el paciente ya está registrado con ese email, la cita se agrega automáticamente a la agenda. Si no, se enviará un email al paciente para que complete su registro.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Registration pending sidebar */}
+      {selectedRegistrationRequest && (
+        <div
+          className="w-80 flex-shrink-0 overflow-y-auto"
+          style={{ background: "var(--psy-surface)", borderLeft: "1px solid var(--psy-line)" }}
+        >
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--psy-line)" }}>
+            <h2 className="text-[14px] font-semibold" style={{ color: "var(--psy-ink-1)" }}>Registro pendiente</h2>
+            <button
+              type="button"
+              onClick={() => setSelectedRegistrationRequest(null)}
+              className="text-[18px] leading-none"
+              style={{ color: "var(--psy-ink-3)" }}
+            >✕</button>
+          </div>
+          <div className="p-4 space-y-4">
+            <span
+              className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: "#EDE7FF", color: "#5B2ECC" }}
+            >
+              📋 Esperando datos del paciente
+            </span>
+            <dl className="space-y-3">
+              {[
+                { label: "Paciente", value: selectedRegistrationRequest.patient_name },
+                { label: "Email", value: selectedRegistrationRequest.patient_email },
+                ...(selectedRegistrationRequest.patient_phone
+                  ? [{ label: "Teléfono", value: selectedRegistrationRequest.patient_phone }]
+                  : []),
+                {
+                  label: "Cita reservada",
+                  value: new Date(selectedRegistrationRequest.requested_start).toLocaleString("es-CO", {
+                    weekday: "long", year: "numeric", month: "long",
+                    day: "numeric", hour: "2-digit", minute: "2-digit",
+                  }),
+                },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <dt className="psy-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>{label}</dt>
+                  <dd className="text-[13px] mt-0.5" style={{ color: "var(--psy-ink-1)" }}>{value}</dd>
+                </div>
+              ))}
+              {selectedRegistrationRequest.registration_token_expires_at && (
+                <div>
+                  <dt className="psy-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>Enlace válido hasta</dt>
+                  <dd
+                    className="text-[13px] mt-0.5"
+                    style={{
+                      color: new Date(selectedRegistrationRequest.registration_token_expires_at) < new Date()
+                        ? "var(--psy-danger)" : "var(--psy-ink-1)",
+                    }}
+                  >
+                    {new Date(selectedRegistrationRequest.registration_token_expires_at) < new Date()
+                      ? "⚠ Expirado"
+                      : new Date(selectedRegistrationRequest.registration_token_expires_at).toLocaleString("es-CO", {
+                          day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+                        })
+                    }
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <button
+              type="button"
+              disabled={resendMutation.isPending}
+              onClick={() =>
+                resendMutation.mutate(selectedRegistrationRequest.id, {
+                  onSuccess: (updated) => setSelectedRegistrationRequest(updated),
+                })
+              }
+              className="w-full text-[13px] py-2 rounded-md font-medium disabled:opacity-50 transition-colors"
+              style={{ background: "#7C4DFF", color: "#fff" }}
+            >
+              {resendMutation.isPending ? "Enviando..." : "↩ Reenviar email de registro"}
+            </button>
+            <p className="text-[11px]" style={{ color: "var(--psy-ink-3)" }}>
+              El paciente recibirá un nuevo enlace válido por 48 horas.
             </p>
           </div>
         </div>

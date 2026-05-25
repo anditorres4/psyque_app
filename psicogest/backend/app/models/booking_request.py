@@ -33,3 +33,10 @@ class BookingRequest(Base, UUIDPrimaryKey):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    registration_token: Mapped[str | None] = mapped_column(sa.String(36), nullable=True, index=True)
+    registration_token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    registration_token_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

@@ -436,3 +436,37 @@ class EmailService:
                 f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
             ),
         })
+
+    def send_patient_registration_request(
+        self,
+        *,
+        to_email: str,
+        patient_name: str,
+        psychologist_name: str,
+        registration_link: str,
+        appointment_start: datetime,
+    ) -> bool:
+        """Sent when a booking is confirmed but patient doesn't exist yet."""
+        if not settings.resend_api_key:
+            return False
+        date_str = appointment_start.strftime("%A %d de %B de %Y")
+        time_str = appointment_start.strftime("%H:%M")
+        return self._post({
+            "from": settings.resend_from_email,
+            "to": [to_email],
+            "subject": f"Completa tu registro — cita el {date_str}",
+            "html": (
+                f"<p>Hola {patient_name},</p>"
+                f"<p><strong>{psychologist_name}</strong> ha confirmado tu solicitud de cita para el "
+                f"<strong>{date_str} a las {time_str}</strong>.</p>"
+                f"<p>Para finalizar el agendamiento necesitamos algunos datos básicos. "
+                f"Solo te tomará 2 minutos:</p>"
+                f"<p style='margin:24px 0;'>"
+                f"<a href='{registration_link}' style='display:inline-block;background:#2E5E8A;"
+                f"color:white;padding:14px 32px;border-radius:8px;text-decoration:none;"
+                f"font-weight:600;font-size:15px;'>Completar mi registro</a></p>"
+                f"<p style='font-size:12px;color:#6B7A7E;'>Este enlace es válido por 48 horas. "
+                f"Si no solicitaste esta cita, ignora este mensaje.</p>"
+                f"<p>Saludos,<br><strong>{psychologist_name}</strong></p>"
+            ),
+        })

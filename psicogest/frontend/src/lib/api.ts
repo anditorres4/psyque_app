@@ -730,6 +730,29 @@ export interface BookingRequestSummary {
   status: "pending" | "confirmed" | "rejected";
   notes: string | null;
   created_at: string;
+  registration_pending: boolean;
+  registration_token_expires_at: string | null;
+}
+
+export interface RegistrationTokenInfo {
+  patient_name: string;
+  patient_email: string;
+  psychologist_name: string;
+  requested_start: string;
+  session_type: string;
+}
+
+export interface PatientRegistrationBody {
+  doc_type: string;
+  doc_number: string;
+  birth_date: string;
+  biological_sex: string;
+  phone: string;
+}
+
+export interface PatientRegistrationResult {
+  patient_name: string;
+  appointment_start: string;
 }
 
 // --- Google Calendar --------------------------------------------------------
@@ -1326,6 +1349,14 @@ referrals: {
       request<BookingRequestSummary>("POST", `/booking-requests/${id}/confirm`),
     reject: (id: string): Promise<BookingRequestSummary> =>
       request<BookingRequestSummary>("POST", `/booking-requests/${id}/reject`),
+    resendRegistration: (id: string): Promise<BookingRequestSummary> =>
+      request<BookingRequestSummary>("POST", `/booking-requests/${id}/resend-registration`),
+  },
+  registration: {
+    getInfo: (token: string): Promise<RegistrationTokenInfo> =>
+      publicRequest<RegistrationTokenInfo>("GET", `/public/booking/registration/${token}`),
+    complete: (token: string, body: PatientRegistrationBody): Promise<PatientRegistrationResult> =>
+      publicRequest<PatientRegistrationResult>("POST", `/public/booking/registration/${token}`, body),
   },
   // --- Google Calendar --------------------------------------------------------
   googleCalendar: {
