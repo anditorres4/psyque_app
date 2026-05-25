@@ -17,8 +17,18 @@ export function useNotifications() {
 
   // Supabase Realtime — invalidate query on new INSERT
   useEffect(() => {
+    const CHANNEL_NAME = "notifications-realtime";
+
+    // Remove stale channel if it already exists (React StrictMode double-invoke
+    // or hot reload can leave a subscribed channel behind, causing the
+    // "cannot add callbacks after subscribe()" error).
+    const stale = supabase
+      .getChannels()
+      .find((ch) => ch.topic === `realtime:${CHANNEL_NAME}`);
+    if (stale) supabase.removeChannel(stale);
+
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel(CHANNEL_NAME)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },

@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -46,6 +46,8 @@ export function AgendaPage() {
   const { data: bookingRequests = [] } = useBookingRequests("pending");
   const { data: confirmedRequests = [] } = useBookingRequests("confirmed");
   const registrationPendingRequests = confirmedRequests.filter((r) => r.registration_pending);
+  console.log("[agenda] confirmedRequests", confirmedRequests.length, confirmedRequests.map(r => ({ id: r.id, email: r.patient_email, pending: r.registration_pending })));
+  console.log("[agenda] registrationPendingRequests", registrationPendingRequests.length);
   const confirmMutation = useConfirmBookingRequest();
   const rejectMutation = useRejectBookingRequest();
   const resendMutation = useResendRegistration();
@@ -94,7 +96,7 @@ export function AgendaPage() {
     }
   };
 
-  const calendarEvents = [
+  const calendarEvents = useMemo(() => [
     ...appointments.map((appt) => ({
       id: appt.id,
       title: SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type,
@@ -125,7 +127,7 @@ export function AgendaPage() {
       textColor: "#fff",
       extendedProps: { type: "registration_pending", requestId: req.id },
     })),
-  ];
+  ], [appointments, bookingRequests, registrationPendingRequests]);
 
   const totalAppts = appointments.length;
   const pendingRequests = bookingRequests.length;
