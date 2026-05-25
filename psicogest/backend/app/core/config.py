@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     fevrips_base_url: str = ""  # e.g. https://<docker-host>:9443
 
     # --- Frontend ---
-    frontend_url: str = "https://app.psycent.co"
+    frontend_url: str = "https://psycent.com"
 
     @property
     def is_development(self) -> bool:
