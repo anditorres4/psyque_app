@@ -9,7 +9,6 @@ from sqlalchemy import select
 
 from app.core.deps import get_tenant_db, TenantDB
 from app.models.clinical_record import ClinicalRecord
-from app.models.patient import Patient
 from app.schemas.clinical_record import ClinicalRecordDetail, ClinicalRecordUpsert
 from app.schemas.patient import (
     PaginatedPatients,
@@ -18,8 +17,8 @@ from app.schemas.patient import (
     PatientSummary,
     PatientUpdate,
 )
-from app.schemas.session import SessionSummary, PaginatedSessions
-from app.schemas.appointment import AppointmentSummary, PaginatedAppointments
+from app.schemas.session import PaginatedSessions
+from app.schemas.appointment import PaginatedAppointments
 from app.services.patient_service import (
     DuplicateDocumentError,
     PatientNotFoundError,
