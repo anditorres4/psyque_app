@@ -73,12 +73,19 @@ def list_cartera(
 
     invoices = query.all()
 
+    # Batch-load patients to avoid N+1
+    patient_ids = list({inv.patient_id for inv in invoices})
+    patients_by_id: dict[uuid.UUID, Patient] = {
+        p.id: p
+        for p in ctx.db.query(Patient).filter(Patient.id.in_(patient_ids)).all()
+    }
+
     # Group by patient
     patient_map: dict[uuid.UUID, dict] = {}
     for inv in invoices:
         pid = inv.patient_id
         if pid not in patient_map:
-            patient = ctx.db.query(Patient).filter(Patient.id == pid).first()
+            patient = patients_by_id.get(pid)
             patient_map[pid] = {
                 "id": pid,
                 "patient_id": pid,
@@ -135,11 +142,18 @@ def cartera_summary(
         Invoice.payment_status != "paid",
     ).all()
 
+    # Batch-load patients to avoid N+1
+    patient_ids = list({inv.patient_id for inv in invoices})
+    patients_by_id: dict[uuid.UUID, Patient] = {
+        p.id: p
+        for p in ctx.db.query(Patient).filter(Patient.id.in_(patient_ids)).all()
+    }
+
     total_particular = 0
     total_eps = 0
 
     for inv in invoices:
-        patient = ctx.db.query(Patient).filter(Patient.id == inv.patient_id).first()
+        patient = patients_by_id.get(inv.patient_id)
         pending = inv.total_cop - inv.amount_paid
         if patient and patient.payer_type == "PA":
             total_particular += pending
