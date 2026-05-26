@@ -70,6 +70,7 @@ class AppointmentSummary(BaseModel):
     status: str
     notes: str | None
     created_at: datetime
+    session_signed: bool | None = None
 
 
 class AppointmentDetail(AppointmentSummary):

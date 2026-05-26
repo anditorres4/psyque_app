@@ -12,6 +12,7 @@ from app.schemas.invoice import (
     InvoiceListResponse,
     InvoiceSummary,
     InvoiceUpdate,
+    UnbilledPatientRow,
     CreditDebitNoteCreate,
     CreditDebitNoteOut,
 )
@@ -62,6 +63,14 @@ def list_invoices(
         items=[InvoiceSummary.model_validate(i) for i in invoices],
         total=len(invoices),
     )
+
+
+@router.get("/unbilled", response_model=list[UnbilledPatientRow])
+def list_unbilled_sessions(
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> list[UnbilledPatientRow]:
+    rows = _service(ctx).get_unbilled_by_patient()
+    return [UnbilledPatientRow(**r) for r in rows]
 
 
 @router.post("/bulk", response_model=InvoiceSummary, status_code=status.HTTP_201_CREATED)

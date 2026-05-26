@@ -21,6 +21,7 @@ from app.schemas.appointment import (
 )
 from app.models.appointment import Appointment
 from app.models.appointment_series import AppointmentSeries
+from app.models.session import Session
 from app.services.appointment_service import (
     AppointmentConflictError,
     AppointmentNotFoundError,
@@ -84,8 +85,23 @@ def list_appointments_by_range(
         {p.id: p.full_name for p in ctx.db.query(Patient).filter(Patient.id.in_(patient_ids)).all()}
         if patient_ids else {}
     )
+    appt_ids = {a.id for a in appts}
+    session_signed_map: dict = {}
+    if appt_ids:
+        rows = (
+            ctx.db.query(Session.appointment_id, Session.status)
+            .filter(
+                Session.tenant_id == ctx.tenant.tenant_id,
+                Session.appointment_id.in_(appt_ids),
+            )
+            .all()
+        )
+        session_signed_map = {row[0]: row[1] == "signed" for row in rows}
     return [
-        AppointmentSummary.model_validate(a).model_copy(update={"patient_name": patients.get(a.patient_id)})
+        AppointmentSummary.model_validate(a).model_copy(update={
+            "patient_name": patients.get(a.patient_id),
+            "session_signed": session_signed_map.get(a.id),
+        })
         for a in appts
     ]
 

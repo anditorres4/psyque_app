@@ -111,6 +111,45 @@ class InvoiceService:
             session_ids=[str(s.id) for s in sessions],
         )
 
+    def get_unbilled_by_patient(self) -> list[dict]:
+        """Return signed sessions not yet included in any invoice, grouped by patient."""
+        invoiced_ids: set[uuid.UUID] = set()
+        for (raw_ids,) in self.db.query(Invoice.session_ids).filter(
+            Invoice.tenant_id == self._tenant_uuid
+        ):
+            invoiced_ids.update(uuid.UUID(sid) for sid in (raw_ids or []))
+
+        query = self.db.query(Session).filter(
+            Session.tenant_id == self._tenant_uuid,
+            Session.status == "signed",
+        )
+        if invoiced_ids:
+            query = query.filter(~Session.id.in_(invoiced_ids))
+
+        from collections import defaultdict
+
+        grouped: dict[uuid.UUID, list[Session]] = defaultdict(list)
+        for s in query.all():
+            grouped[s.patient_id].append(s)
+
+        rows = []
+        for patient_id, sessions in grouped.items():
+            patient = self.db.get(Patient, patient_id)
+            if not patient:
+                continue
+            rows.append(
+                {
+                    "patient_id": patient_id,
+                    "patient_name": patient.full_name,
+                    "session_count": len(sessions),
+                    "total_cop": sum(s.session_fee for s in sessions),
+                    "oldest_session_date": min(s.actual_start for s in sessions),
+                    "latest_session_date": max(s.actual_start for s in sessions),
+                }
+            )
+        rows.sort(key=lambda x: x["oldest_session_date"])
+        return rows
+
     def _generate_invoice_number(self) -> str:
         """Generate sequential invoice number: INV-YYYY-NNNN."""
         year = datetime.now(tz=timezone.utc).year

@@ -17,6 +17,7 @@ export interface AppointmentSummary {
   status: AppointmentStatus;
   notes: string | null;
   created_at: string;
+  session_signed?: boolean | null;
 }
 
 export interface AppointmentDetail extends AppointmentSummary {

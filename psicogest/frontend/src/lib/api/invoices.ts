@@ -44,6 +44,15 @@ export interface InvoiceUpdatePayload {
   notes?: string;
 }
 
+export interface UnbilledPatientRow {
+  patient_id: string;
+  patient_name: string;
+  session_count: number;
+  total_cop: number;
+  oldest_session_date: string;
+  latest_session_date: string;
+}
+
 export interface CreditDebitNoteCreate {
   type: "credit" | "debit";
   reason: string;
@@ -66,6 +75,8 @@ export const invoicesApi = {
     request<InvoiceSummary>("POST", "/invoices", body),
   bulk: (body: InvoiceBulkPayload) =>
     request<InvoiceSummary>("POST", "/invoices/bulk", body),
+  getUnbilled: () =>
+    request<UnbilledPatientRow[]>("GET", "/invoices/unbilled"),
   list: (params?: { patient_id?: string; status?: string; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.patient_id) q.set("patient_id", params.patient_id);

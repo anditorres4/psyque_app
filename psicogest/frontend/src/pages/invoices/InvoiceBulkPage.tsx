@@ -1,197 +1,149 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { api, PatientSummary } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { api, type UnbilledPatientRow } from "@/lib/api";
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
+const COP = (n: number) =>
+  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
 
-function PatientPicker({
-  selected,
-  onSelect,
-  onClear,
-}: {
-  selected: PatientSummary | null;
-  onSelect: (p: PatientSummary) => void;
-  onClear: () => void;
-}) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showResults, setShowResults] = useState(false);
-  const debouncedQuery = useDebounce(searchQuery, 300);
-  const containerRef = useRef<HTMLDivElement>(null);
+const daysSince = (iso: string) => {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.floor(ms / 86_400_000);
+};
 
-  const { data: searchResults, isFetching } = useQuery({
-    queryKey: ["patient-search-bulk", debouncedQuery],
-    queryFn: () => api.patients.list({ search: debouncedQuery, page_size: 6 }),
-    enabled: debouncedQuery.length >= 2 && !selected,
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+
+function RowActions({ row }: { row: UnbilledPatientRow }) {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  const dateFrom = new Date(row.oldest_session_date);
+  dateFrom.setHours(0, 0, 0, 0);
+  const dateTo = new Date(row.latest_session_date);
+  dateTo.setHours(23, 59, 59, 999);
+
+  const bulkMutation = useMutation({
+    mutationFn: () =>
+      api.invoices.bulk({
+        patient_id: row.patient_id,
+        date_from: dateFrom.toISOString(),
+        date_to: dateTo.toISOString(),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["invoices-unbilled"] });
+      navigate("/invoices");
+    },
+    onError: (err: Error) => setError(err.message),
   });
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setShowResults(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  if (selected) {
-    const surnames = [selected.first_surname, selected.second_surname].filter(Boolean).join(" ");
-    return (
-      <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-slate-50 text-sm">
-        <span className="flex-1 truncate">{surnames}, {selected.first_name} — {selected.doc_type} {selected.doc_number}</span>
-        <button type="button" className="text-muted-foreground hover:text-foreground shrink-0" onClick={onClear}>✕</button>
-      </div>
-    );
-  }
-
   return (
-    <div ref={containerRef} className="relative">
-      <Input
-        value={searchQuery}
-        onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
-        onFocus={() => setShowResults(true)}
-        placeholder="Buscar por nombre o documento..."
-        autoComplete="off"
-      />
-      {showResults && debouncedQuery.length >= 2 && (
-        <div className="absolute z-10 top-full mt-1 w-full bg-white border rounded-md shadow-lg max-h-52 overflow-y-auto">
-          {isFetching && <p className="text-xs text-muted-foreground p-3">Buscando...</p>}
-          {!isFetching && searchResults?.items.length === 0 && (
-            <p className="text-xs text-muted-foreground p-3">Sin resultados para "{debouncedQuery}"</p>
-          )}
-          {searchResults?.items.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 border-b last:border-b-0"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onSelect(p); setSearchQuery(""); setShowResults(false); }}
-            >
-              <span className="font-medium">{[p.first_surname, p.second_surname].filter(Boolean).join(" ")}, {p.first_name}</span>
-              <span className="text-muted-foreground ml-2 text-xs">{p.doc_type} {p.doc_number}</span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="flex flex-col items-end gap-1.5 min-w-[170px]">
+      {error && <p className="text-[11px] text-red-600 text-right max-w-[160px]">{error}</p>}
+      <div className="text-[11px] text-right" style={{ color: "var(--psy-ink-3)" }}>
+        {shortDate(row.oldest_session_date)} — {shortDate(row.latest_session_date)}
+      </div>
+      <Button
+        size="sm"
+        disabled={bulkMutation.isPending}
+        onClick={() => { setError(null); bulkMutation.mutate(); }}
+        className="w-full"
+      >
+        {bulkMutation.isPending ? "Generando…" : "Facturar"}
+      </Button>
     </div>
   );
 }
 
 export function InvoiceBulkPage() {
-  const navigate = useNavigate();
-  const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const bulkMutation = useMutation({
-    mutationFn: ({ patient_id, date_from, date_to }: { patient_id: string; date_from: string; date_to: string }) =>
-      api.invoices.bulk({ patient_id, date_from, date_to }),
-    onSuccess: () => {
-      navigate("/invoices");
-    },
-    onError: (err: Error) => {
-      setError(err.message);
-    },
+  const { data: rows = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["invoices-unbilled"],
+    queryFn: () => api.invoices.getUnbilled(),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!selectedPatient) {
-      setError("Selecciona un paciente");
-      return;
-    }
-    if (!dateFrom || !dateTo) {
-      setError("Selecciona el rango de fechas");
-      return;
-    }
-
-    bulkMutation.mutate({
-      patient_id: selectedPatient.id,
-      date_from: new Date(dateFrom + "T00:00:00").toISOString(),
-      date_to: new Date(dateTo + "T23:59:59").toISOString(),
-    });
-  };
-
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="psy-page-title">Facturación en masa</h1>
         <p className="text-muted-foreground mt-1">
-          Genera una factura automáticamente desde sesiones firmadas en un rango de fechas
+          Pacientes con sesiones firmadas sin facturar. El rango de fechas es de la sesión más antigua a la más reciente.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Nueva factura</CardTitle>
-          <CardDescription>
-            Selecciona el paciente y el período de sesiones a facturar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+      {isLoading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
+      )}
 
-            <div>
-              <Label>Paciente</Label>
-              <PatientPicker
-                selected={selectedPatient}
-                onSelect={setSelectedPatient}
-                onClear={() => setSelectedPatient(null)}
-              />
-            </div>
+      {isError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            No se pudo cargar la lista.{" "}
+            <button type="button" onClick={() => refetch()} className="underline">Reintentar</button>
+          </AlertDescription>
+        </Alert>
+      )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Desde</Label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Hasta</Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+      {!isLoading && !isError && rows.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No hay sesiones pendientes de facturar.</p>
+          </CardContent>
+        </Card>
+      )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={bulkMutation.isPending}
-            >
-              {bulkMutation.isPending ? "Generando..." : "Generar factura"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {!isLoading && !isError && rows.length > 0 && (
+        <div className="space-y-3">
+          {rows.map((row) => {
+            const days = daysSince(row.oldest_session_date);
+            const urgent = days >= 25;
+
+            return (
+              <Card
+                key={row.patient_id}
+                style={urgent ? { border: "1px solid var(--psy-warn)" } : undefined}
+              >
+                <CardContent className="py-4 flex items-center gap-6">
+                  {/* Patient name + alert */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[14px] font-semibold truncate" style={{ color: "var(--psy-ink-1)" }}>
+                        {row.patient_name}
+                      </span>
+                      {urgent && (
+                        <span
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                          style={{ background: "var(--psy-warn-bg, #FEF3C7)", color: "var(--psy-warn, #B45309)" }}
+                        >
+                          ⚠ {days} días sin facturar
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-1.5">
+                      <span className="text-[12px]" style={{ color: "var(--psy-ink-3)" }}>
+                        <strong style={{ color: "var(--psy-ink-2)" }}>{row.session_count}</strong>{" "}
+                        sesión{row.session_count !== 1 ? "es" : ""}
+                      </span>
+                      <span className="text-[12px] font-semibold" style={{ color: "var(--psy-primary)" }}>
+                        {COP(row.total_cop)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <RowActions row={row} />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

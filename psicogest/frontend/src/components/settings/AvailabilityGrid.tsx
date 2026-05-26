@@ -16,10 +16,29 @@ function BlockRow({ block, onDelete }: { block: { id: string; start_time: string
   );
 }
 
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const h = String(i).padStart(2, "0");
+  return { value: `${h}:00`, label: `${h}:00` };
+});
+
+function HourSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="border rounded px-2 py-1 text-xs bg-white"
+    >
+      {HOURS.map((h) => (
+        <option key={h.value} value={h.value}>{h.label}</option>
+      ))}
+    </select>
+  );
+}
+
 function AddBlockForm({ dayOfWeek, onDone }: { dayOfWeek: number; onDone: () => void }) {
   const createMutation = useCreateAvailabilityBlock();
   const [start, setStart] = useState("09:00");
-  const [end, setEnd] = useState("13:00");
+  const [end, setEnd] = useState("18:00");
   const [err, setErr] = useState<string | null>(null);
 
   const handleAdd = async () => {
@@ -37,10 +56,10 @@ function AddBlockForm({ dayOfWeek, onDone }: { dayOfWeek: number; onDone: () => 
   };
 
   return (
-    <div className="flex items-center gap-2 mt-1">
-      <input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="border rounded px-2 py-1 text-xs" />
-      <span className="text-xs">—</span>
-      <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="border rounded px-2 py-1 text-xs" />
+    <div className="flex flex-wrap items-center gap-2 mt-1">
+      <HourSelect value={start} onChange={setStart} />
+      <span className="text-xs text-muted-foreground">—</span>
+      <HourSelect value={end} onChange={setEnd} />
       <Button size="sm" onClick={handleAdd} disabled={createMutation.isPending} className="text-xs h-7">
         Agregar
       </Button>

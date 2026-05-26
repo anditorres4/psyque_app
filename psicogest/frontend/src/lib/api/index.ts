@@ -55,6 +55,7 @@ export type {
   InvoiceUpdatePayload,
   CreditDebitNoteCreate,
   CreditDebitNoteOut,
+  UnbilledPatientRow,
 } from "./invoices";
 
 export type {

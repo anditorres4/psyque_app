@@ -49,6 +49,15 @@ class InvoiceListResponse(BaseModel):
     total: int
 
 
+class UnbilledPatientRow(BaseModel):
+    patient_id: uuid.UUID
+    patient_name: str
+    session_count: int
+    total_cop: int
+    oldest_session_date: datetime
+    latest_session_date: datetime
+
+
 class CreditDebitNoteCreate(BaseModel):
     type: str  # "credit" | "debit"
     reason: str
