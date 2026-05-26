@@ -103,10 +103,11 @@ def list_sessions(
     if not _is_tenant_owner(ctx):
         query = query.filter(CashSession.user_id == ctx.tenant.user_id)
     query = query.order_by(CashSession.opened_at.desc())
+    total = query.count()
     sessions = query.limit(limit).all()
     return CashSessionListResponse(
         items=[CashSessionSummary.model_validate(s) for s in sessions],
-        total=len(sessions),
+        total=total,
     )
 
 
