@@ -1,5 +1,5 @@
 """Tests for 100ms token generation."""
-from jose import jwt as jose_jwt
+import jwt
 
 from app.services.hms_service import HmsService
 
@@ -8,7 +8,7 @@ def test_create_app_token_includes_required_100ms_claims():
     svc = HmsService()
 
     token = svc.create_app_token("room-123", "user-456", "session")
-    payload = jose_jwt.get_unverified_claims(token)
+    payload = jwt.decode(token, options={"verify_signature": False})
 
     assert payload["access_key"]
     assert payload["room_id"] == "room-123"

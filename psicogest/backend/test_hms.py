@@ -1,13 +1,13 @@
 import time, uuid, httpx
-from jose import jwt as jose_jwt
+import jwt
 
 HMS_APP_KEY = "69f12a91f8e80a674997e7f0"
-HMS_APP_SECRET = "mBJ43bsDsBeO-e6OiIQymHaZguobvjDMEvfNa53TN-YthLE7WVa8hhnYMUtCzbaC1KABLVyo1IHiLjjIHrxzDcq6IhsjoQMJk-mtYvQGSJ8UKV4sYg_gchbbCcmY2U81qGub3FPThhVjkVqcnW2B-oitdsL91SMxBeMQNSCbKcw="
+HMS_APP_SECRET = "your-secret-here"
 HMS_API = "https://api.100ms.live/v2"
 
 def mgmt_token():
     now = int(time.time())
-    return jose_jwt.encode({
+    return jwt.encode({
         "access_key": HMS_APP_KEY,
         "type": "management",
         "version": 2,
