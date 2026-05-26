@@ -2,7 +2,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_tenant_db, TenantDB
@@ -37,8 +37,9 @@ def create_referral(
 def list_referrals(
     patient_id: uuid.UUID,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+    limit: int = Query(100, ge=1, le=500),
 ):
-    referrals = _svc(ctx).list_by_patient(patient_id)
+    referrals = _svc(ctx).list_by_patient(patient_id, limit=limit)
     return [ReferralDetail.model_validate(referral) for referral in referrals]
 
 

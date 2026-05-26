@@ -39,7 +39,7 @@ class ReferralService:
         self.db.refresh(referral)
         return referral
 
-    def list_by_patient(self, patient_id: uuid.UUID) -> list[Referral]:
+    def list_by_patient(self, patient_id: uuid.UUID, limit: int = 100) -> list[Referral]:
         return (
             self.db.query(Referral)
             .filter(
@@ -47,6 +47,7 @@ class ReferralService:
                 Referral.patient_id == patient_id,
             )
             .order_by(Referral.created_at.desc())
+            .limit(limit)
             .all()
         )
 

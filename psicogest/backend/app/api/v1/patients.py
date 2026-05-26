@@ -18,8 +18,8 @@ from app.schemas.patient import (
     PatientSummary,
     PatientUpdate,
 )
-from app.schemas.session import SessionSummary
-from app.schemas.appointment import AppointmentSummary
+from app.schemas.session import SessionSummary, PaginatedSessions
+from app.schemas.appointment import AppointmentSummary, PaginatedAppointments
 from app.services.patient_service import (
     DuplicateDocumentError,
     PatientNotFoundError,
@@ -140,17 +140,17 @@ def update_patient(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
 
 
-@router.get("/{patient_id}/sessions", response_model=list[SessionSummary])
+@router.get("/{patient_id}/sessions", response_model=PaginatedSessions)
 def get_patient_sessions(
     patient_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-) -> list[SessionSummary]:
+) -> PaginatedSessions:
     """List clinical sessions for a patient.
 
     Returns:
-        List of SessionSummary ordered by date (newest first).
+        Paginated list of SessionSummary ordered by date (newest first).
     """
     try:
         _service(ctx).get_by_id(patient_id)
@@ -158,24 +158,28 @@ def get_patient_sessions(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
     return SessionService(ctx.db, ctx.tenant.tenant_id).list_paginated(
         page=page, page_size=page_size, patient_id=patient_id
-    ).items
+    )
 
 
-@router.get("/{patient_id}/appointments", response_model=list[AppointmentSummary])
+@router.get("/{patient_id}/appointments", response_model=PaginatedAppointments)
 def get_patient_appointments(
     patient_id: str,
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
-) -> list[AppointmentSummary]:
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+) -> PaginatedAppointments:
     """List appointments for a patient.
 
     Returns:
-        List of AppointmentSummary ordered by scheduled_start.
+        Paginated list of AppointmentSummary ordered by scheduled_start.
     """
     try:
         _service(ctx).get_by_id(patient_id)
     except PatientNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado.")
-    return AppointmentService(ctx.db, ctx.tenant.tenant_id).list_by_patient(patient_id)
+    return AppointmentService(ctx.db, ctx.tenant.tenant_id).list_paginated(
+        page=page, page_size=page_size, patient_id=patient_id
+    )
 
 
 @router.get("/{patient_id}/history-export")
