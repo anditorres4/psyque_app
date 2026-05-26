@@ -132,5 +132,3 @@ export const patientsApi = {
   },
 };
 
-// Keep ApiError and API_BASE re-exported for convenience (used in documents.ts upload)
-export { ApiError, API_BASE, getAuthHeader };
