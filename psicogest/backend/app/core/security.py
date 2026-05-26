@@ -1,25 +1,31 @@
 """JWT validation and tenant extraction from Supabase Auth tokens (ES256 / ECC P-256)."""
 import json
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
+from jwt.algorithms import ECAlgorithm
 from jwt.exceptions import InvalidTokenError
 
 from app.core.config import settings
 
 _bearer = HTTPBearer()
 
-# Parse the JWK once at startup — avoids re-parsing on every request
-_PUBLIC_KEY: dict = {}
+# Cached EC key object for PyJWT — loaded once, avoids re-parsing on every request
+_PUBLIC_KEY: Any = None
 
 
-def _get_public_key() -> dict:
-    """Return the parsed EC public JWK, loading it once from settings."""
+def _get_public_key() -> Any:
+    """Return the EC public key object (cryptography library) for PyJWT ES256 verification.
+
+    PyJWT requires a key object from the `cryptography` library, not a raw JWK dict.
+    ECAlgorithm.from_jwk() performs the conversion from the stored JWK JSON string.
+    """
     global _PUBLIC_KEY
-    if not _PUBLIC_KEY:
-        _PUBLIC_KEY = json.loads(settings.supabase_jwt_jwk)
+    if _PUBLIC_KEY is None:
+        jwk_dict = json.loads(settings.supabase_jwt_jwk)
+        _PUBLIC_KEY = ECAlgorithm.from_jwk(json.dumps(jwk_dict))
     return _PUBLIC_KEY
 
 
