@@ -29,7 +29,9 @@ async def upload_document(
 ) -> DocumentRead:
     """Upload a document to a patient's file."""
     content = await file.read()
-    content_type = file.content_type or "application/octet-stream"
+    if not file.content_type or file.content_type not in DocumentService.ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+    content_type = file.content_type
     filename = file.filename or "document"
     file_size = len(content)
 
