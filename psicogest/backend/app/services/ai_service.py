@@ -10,7 +10,7 @@ from app.models.ai_suggestion import AiDiagnosisSuggestion
 from app.models.ai_session_summary import AiSessionSummary
 from app.models.ai_clinical_record_summary import AiClinicalRecordSummary
 from app.models.ai_document_analysis import AiDocumentAnalysis
-from app.services.ai.providers import get_provider, AIResponse
+from app.services.ai.providers import get_provider
 
 
 DIAGNOSIS_PROMPT = """Eres un asistente de diagnóstico psicológico clínico. Basándote en la siguiente información del paciente, sugiere códigos CIE-10 relevantes.
