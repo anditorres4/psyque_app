@@ -81,6 +81,13 @@ Contexto de salud mental: UI calmada, profesional, bajo costo cognitivo.
 - Componentes: shadcn/ui con tema personalizado. Evitar rojos/naranjas intensos fuera de alertas críticas.
 - Portal pacientes: extra simplificado, áreas táctiles grandes, tonos cálidos.
 
+## Licencias de Dependencias
+
+Antes del lanzamiento comercial verificar cumplimiento:
+
+- **`psycopg2-binary`** — LGPL-2.1. Distribución como binario permite uso en SaaS sin obligación de liberar código fuente, siempre que no se modifique la librería. Revisar al distribuir instaladores de escritorio.
+- **`reportlab`** — BSD (ReportLab Toolkit OSS). Libre para uso comercial bajo BSD. La versión ReportLab Plus (propietaria) no es usada aquí.
+
 ## Convenciones de Código
 
 - **Backend:** `async/await` en todas las rutas. `Depends()` para sesiones DB y auth. Nunca `service_role` en rutas de usuario.
