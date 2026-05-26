@@ -65,7 +65,7 @@ class CreditNoteService:
 
     def _generate_number(self, type: str) -> str:
         prefix = "NC" if type == "credit" else "ND"
-        year = datetime.now().year
+        year = datetime.now(tz=timezone.utc).year
         count = (
             self.db.query(CreditDebitNote)
             .filter(

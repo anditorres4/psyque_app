@@ -113,7 +113,7 @@ class InvoiceService:
 
     def _generate_invoice_number(self) -> str:
         """Generate sequential invoice number: INV-YYYY-NNNN."""
-        year = datetime.now().year
+        year = datetime.now(tz=timezone.utc).year
         count = (
             self.db.query(Invoice)
             .filter(

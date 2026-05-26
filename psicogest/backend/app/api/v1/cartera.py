@@ -1,5 +1,5 @@
 """Cartera router — invoice payment tracking."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 import uuid
 
@@ -196,7 +196,7 @@ def register_payment(
         invoice_id=invoice_id,
         patient_id=invoice.patient_id,
         eps_name=patient.eps_name if category == "eps" and patient else None,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(tz=timezone.utc),
         created_by=ctx.tenant.user_id,
     )
     ctx.db.add(tx)

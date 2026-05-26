@@ -1,5 +1,5 @@
 """Caja router — cash sessions and transactions."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 import uuid
 
@@ -82,7 +82,7 @@ def open_session(
     session = CashSession(
         tenant_id=ctx.tenant.tenant_id,
         user_id=ctx.tenant.user_id,
-        opened_at=datetime.utcnow(),
+        opened_at=datetime.now(tz=timezone.utc),
         status="open",
     )
     ctx.db.add(session)
@@ -198,7 +198,7 @@ def close_session(
         )
 
     session.status = "closed"
-    session.closed_at = datetime.utcnow()
+    session.closed_at = datetime.now(tz=timezone.utc)
     if body.notes:
         session.notes = body.notes
     ctx.db.commit()
@@ -234,7 +234,7 @@ def create_transaction(
         description=body.description,
         invoice_id=body.invoice_id,
         patient_id=body.patient_id,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(tz=timezone.utc),
         created_by=ctx.tenant.user_id,
     )
     ctx.db.add(tx)

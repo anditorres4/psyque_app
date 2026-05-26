@@ -1,6 +1,6 @@
 """Report service — analytics and aggregation queries."""
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, extract, case, Integer
 from sqlalchemy.orm import Session as DBSession
 
@@ -16,7 +16,7 @@ class ReportService:
 
     def revenue_report(self, months: int = 12) -> dict:
         """Revenue report from signed sessions."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         
         results = (
             self.db.query(
@@ -59,7 +59,7 @@ class ReportService:
 
     def attendance_report(self, months: int = 12) -> dict:
         """Attendance report by appointment status."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         
         results = (
             self.db.query(
@@ -86,7 +86,7 @@ class ReportService:
 
     def session_type_report(self, months: int = 12) -> dict:
         """Session types grouped by CUPS code."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         
         results = (
             self.db.query(
@@ -109,7 +109,7 @@ class ReportService:
 
     def new_patients_report(self, months: int = 12) -> dict:
         """New patients by month."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         
         results = (
             self.db.query(
@@ -131,7 +131,7 @@ class ReportService:
 
     def dashboard_summary(self, months: int = 12) -> dict:
         """Dashboard summary cards."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         
         total_revenue = (
             self.db.query(func.sum(Session.session_fee))
@@ -182,7 +182,7 @@ class ReportService:
 
     def top_diagnoses(self, months: int = 3, limit: int = 10) -> dict:
         """Top N diagnoses by frequency in signed sessions."""
-        start_date = datetime.now() - timedelta(days=months * 30)
+        start_date = datetime.now(tz=timezone.utc) - timedelta(days=months * 30)
         results = (
             self.db.query(
                 Session.diagnosis_cie11,
