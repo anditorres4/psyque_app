@@ -53,11 +53,28 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, tenantReady } = useAuth();
+  const { user, loading, tenantReady, authSetupError } = useAuth();
   const { data: billing } = useBillingStatus();
 
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
+
+  if (authSetupError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="text-center space-y-4 max-w-sm px-4">
+          <p className="text-[#1E3A5F] font-medium">No se pudo configurar tu cuenta</p>
+          <p className="text-sm text-gray-500">{authSetupError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#1E3A5F] text-white rounded-md text-sm hover:bg-[#16304f]"
+          >
+            Recargar
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (user.app_metadata?.role === "patient") return <Navigate to="/portal/dashboard" replace />;
   if (!tenantReady) return <Navigate to="/complete-profile" replace />;
 
