@@ -1,8 +1,11 @@
 """GCalSyncService — business logic for Google Calendar bidirectional sync."""
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.dialects.postgresql import insert
+
+logger = logging.getLogger(__name__)
 
 from app.models.gcal_external_block import GCalExternalBlock
 from app.models.patient import Patient
@@ -119,4 +122,8 @@ def sync_appointment_background(tenant_id_str: str, appointment_id_str: str, act
             if appt:
                 GCalSyncService(db).push_appointment(uuid.UUID(tenant_id_str), appt, action)
         except Exception:
-            pass
+            logger.exception(
+                "Background task sync_appointment_background failed for appointment %s action %s",
+                appointment_id_str,
+                action,
+            )
