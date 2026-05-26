@@ -1,13 +1,14 @@
 """Combined FastAPI dependencies for authenticated, tenant-scoped DB access."""
+import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status as http_status
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db, set_tenant_context
 from app.core.security import PatientContext, TenantContext, get_current_patient, get_current_tenant
+from app.models.tenant import Tenant
 
 
 class TenantDB:
@@ -64,13 +65,12 @@ def require_active_subscription(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ) -> None:
     """Raise 402 if subscription has expired beyond the 3-day grace period."""
-    row = ctx.db.execute(
-        text("SELECT plan_expires_at FROM tenants WHERE id = :tid"),
-        {"tid": ctx.tenant.tenant_id},
-    ).fetchone()
-    if row is None:
+    tenant = ctx.db.query(Tenant).filter(
+        Tenant.id == uuid.UUID(ctx.tenant.tenant_id)
+    ).first()
+    if tenant is None:
         raise HTTPException(http_status.HTTP_401_UNAUTHORIZED, "Tenant no encontrado")
-    expires = row.plan_expires_at
+    expires = tenant.plan_expires_at
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
     if datetime.now(timezone.utc) > expires + timedelta(days=3):
@@ -86,13 +86,12 @@ def require_plan(required: str):
     free_trial always passes — tenants can evaluate all features during their trial.
     """
     def _check(ctx: Annotated[TenantDB, Depends(get_tenant_db)]) -> None:
-        row = ctx.db.execute(
-            text("SELECT plan FROM tenants WHERE id = :tid"),
-            {"tid": ctx.tenant.tenant_id},
-        ).fetchone()
-        if row is None:
+        tenant = ctx.db.query(Tenant).filter(
+            Tenant.id == uuid.UUID(ctx.tenant.tenant_id)
+        ).first()
+        if tenant is None:
             raise HTTPException(http_status.HTTP_401_UNAUTHORIZED, "Tenant no encontrado")
-        if row.plan not in ("free_trial", required):
+        if tenant.plan not in ("free_trial", required):
             raise HTTPException(
                 http_status.HTTP_403_FORBIDDEN,
                 "Se requiere plan Premium para usar esta función",

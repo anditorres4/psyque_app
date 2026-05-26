@@ -8,13 +8,15 @@ import httpx
 
 logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import text
+from datetime import datetime, timezone, timedelta
+
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import AuthUser, get_auth_user
+from app.models.tenant import Tenant
 
 router = APIRouter(tags=["auth"])
 
@@ -35,13 +37,12 @@ def setup_profile(
     signUp (full_name, colpsic_number, reps_code, city) to create the tenant.
     If the tenant already exists, skips creation and just refreshes metadata.
     """
-    existing = db.execute(
-        text("SELECT id FROM tenants WHERE auth_user_id = :uid"),
-        {"uid": user.user_id},
-    ).fetchone()
+    existing = db.query(Tenant).filter(
+        Tenant.auth_user_id == uuid.UUID(user.user_id)
+    ).first()
 
     if existing:
-        tenant_id = str(existing[0])
+        tenant_id = str(existing.id)
     else:
         meta = user.user_metadata
         full_name = (meta.get("full_name") or meta.get("name") or "").strip()
@@ -75,26 +76,19 @@ def setup_profile(
 
         tenant_id = str(uuid.uuid4())
         try:
-            db.execute(
-                text("""
-                    INSERT INTO tenants (
-                        id, auth_user_id, full_name, colpsic_number, reps_code,
-                        plan, plan_expires_at, city, nit, subscription_status
-                    ) VALUES (
-                        :id, :uid, :name, :colpsic, :reps,
-                        'free_trial', NOW() + INTERVAL '14 days', :city, :nit, 'trial'
-                    )
-                """),
-                {
-                    "id": tenant_id,
-                    "uid": user.user_id,
-                    "name": full_name,
-                    "colpsic": str(colpsic_raw),
-                    "reps": reps_code,
-                    "city": city,
-                    "nit": nit,
-                },
+            new_tenant = Tenant(
+                id=uuid.UUID(tenant_id),
+                auth_user_id=uuid.UUID(user.user_id),
+                full_name=full_name,
+                colpsic_number=str(colpsic_raw),
+                reps_code=reps_code,
+                plan="free_trial",
+                plan_expires_at=datetime.now(tz=timezone.utc) + timedelta(days=14),
+                city=city,
+                nit=nit,
+                subscription_status="trial",
             )
+            db.add(new_tenant)
             db.commit()
         except Exception:
             db.rollback()
