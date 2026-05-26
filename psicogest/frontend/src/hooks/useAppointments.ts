@@ -35,6 +35,10 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: (data: AppointmentCreatePayload) => api.appointments.create(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["appointments"] }),
+    onError: (error: unknown) => {
+      console.error("[appointments] create failed:", error);
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+    },
   });
 }
 
@@ -46,6 +50,11 @@ export function useUpdateAppointment(id: string) {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["appointment", id] });
     },
+    onError: (error: unknown) => {
+      console.error("[appointments] update failed:", error);
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      qc.invalidateQueries({ queryKey: ["appointment", id] });
+    },
   });
 }
 
@@ -54,6 +63,11 @@ export function useCancelAppointment(id: string) {
   return useMutation({
     mutationFn: (data: CancelPayload) => api.appointments.cancel(id, data),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      qc.invalidateQueries({ queryKey: ["appointment", id] });
+    },
+    onError: (error: unknown) => {
+      console.error("[appointments] cancel failed:", error);
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["appointment", id] });
     },
