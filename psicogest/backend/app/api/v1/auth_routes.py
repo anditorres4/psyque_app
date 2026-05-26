@@ -93,12 +93,13 @@ def setup_profile(
                 },
             )
             db.commit()
-        except Exception as exc:
+        except Exception:
             db.rollback()
+            logger.exception("DB insert failed in setup_profile")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error al crear el perfil profesional.",
-            ) from exc
+            )
 
     supabase_admin_url = (
         f"{settings.supabase_url}/auth/v1/admin/users/{user.user_id}"

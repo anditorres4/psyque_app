@@ -163,5 +163,6 @@ def sync_from_stripe_endpoint(
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
-    except Exception as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al consultar Stripe: {exc}")
+    except Exception:
+        logger.exception("sync_from_stripe failed for tenant %s", ctx.tenant.tenant_id)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Error al consultar Stripe. Intenta nuevamente.")
