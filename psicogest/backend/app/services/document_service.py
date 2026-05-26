@@ -68,7 +68,10 @@ class DocumentService:
         doc_id = uuid.uuid4()
         storage_path = f"{self._tenant_id}/{patient_id}/{doc_id}_{filename}"
 
-        self._upload_to_storage(storage_path, file_content, content_type)
+        try:
+            self._upload_to_storage(storage_path, file_content, content_type)
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            raise ValueError(f"Storage upload failed: {exc}") from exc
 
         doc = ClinicalDocument(
             id=doc_id,
@@ -82,7 +85,11 @@ class DocumentService:
             description=description,
         )
         self.db.add(doc)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         self.db.refresh(doc)
         return doc
 
@@ -93,7 +100,7 @@ class DocumentService:
             "Authorization": f"Bearer {self._supabase_key}",
             "Content-Type": content_type,
         }
-        with httpx.Client() as client:
+        with httpx.Client(timeout=15.0) as client:
             response = client.post(url, headers=headers, content=content)
             response.raise_for_status()
 
@@ -105,7 +112,7 @@ class DocumentService:
             "Authorization": f"Bearer {self._supabase_key}",
         }
         params = {"expires_in": expires_in}
-        with httpx.Client() as client:
+        with httpx.Client(timeout=15.0) as client:
             response = client.post(url, headers=headers, params=params)
             response.raise_for_status()
             data = response.json()
@@ -125,7 +132,7 @@ class DocumentService:
         headers = {
             "Authorization": f"Bearer {self._supabase_key}",
         }
-        with httpx.Client() as client:
+        with httpx.Client(timeout=15.0) as client:
             response = client.delete(url, headers=headers)
             response.raise_for_status()
 
