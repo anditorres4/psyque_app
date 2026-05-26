@@ -39,16 +39,12 @@ def _verify_hmac(
     Expected headers:
       X-Webhook-Signature: sha256=<hex digest of body using WEBHOOK_TRIAGE_SECRET>
       X-Webhook-Timestamp: <unix timestamp as decimal string>
-
-    Skips verification in development when webhook_triage_secret is unset.
     """
     if not settings.webhook_triage_secret:
-        if not settings.is_development:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Webhook secret not configured.",
-            )
-        return  # allow unauthenticated in dev
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook secret not configured. Set WEBHOOK_TRIAGE_SECRET environment variable.",
+        )
 
     if not x_webhook_timestamp:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing X-Webhook-Timestamp header.")
