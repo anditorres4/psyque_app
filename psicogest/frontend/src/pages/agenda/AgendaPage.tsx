@@ -260,7 +260,9 @@ export function AgendaPage() {
       );
     }
     return calendarEvents.filter(
-      (e) => e.extendedProps.type === "appointment" && e.extendedProps.status === statusFilter
+      (e) =>
+        e.extendedProps.type === "appointment" &&
+        (e.extendedProps as { status?: string }).status === statusFilter
     );
   }, [calendarEvents, statusFilter]);
 

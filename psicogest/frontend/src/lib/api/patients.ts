@@ -1,4 +1,4 @@
-import { request, downloadBlob, ApiError, API_BASE, getAuthHeader } from "./client";
+import { request, downloadBlob } from "./client";
 
 export interface PatientSummary {
   id: string;
