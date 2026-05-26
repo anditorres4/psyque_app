@@ -128,7 +128,7 @@ class PatientSummary(BaseModel):
     doc_type: str
     doc_number: str
     current_diagnosis_cie11: str | None
-    payer_type: str
+    payer_type: str | None = None
     is_active: bool
     created_at: datetime
 
@@ -141,11 +141,11 @@ class PatientDetail(PatientSummary):
     birth_date: date
     biological_sex: str
     gender_identity: str | None
-    marital_status: str
-    occupation: str
-    address: str
-    municipality_dane: str
-    zone: str
+    marital_status: str | None = None
+    occupation: str | None = None
+    address: str | None = None
+    municipality_dane: str | None = None
+    zone: str | None = None
     phone: str
     email: str | None
     emergency_contact_name: str | None
@@ -153,7 +153,7 @@ class PatientDetail(PatientSummary):
     eps_name: str | None
     eps_code: str | None
     authorization_number: str | None
-    consent_signed_at: datetime
+    consent_signed_at: datetime | None = None
     updated_at: datetime
 
 
