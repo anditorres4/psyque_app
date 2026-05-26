@@ -46,8 +46,6 @@ export function AgendaPage() {
   const { data: bookingRequests = [] } = useBookingRequests("pending");
   const { data: confirmedRequests = [] } = useBookingRequests("confirmed");
   const registrationPendingRequests = confirmedRequests.filter((r) => r.registration_pending);
-  console.log("[agenda] confirmedRequests", confirmedRequests.length, confirmedRequests.map(r => ({ id: r.id, email: r.patient_email, pending: r.registration_pending })));
-  console.log("[agenda] registrationPendingRequests", registrationPendingRequests.length);
   const confirmMutation = useConfirmBookingRequest();
   const rejectMutation = useRejectBookingRequest();
   const resendMutation = useResendRegistration();
