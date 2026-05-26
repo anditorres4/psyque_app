@@ -4,7 +4,7 @@ import uuid
 from typing import Any
 
 import httpx
-from jose import jwt as jose_jwt
+import jwt as jose_jwt
 
 from app.core.config import settings
 

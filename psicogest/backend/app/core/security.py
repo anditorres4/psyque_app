@@ -4,7 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import InvalidTokenError
 
 from app.core.config import settings
 
@@ -54,7 +55,7 @@ def get_auth_user(
         if not user_id:
             raise credentials_exception
         user_metadata: dict = payload.get("user_metadata", {})
-    except JWTError:
+    except InvalidTokenError:
         raise credentials_exception
     return AuthUser(user_id=user_id, user_metadata=user_metadata)
 
@@ -113,7 +114,7 @@ def get_current_tenant(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Cuenta no configurada. Complete el registro para activar su acceso.",
             )
-    except JWTError:
+    except InvalidTokenError:
         raise credentials_exception
 
     return TenantContext(tenant_id=tenant_id, user_id=user_id)
@@ -164,7 +165,7 @@ def get_current_patient(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Cuenta de paciente no vinculada. Contacta a tu psicólogo.",
             )
-    except JWTError:
+    except InvalidTokenError:
         raise credentials_exception
     return PatientContext(patient_id=patient_id, user_id=user_id)
 
