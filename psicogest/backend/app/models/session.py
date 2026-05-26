@@ -21,10 +21,12 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     __tablename__ = "sessions"
 
     appointment_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True, index=True
+        UUID(as_uuid=True), nullable=True, index=True, unique=True
     )
     patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
+        UUID(as_uuid=True),
+        sa.ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False, index=True
     )
     actual_start: Mapped[datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=False

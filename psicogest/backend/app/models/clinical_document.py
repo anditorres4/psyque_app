@@ -20,7 +20,9 @@ class ClinicalDocument(Base, UUIDPrimaryKey, TenantMixin):
     __tablename__ = "clinical_documents"
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
+        UUID(as_uuid=True),
+        sa.ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False, index=True
     )
     filename: Mapped[str] = mapped_column(sa.String(255), nullable=False)
     content_type: Mapped[str] = mapped_column(sa.String(100), nullable=False)

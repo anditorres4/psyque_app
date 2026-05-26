@@ -13,7 +13,11 @@ class ClinicalRecord(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
 
     __tablename__ = "clinical_records"
 
-    patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        sa.ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
     chief_complaint: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     antecedentes_personales: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
     antecedentes_familiares: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)

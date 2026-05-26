@@ -18,9 +18,11 @@ class Invoice(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
 
     __tablename__ = "invoices"
 
-    invoice_number: Mapped[str] = mapped_column(sa.String(20), nullable=False)
+    invoice_number: Mapped[str] = mapped_column(sa.String(20), nullable=False, unique=True)
     patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
+        UUID(as_uuid=True),
+        sa.ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(
         sa.Enum("draft", "issued", "paid", name="invoice_status"),
