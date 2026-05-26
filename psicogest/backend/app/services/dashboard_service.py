@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session
 
 from app.models.appointment import Appointment
@@ -31,47 +32,69 @@ class DashboardService:
         ).astimezone(timezone.utc)
         today_end = today_start + timedelta(days=1)
 
-        appointments_today = (
-            self.db.query(Appointment)
-            .filter(
-                Appointment.tenant_id == self.tenant_id,
-                Appointment.status == "scheduled",
-                Appointment.scheduled_start >= today_start,
-                Appointment.scheduled_start < today_end,
-            )
-            .count()
-        )
-
-        pending_to_close = (
-            self.db.query(Appointment)
-            .filter(
-                Appointment.tenant_id == self.tenant_id,
-                Appointment.status == "scheduled",
-                Appointment.scheduled_end < now_utc,
-            )
-            .count()
-        )
-
         thirty_days_ago = now_utc - timedelta(days=30)
 
-        completed = (
-            self.db.query(Appointment)
-            .filter(
-                Appointment.tenant_id == self.tenant_id,
-                Appointment.status == "completed",
-                Appointment.scheduled_start >= thirty_days_ago,
+        # Single aggregated query replacing 4 separate COUNTs (PERF-M6)
+        row = (
+            self.db.query(
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                Appointment.status == "scheduled",
+                                Appointment.scheduled_start >= today_start,
+                                Appointment.scheduled_start < today_end,
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("appointments_today"),
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                Appointment.status == "scheduled",
+                                Appointment.scheduled_end < now_utc,
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("pending_to_close"),
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                Appointment.status == "completed",
+                                Appointment.scheduled_start >= thirty_days_ago,
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("completed_30d"),
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                Appointment.status == "noshow",
+                                Appointment.scheduled_start >= thirty_days_ago,
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("noshow_30d"),
             )
-            .count()
+            .filter(Appointment.tenant_id == self.tenant_id)
+            .one()
         )
-        noshow = (
-            self.db.query(Appointment)
-            .filter(
-                Appointment.tenant_id == self.tenant_id,
-                Appointment.status == "noshow",
-                Appointment.scheduled_start >= thirty_days_ago,
-            )
-            .count()
-        )
+
+        appointments_today = row.appointments_today or 0
+        pending_to_close = row.pending_to_close or 0
+        completed = row.completed_30d or 0
+        noshow = row.noshow_30d or 0
 
         total_attended = completed + noshow
         attendance_rate = (
