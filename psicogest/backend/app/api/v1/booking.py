@@ -5,8 +5,10 @@ from datetime import date
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+
+from app.core.rate_limit import limiter
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -66,7 +68,9 @@ def get_booking_info(slug: str, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post("/{slug}/request", response_model=BookingRequestCreated, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 def create_booking_request(
+    request: Request,
     slug: str, body: BookingRequestCreate, db: Annotated[Session, Depends(get_db)],
     bg: BackgroundTasks,
 ):
@@ -128,7 +132,9 @@ def get_registration_info(token: str, db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post("/registration/{token}", response_model=PatientRegistrationResult, status_code=201)
+@limiter.limit("10/minute")
 def complete_registration(
+    request: Request,
     token: str,
     body: PatientRegistrationBody,
     db: Annotated[Session, Depends(get_db)],

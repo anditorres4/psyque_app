@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import AuthUser, get_auth_user
 
 router = APIRouter(tags=["auth"])
@@ -22,7 +23,9 @@ _REPS_RE = re.compile(r"^[A-Za-z0-9\-]{1,20}$")
 
 
 @router.post("/auth/setup-profile", status_code=200)
+@limiter.limit("10/minute")
 def setup_profile(
+    request: Request,
     user: Annotated[AuthUser, Depends(get_auth_user)],
     db: Session = Depends(get_db),
 ) -> dict:
@@ -126,7 +129,9 @@ def setup_profile(
 
 
 @router.post("/auth/setup-patient-profile", status_code=200)
+@limiter.limit("10/minute")
 def setup_patient_profile(
+    request: Request,
     user: Annotated[AuthUser, Depends(get_auth_user)],
 ) -> dict:
     """Set app_metadata.role = 'patient' for a newly registered patient.
