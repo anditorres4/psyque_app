@@ -87,14 +87,14 @@ class EmailService:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            logger.warning(
+            logger.error(
                 "Resend email failed (status %d): %s",
                 exc.response.status_code,
                 exc.response.text,
             )
             return False
         except Exception as exc:
-            logger.warning("Resend email failed: %s", exc)
+            logger.error("Resend email failed: %s", exc)
             return False
         return True
 
@@ -106,14 +106,14 @@ class EmailService:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            logger.warning(
+            logger.error(
                 "Resend email failed (status %d): %s",
                 exc.response.status_code,
                 exc.response.text,
             )
             return False
         except Exception as exc:
-            logger.warning("Resend email failed: %s", exc)
+            logger.error("Resend email failed: %s", exc)
             return False
         return True
 
@@ -289,14 +289,14 @@ class EmailService:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            logger.warning(
+            logger.error(
                 "Resend email failed (status %d): %s",
                 exc.response.status_code,
                 exc.response.text,
             )
             return False
         except Exception as exc:
-            logger.warning("Resend email failed: %s", exc)
+            logger.error("Resend email failed: %s", exc)
             return False
         return True
 
@@ -375,14 +375,14 @@ class EmailService:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            logger.warning(
+            logger.error(
                 "Resend email failed (status %d): %s",
                 exc.response.status_code,
                 exc.response.text,
             )
             return False
         except Exception as exc:
-            logger.warning("Resend email failed: %s", exc)
+            logger.error("Resend email failed: %s", exc)
             return False
         return True
 

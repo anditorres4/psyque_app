@@ -1,9 +1,12 @@
 """Auth routes — account setup after Supabase signup."""
+import logging
 import re
 import uuid
 from typing import Annotated
 
 import httpx
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -112,9 +115,10 @@ def setup_profile(
             )
             resp.raise_for_status()
     except httpx.HTTPError as exc:
+        logger.exception("setup_profile: failed to update Supabase app_metadata for user %s", user.user_id)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"No se pudo actualizar la configuración de cuenta: {exc}",
+            detail="No se pudo actualizar la configuración de cuenta",
         )
 
     return {"tenant_id": tenant_id, "status": "configured"}
@@ -144,8 +148,9 @@ def setup_patient_profile(
             )
             resp.raise_for_status()
     except httpx.HTTPError as exc:
+        logger.exception("setup_patient_profile: failed to update Supabase app_metadata for user %s", user.user_id)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"No se pudo configurar el perfil de paciente: {exc}",
+            detail="No se pudo configurar el perfil de paciente",
         )
     return {"role": "patient", "status": "configured"}

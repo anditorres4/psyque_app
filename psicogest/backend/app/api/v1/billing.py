@@ -1,4 +1,5 @@
 """Billing router — Stripe Checkout, status, portal, and webhook."""
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
@@ -6,6 +7,8 @@ import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -67,7 +70,8 @@ def create_checkout_session(
             plan=body.plan,
         )
     except Exception as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al crear sesión de pago: {exc}")
+        logger.exception("create_checkout_session failed for tenant %s", ctx.tenant.tenant_id)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Error al crear sesión de pago. Intenta nuevamente.")
 
     return CheckoutSessionResponse(checkout_url=url)
 
@@ -85,7 +89,8 @@ def create_customer_portal(
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     except Exception as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Error al crear portal: {exc}")
+        logger.exception("create_portal_session failed for tenant %s", ctx.tenant.tenant_id)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Error al crear portal de pago. Intenta nuevamente.")
 
     return CustomerPortalResponse(portal_url=url)
 
@@ -108,14 +113,19 @@ async def stripe_webhook(
     event_type = event["type"]
     event_data = event["data"]
 
-    if event_type == "checkout.session.completed":
-        billing_service.handle_checkout_completed(db, event_data)
-    elif event_type == "invoice.payment_succeeded":
-        billing_service.handle_invoice_payment_succeeded(db, event_data)
-    elif event_type == "invoice.payment_failed":
-        billing_service.handle_invoice_payment_failed(db, event_data)
-    elif event_type == "customer.subscription.deleted":
-        billing_service.handle_subscription_deleted(db, event_data)
+    logger.info("Processing Stripe event: %s", event_type)
+    try:
+        if event_type == "checkout.session.completed":
+            billing_service.handle_checkout_completed(db, event_data)
+        elif event_type == "invoice.payment_succeeded":
+            billing_service.handle_invoice_payment_succeeded(db, event_data)
+        elif event_type == "invoice.payment_failed":
+            billing_service.handle_invoice_payment_failed(db, event_data)
+        elif event_type == "customer.subscription.deleted":
+            billing_service.handle_subscription_deleted(db, event_data)
+    except Exception:
+        logger.exception("Error processing Stripe event %s", event_type)
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Error procesando evento de pago")
 
     return {"received": True}
 
@@ -137,7 +147,8 @@ def activate_from_session(
             session_id=session_id,
         )
     except Exception as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Error al activar plan: {exc}")
+        logger.exception("activate_from_session failed for session_id %s", session_id)
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Error al activar el plan. Intenta nuevamente.")
 
 
 @router.post("/sync-from-stripe")
