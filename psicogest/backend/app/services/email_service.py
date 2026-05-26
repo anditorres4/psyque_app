@@ -1,9 +1,16 @@
 """Thin wrapper around Resend REST API for sending transactional emails."""
 import base64
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
+
+try:
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    _BOGOTA_TZ: object = _ZoneInfo("America/Bogota")
+except Exception:
+    from datetime import timedelta
+    _BOGOTA_TZ = timezone(timedelta(hours=-5))
 
 from app.core.config import settings
 
@@ -14,6 +21,12 @@ class EmailService:
     """Sends reminder emails via Resend. Skips silently if resend_api_key is empty."""
 
     RESEND_URL = "https://api.resend.com/emails"
+
+    @staticmethod
+    def _to_bogota(dt: datetime) -> datetime:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_BOGOTA_TZ)  # type: ignore[arg-type]
 
     def send_reminder(
         self,
@@ -29,8 +42,9 @@ class EmailService:
             return False
 
         label = "mañana" if hours_ahead >= 20 else "en 2 horas"
-        date_str = appointment_start.strftime("%A %d de %B de %Y")
-        time_str = appointment_start.strftime("%H:%M")
+        local_dt = self._to_bogota(appointment_start)
+        date_str = local_dt.strftime("%A %d de %B de %Y")
+        time_str = local_dt.strftime("%H:%M")
 
         if modality == "virtual":
             recommendations = (
@@ -146,8 +160,9 @@ class EmailService:
         """Appointment confirmation with video join link (virtual) or address (presencial)."""
         if not settings.resend_api_key:
             return False
-        date_str = appointment_start.strftime("%A %d de %B de %Y")
-        time_str = appointment_start.strftime("%H:%M")
+        local_dt = self._to_bogota(appointment_start)
+        date_str = local_dt.strftime("%A %d de %B de %Y")
+        time_str = local_dt.strftime("%H:%M")
         if modality == "virtual" and join_url:
             modality_section = (
                 f"<p><strong>Modalidad:</strong> Videoconsulta<br>"

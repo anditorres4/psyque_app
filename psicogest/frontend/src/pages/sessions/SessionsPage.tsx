@@ -38,6 +38,11 @@ function SessionCard({ session, onClick }: { session: SessionSummary; onClick: (
           {STATUS_LABELS[session.status] ?? session.status}
         </Tag>
       </div>
+      {session.patient_name && (
+        <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--psy-ink-1)" }}>
+          {session.patient_name}
+        </p>
+      )}
       <div className="flex items-center gap-3 mb-2">
         <span className="psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
           {session.diagnosis_cie11}
@@ -205,10 +210,10 @@ export function SessionsPage() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--psy-line)" }}>
-                    {["Fecha", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
+                    {["Fecha", "Paciente", "CIE-11", "CUPS", "Valor", "Estado"].map((h, i) => (
                       <th
                         key={h}
-                        className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 3 ? "text-right" : "text-left"}`}
+                        className={`px-[18px] py-3 psy-mono text-[10.5px] uppercase tracking-wider font-medium ${i === 4 ? "text-right" : "text-left"}`}
                         style={{ color: "var(--psy-ink-3)" }}
                       >
                         {h}
@@ -228,6 +233,9 @@ export function SessionsPage() {
                         {new Date(sess.actual_start).toLocaleDateString("es-CO", {
                           year: "numeric", month: "short", day: "numeric",
                         })}
+                      </td>
+                      <td className="px-[18px] py-3 text-[13px] font-medium" style={{ color: "var(--psy-ink-1)" }}>
+                        {sess.patient_name ?? "—"}
                       </td>
                       <td className="px-[18px] py-3 psy-mono font-semibold" style={{ color: "var(--psy-primary)" }}>
                         {sess.diagnosis_cie11}

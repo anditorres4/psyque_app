@@ -155,7 +155,7 @@ export interface PatientCreatePayload {
   eps_name?: string;
   eps_code?: string;
   authorization_number?: string;
-  consent_accepted: boolean;
+  consent_accepted?: boolean;
 }
 
 // --- Appointments -----------------------------------------------------------
@@ -168,6 +168,7 @@ export type CancelledBy = "psychologist" | "patient";
 export interface AppointmentSummary {
   id: string;
   patient_id: string;
+  patient_name: string | null;
   scheduled_start: string;
   scheduled_end: string;
   session_type: SessionType;
@@ -278,6 +279,7 @@ export interface SessionSummary {
   id: string;
   appointment_id: string | null;
   patient_id: string;
+  patient_name: string | null;
   actual_start: string;
   actual_end: string;
   diagnosis_cie11: string;

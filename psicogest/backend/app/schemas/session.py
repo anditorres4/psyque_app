@@ -110,6 +110,7 @@ class SessionSummary(BaseModel):
     id: uuid.UUID
     appointment_id: uuid.UUID | None
     patient_id: uuid.UUID
+    patient_name: str | None = None
     actual_start: datetime
     actual_end: datetime
     diagnosis_cie11: str

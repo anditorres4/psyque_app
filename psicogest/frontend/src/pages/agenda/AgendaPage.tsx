@@ -99,7 +99,9 @@ export function AgendaPage() {
   const calendarEvents = useMemo(() => [
     ...appointments.map((appt) => ({
       id: appt.id,
-      title: SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type,
+      title: appt.patient_name
+        ? `${appt.patient_name} — ${SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type}`
+        : SESSION_TYPE_LABELS[appt.session_type] ?? appt.session_type,
       start: appt.scheduled_start,
       end: appt.scheduled_end,
       backgroundColor: STATUS_COLORS[appt.status] ?? "#2E86AB",

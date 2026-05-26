@@ -38,10 +38,8 @@ const patientSchema = z.object({
   eps_name: z.string().max(200).optional(),
   eps_code: z.string().max(10).optional(),
   authorization_number: z.string().max(30).optional(),
-  consent_accepted: z.literal(true, {
-    errorMap: () => ({ message: "Debe aceptar el consentimiento informado (Ley 1581/2012)" }),
-  }),
 });
+
 
 type PatientFormData = z.infer<typeof patientSchema>;
 
@@ -231,6 +229,7 @@ export function PatientForm({
   const handleFormSubmit = async (data: PatientFormData) => {
     await onSubmit({
       ...data,
+      consent_accepted: true,
       second_surname: data.second_surname || undefined,
       second_name: data.second_name || undefined,
       email: data.email || undefined,
@@ -418,34 +417,6 @@ export function PatientForm({
         </div>
       </section>
 
-      {/* Consentimiento informado — solo en creación */}
-      {!isEdit && (
-        <section className="rounded-lg border border-[#E67E22] bg-amber-50 p-4">
-          <h3 className="text-sm font-semibold text-[#E67E22] mb-2">
-            Consentimiento informado — Ley 1581/2012
-          </h3>
-          <p className="text-xs text-slate-600 mb-3">
-            El paciente autoriza el tratamiento de sus datos personales de salud para fines
-            exclusivamente clínicos y administrativos. Esta autorización quedará registrada
-            con fecha, hora e IP del dispositivo de forma permanente.
-          </p>
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              {...register("consent_accepted")}
-            />
-            <span className="text-sm">
-              El paciente ha leído y acepta el tratamiento de sus datos personales de salud
-            </span>
-          </label>
-          {errors.consent_accepted && (
-            <p className="text-xs mt-1" role="alert" style={{ color: "var(--psy-danger)" }}>
-              {errors.consent_accepted.message}
-            </p>
-          )}
-        </section>
-      )}
 
       <Button
         type="submit"

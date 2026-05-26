@@ -79,7 +79,15 @@ def list_appointments_by_range(
 ) -> list[AppointmentSummary]:
     """Return appointments overlapping a datetime range. Used by FullCalendar."""
     appts = _service(ctx).list_by_range(start=start, end=end)
-    return [AppointmentSummary.model_validate(a) for a in appts]
+    patient_ids = {a.patient_id for a in appts}
+    patients = (
+        {p.id: p.full_name for p in ctx.db.query(Patient).filter(Patient.id.in_(patient_ids)).all()}
+        if patient_ids else {}
+    )
+    return [
+        AppointmentSummary.model_validate(a).model_copy(update={"patient_name": patients.get(a.patient_id)})
+        for a in appts
+    ]
 
 
 @router.post("", response_model=AppointmentDetail, status_code=status.HTTP_201_CREATED)

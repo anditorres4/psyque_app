@@ -7,10 +7,20 @@ export const CIE11_CODES: Cie11Entry[] = [
   // Trastornos del neurodesarrollo
   { code: "6A00", description: "Discapacidad intelectual leve" },
   { code: "6A01", description: "Discapacidad intelectual moderada" },
+  { code: "6A01.1", description: "Discapacidad intelectual grave" },
+  { code: "6A01.2", description: "Discapacidad intelectual profunda" },
   { code: "6A02", description: "Trastorno del espectro autista" },
+  { code: "6A02.0", description: "Trastorno del espectro autista sin trastorno del desarrollo intelectual y sin deterioro funcional del lenguaje" },
+  { code: "6A02.1", description: "Trastorno del espectro autista sin trastorno del desarrollo intelectual con deterioro funcional del lenguaje" },
   { code: "6A03", description: "Trastorno del aprendizaje del desarrollo" },
-  { code: "6A04", description: "Trastorno del desarrollo de la coordinación motora" },
+  { code: "6A03.0", description: "Trastorno del aprendizaje del desarrollo con afectación de la lectura (dislexia)" },
+  { code: "6A03.1", description: "Trastorno del aprendizaje del desarrollo con afectación de la escritura (disgrafía)" },
+  { code: "6A03.2", description: "Trastorno del aprendizaje del desarrollo con afectación de las matemáticas (discalculia)" },
+  { code: "6A04", description: "Trastorno del desarrollo de la coordinación motora (dispraxia)" },
   { code: "6A05", description: "Trastorno por déficit de atención con hiperactividad (TDAH)" },
+  { code: "6A05.0", description: "TDAH con predominio de déficit de atención" },
+  { code: "6A05.1", description: "TDAH con predominio de hiperactividad-impulsividad" },
+  { code: "6A05.2", description: "TDAH de presentación combinada" },
   { code: "6A06", description: "Trastorno del habla y el lenguaje del desarrollo" },
   // Esquizofrenia y trastornos psicóticos
   { code: "6A20", description: "Esquizofrenia" },
@@ -92,8 +102,41 @@ export const CIE11_CODES: Cie11Entry[] = [
   { code: "6C4A", description: "Uso nocivo de nicotina" },
   { code: "6C4B", description: "Uso nocivo de cafeína" },
   // Trastornos del juego y comportamiento
-  { code: "6C50", description: "Trastorno por juego" },
+  { code: "6C50", description: "Trastorno por juego (gambling)" },
   { code: "6C51", description: "Trastorno por videojuegos" },
+  // Trastornos de eliminación
+  { code: "6C00", description: "Enuresis" },
+  { code: "6C01", description: "Encopresis" },
+  // Trastornos de la conducta alimentaria en la infancia
+  { code: "6B84", description: "Trastorno de ingesta evitativa/restrictiva" },
+  { code: "6B85", description: "Trastorno de rumiación-regurgitación" },
+  // Trastornos de tics
+  { code: "8A05.0", description: "Trastorno de Tourette" },
+  { code: "8A05.1", description: "Trastorno de tic motor o vocal persistente" },
+  { code: "8A05.2", description: "Trastorno de tic transitorio" },
+  // Trastornos neurocognitivos
+  { code: "6D70", description: "Demencia debida a enfermedad de Alzheimer" },
+  { code: "6D71", description: "Demencia vascular" },
+  { code: "6D72", description: "Demencia por enfermedad de Parkinson" },
+  { code: "6D73", description: "Demencia de cuerpos de Lewy" },
+  { code: "6D74", description: "Demencia frontotemporal" },
+  { code: "6D80", description: "Trastorno neurocognitivo leve (deterioro cognitivo leve)" },
+  // Disfunciones sexuales
+  { code: "HA00", description: "Disfunción del deseo sexual hipoactivo" },
+  { code: "HA01", description: "Trastorno de la excitación sexual" },
+  { code: "HA02", description: "Trastorno orgásmico" },
+  { code: "HA03", description: "Eyaculación precoz" },
+  { code: "HA04", description: "Trastorno de dolor-penetración (vaginismo / dispareunia)" },
+  // Factores psicológicos que afectan condiciones médicas
+  { code: "6E40", description: "Factores psicológicos o del comportamiento que afectan enfermedades o trastornos clasificados en otro lugar" },
+  // Estrés y reacciones normales
+  { code: "QE84", description: "Reacción aguda al estrés" },
+  { code: "QE50", description: "Problema relacionado con dificultades en el manejo de la vida" },
+  { code: "QE61", description: "Problema de relación con pareja" },
+  { code: "QE62", description: "Problema de relación con los padres" },
+  { code: "QE63", description: "Problema de relación con los hijos" },
+  { code: "QF50", description: "Problema relacionado con el empleo" },
+  { code: "QF51", description: "Dificultad de adaptación al ciclo de vida" },
   // Trastornos de la personalidad
   { code: "6D10", description: "Trastorno de la personalidad leve" },
   { code: "6D11", description: "Trastorno de la personalidad moderado" },
@@ -112,14 +155,19 @@ export const CIE11_CODES: Cie11Entry[] = [
   // Disforia de género
   { code: "HA60", description: "Incongruencia de género en la adolescencia o la edad adulta" },
   { code: "HA61", description: "Incongruencia de género en la infancia" },
-  // Trastornos del sueño (selección)
+  // Trastornos del sueño
   { code: "7A00", description: "Insomnio crónico" },
   { code: "7A01", description: "Insomnio a corto plazo" },
+  { code: "7B00", description: "Narcolepsia" },
   { code: "7B01", description: "Trastorno de hipersomnia idiopática" },
   { code: "7B20", description: "Trastorno del ritmo circadiano sueño-vigilia" },
+  { code: "7B21", description: "Trastorno del sueño por trabajo en turnos" },
+  { code: "7C00", description: "Apnea obstructiva del sueño" },
   { code: "7C10", description: "Trastorno de pesadillas" },
   { code: "7C11", description: "Trastorno de conductas del sueño REM" },
   { code: "7C12", description: "Sonambulismo" },
+  { code: "7C13", description: "Terrores nocturnos (pavor nocturno)" },
+  { code: "7C20", description: "Síndrome de piernas inquietas" },
 ];
 
 export function searchCie11(query: string): Cie11Entry[] {

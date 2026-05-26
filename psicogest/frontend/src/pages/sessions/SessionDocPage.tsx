@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown } from "lucide-react";
+import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown, Pencil } from "lucide-react";
 
 import { api, type SessionDetail, type SessionUpdatePayload, ApiError } from "@/lib/api";
 import { HmsVideoPanel } from "@/components/sessions/HmsVideoPanel";
@@ -67,7 +67,8 @@ export function SessionDocPage() {
     enabled: !!sessionId,
   });
 
-  const readOnly = sess?.status === "signed";
+  const [editOverride, setEditOverride] = useState(false);
+  const readOnly = sess?.status === "signed" && !editOverride;
 
   // ── Clinical fields state ──────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -155,6 +156,7 @@ export function SessionDocPage() {
       qc.invalidateQueries({ queryKey: ["session", sessionId] });
       qc.invalidateQueries({ queryKey: ["sessions"] });
       setSaveError(null);
+      navigate("/agenda");
     },
     onError: (err) => setSaveError(err instanceof ApiError ? err.message : "Error al guardar."),
   });
@@ -192,6 +194,7 @@ export function SessionDocPage() {
       }
       setSignConfirm(false);
       setSignError(null);
+      navigate("/agenda");
     },
     onError: (err) => {
       setSignConfirm(false);
@@ -247,31 +250,44 @@ export function SessionDocPage() {
             Firmada
           </span>
         )}
-        {readOnly && (
-          <button
-            type="button"
-            onClick={async () => {
-              const { blob, filename } = await api.sessions.downloadCertificate(sessionId!);
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url; a.download = filename; a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="psy-mono text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors ml-auto"
-            style={{ background: "var(--psy-bg-soft)", color: "var(--psy-primary)", border: "1px solid var(--psy-primary)" }}
-          >
-            <FileDown size={12} />
-            Constancia PDF
-          </button>
+        {sess?.status === "signed" && (
+          <div className="ml-auto flex items-center gap-2">
+            {!editOverride && (
+              <button
+                type="button"
+                onClick={() => setEditOverride(true)}
+                className="psy-mono text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors"
+                style={{ background: "var(--psy-bg-soft)", color: "var(--psy-ink-2)", border: "1px solid var(--psy-line)" }}
+              >
+                <Pencil size={12} />
+                Editar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                const { blob, filename } = await api.sessions.downloadCertificate(sessionId!);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="psy-mono text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors"
+              style={{ background: "var(--psy-bg-soft)", color: "var(--psy-primary)", border: "1px solid var(--psy-primary)" }}
+            >
+              <FileDown size={12} />
+              Constancia PDF
+            </button>
+          </div>
         )}
       </div>
 
       {/* Two-panel layout */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: "55% 1fr" }}>
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[55%_1fr]">
 
         {/* ── LEFT PANEL — Historia clínica ── */}
         <div
-          className="rounded-xl p-5 space-y-5 overflow-y-auto"
+          className="rounded-xl p-5 space-y-5 lg:overflow-y-auto"
           style={{
             background: "var(--psy-surface)",
             border: "1px solid var(--psy-line)",
@@ -487,7 +503,7 @@ export function SessionDocPage() {
         </div>
 
         {/* ── RIGHT PANEL — Video + Resumen + Tareas ── */}
-        <div className="flex flex-col gap-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <div className="flex flex-col gap-4 lg:overflow-y-auto" style={{ maxHeight: "calc(100vh - 140px)" }}>
 
           {/* Video call */}
           <HmsVideoPanel appointmentId={sess.appointment_id ? String(sess.appointment_id) : null} autoStart={autoStart} />

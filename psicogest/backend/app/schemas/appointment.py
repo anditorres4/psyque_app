@@ -62,6 +62,7 @@ class AppointmentSummary(BaseModel):
 
     id: uuid.UUID
     patient_id: uuid.UUID
+    patient_name: str | None = None
     scheduled_start: datetime
     scheduled_end: datetime
     session_type: str

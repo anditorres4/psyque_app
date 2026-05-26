@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session as DBSession
 
+from app.models.patient import Patient
 from app.models.session import Session, SessionNote
 from app.schemas.session import PaginatedSessions, SessionSummary
 
@@ -174,7 +175,15 @@ class SessionService:
             .offset(offset)
             .all()
         )
-        items = [SessionSummary.model_validate(r) for r in rows]
+        patient_ids = {r.patient_id for r in rows}
+        patients = (
+            {p.id: p.full_name for p in self.db.query(Patient).filter(Patient.id.in_(patient_ids)).all()}
+            if patient_ids else {}
+        )
+        items = [
+            SessionSummary.model_validate(r).model_copy(update={"patient_name": patients.get(r.patient_id)})
+            for r in rows
+        ]
         return PaginatedSessions(
             items=items,
             total=total,

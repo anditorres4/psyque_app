@@ -17,6 +17,8 @@ export interface MentalExamData {
   psicomotricidad?: string;
   juicio?: string;
   insight?: string;
+  sueno?: string;
+  alimentacion?: string;
   observaciones?: string;
 }
 
@@ -99,6 +101,16 @@ const FIELDS: {
     key: "insight",
     label: "Insight / Conciencia de enfermedad",
     options: ["Completo", "Parcial", "Ausente", "Reconoce síntomas, niega enfermedad"],
+  },
+  {
+    key: "sueno",
+    label: "Sueño",
+    options: ["Conservado", "Insomnio de conciliación", "Insomnio de mantenimiento", "Despertar precoz", "Hipersomnia", "Pesadillas frecuentes", "Inversión del ciclo sueño-vigilia"],
+  },
+  {
+    key: "alimentacion",
+    label: "Alimentación / Apetito",
+    options: ["Conservada", "Hiporexia (disminuido)", "Anorexia (ausente)", "Hiperfagia (aumentado)", "Atracones", "Conductas compensatorias", "Selectividad alimentaria"],
   },
 ];
 
