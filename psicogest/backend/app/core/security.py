@@ -56,6 +56,7 @@ def get_auth_user(
             _get_public_key(),
             algorithms=["ES256"],
             options={"verify_aud": False},
+            issuer=settings.supabase_url,
         )
         user_id: str = payload.get("sub", "")
         if not user_id:
@@ -103,6 +104,7 @@ def get_current_tenant(
             _get_public_key(),
             algorithms=["ES256"],
             options={"verify_aud": False},  # Supabase tokens omit aud claim
+            issuer=settings.supabase_url,
         )
         user_id: str = payload.get("sub", "")
         if not user_id:
@@ -155,6 +157,7 @@ def get_current_patient(
             _get_public_key(),
             algorithms=["ES256"],
             options={"verify_aud": False},
+            issuer=settings.supabase_url,
         )
         user_id: str = payload.get("sub", "")
         if not user_id:
