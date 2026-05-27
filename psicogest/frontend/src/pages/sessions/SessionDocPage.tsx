@@ -103,7 +103,7 @@ export function SessionDocPage() {
       diagnosis_cie11: sess.diagnosis_cie11,
       diagnosis_description: sess.diagnosis_description,
       cups_code: sess.cups_code,
-      tipo_dx_principal: sess.tipo_dx_principal,
+      tipo_dx_principal: (sess.tipo_dx_principal ?? "1").replace(/^0+/, "") || "1",
       is_emergency: sess.is_emergency,
       consultation_reason: sess.consultation_reason,
       intervention: sess.intervention,
@@ -359,7 +359,7 @@ export function SessionDocPage() {
             <input
               className={inputClass} style={inputStyle(readOnly)}
               value={cie11Query}
-              onChange={(e) => { setCie11Query(e.target.value); set("diagnosis_cie11", e.target.value); }}
+              onChange={(e) => setCie11Query(e.target.value)}
               placeholder="Buscar código CIE-11…"
               disabled={readOnly}
             />

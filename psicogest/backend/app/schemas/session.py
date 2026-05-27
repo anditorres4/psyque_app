@@ -80,8 +80,10 @@ class SessionUpdate(BaseModel):
     @field_validator("tipo_dx_principal")
     @classmethod
     def validate_tipo_dx(cls, v: str | None) -> str | None:
-        if v is not None and v not in DIAGNOSIS_TYPE:
-            raise ValueError(f"tipo_dx_principal debe ser uno de: {', '.join(DIAGNOSIS_TYPE.keys())}")
+        if v is not None:
+            v = v.lstrip("0") or "1"  # normalize RIPS-style "01" → "1"
+            if v not in DIAGNOSIS_TYPE:
+                raise ValueError(f"tipo_dx_principal debe ser uno de: {', '.join(DIAGNOSIS_TYPE.keys())}")
         return v
 
     @model_validator(mode="after")
@@ -89,18 +91,6 @@ class SessionUpdate(BaseModel):
         if self.actual_start and self.actual_end:
             if self.actual_end <= self.actual_start:
                 raise ValueError("actual_end must be after actual_start")
-        return self
-
-    @model_validator(mode="after")
-    def codes_format(self) -> "SessionUpdate":
-        if self.diagnosis_cie11 and not _CIE11_RE.match(self.diagnosis_cie11):
-            raise ValueError(
-                "diagnosis_cie11 must follow CIE-11 format (e.g. 6A70, 6A70.1, 11A6/Z)"
-            )
-        if self.cups_code and not _CUPS_RE.match(self.cups_code):
-            raise ValueError(
-                "cups_code must be a 6-digit numeric code (e.g. 890403)"
-            )
         return self
 
 
