@@ -37,7 +37,7 @@ export function SisproConfigCard({ configured }: Props) {
   const [showPass, setShowPass] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  const { register, handleSubmit, getValues, formState: { errors, isDirty } } = useForm<FormValues>({
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { tipo_usuario: "PIN", doc_type: "CC", doc_number: "", sispro_password: "" },
   });
