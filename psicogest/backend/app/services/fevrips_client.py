@@ -34,17 +34,19 @@ class FevRipsClient:
         self.doc_number = doc_number or nit  # PIN: CC == NIT
 
     def login(self) -> str:
-        """POST /api/Auth/LoginSISPRO → Bearer token."""
+        """POST /api/Auth/LoginSISPRO → Bearer token.
+
+        Estructura real del API MinSalud: Nit y Clave van dentro de Identificacion.
+        """
         persona: dict[str, Any] = {
-            "nit": self.nit,
-            "clave": self.password,
-            "identificacion": {
-                "tipo": self.doc_type,
-                "numero": self.doc_number,
+            "TipoUsuario": self.tipo_usuario,
+            "Identificacion": {
+                "Tipo": self.doc_type,
+                "Numero": self.doc_number,
+                "Nit": self.nit,
+                "Clave": self.password,
             },
         }
-        if self.tipo_usuario:
-            persona["tipoUsuario"] = self.tipo_usuario
 
         with httpx.Client(verify=False, timeout=30) as client:
             resp = client.post(
