@@ -35,21 +35,21 @@ class FevRipsClient:
 
     def login(self) -> str:
         """POST /api/Auth/LoginSISPRO → Bearer token."""
-        persona: dict[str, Any] = {
+        body: dict[str, Any] = {
+            "nit": self.nit,
+            "clave": self.password,
             "identificacion": {
                 "tipo": self.doc_type,
                 "numero": self.doc_number,
             },
-            "clave": self.password,
-            "nit": self.nit,
         }
         if self.tipo_usuario:
-            persona["tipoUsuario"] = self.tipo_usuario
+            body["tipoUsuario"] = self.tipo_usuario
 
         with httpx.Client(verify=False, timeout=30) as client:
             resp = client.post(
                 f"{self.base_url}/api/Auth/LoginSISPRO",
-                json={"persona": persona},
+                json=body,
                 headers={"Content-Type": "application/json"},
             )
         resp.raise_for_status()
