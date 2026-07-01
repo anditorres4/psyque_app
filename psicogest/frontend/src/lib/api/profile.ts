@@ -13,6 +13,19 @@ export interface TenantProfile {
   booking_enabled: boolean;
   booking_slug: string | null;
   booking_welcome_message: string | null;
+  sispro_configured: boolean;
+}
+
+export interface SisproCredentials {
+  tipo_usuario: "PIN" | "RE";
+  doc_type: "CC" | "NIT" | "PA";
+  doc_number: string;
+  sispro_password: string;
+}
+
+export interface SisproTestResult {
+  ok: boolean;
+  message: string;
 }
 
 export interface TenantProfileUpdate {
@@ -44,6 +57,10 @@ export const profileApi = {
   get: () => request<TenantProfile>("GET", "/profile"),
   update: (body: TenantProfileUpdate) =>
     request<TenantProfile>("PUT", "/profile", body),
+  updateSisproCredentials: (body: SisproCredentials) =>
+    request<TenantProfile>("PUT", "/profile/sispro-credentials", body),
+  testSisproConnection: (body: SisproCredentials) =>
+    request<SisproTestResult>("POST", "/rips/test-connection", body),
 };
 
 export const availabilityApi = {

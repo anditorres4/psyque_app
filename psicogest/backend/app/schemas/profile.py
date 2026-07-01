@@ -22,8 +22,16 @@ class TenantProfileRead(BaseModel):
     ai_provider: str | None
     ai_model: str | None
     features: dict = {}
+    sispro_configured: bool = False
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):  # type: ignore[override]
+        data = super().model_validate(obj, **kwargs)
+        if hasattr(obj, "fevrips_sispro_password"):
+            data.sispro_configured = bool(obj.fevrips_sispro_password)
+        return data
 
 
 class TenantProfileUpdate(BaseModel):
@@ -35,3 +43,15 @@ class TenantProfileUpdate(BaseModel):
     session_duration_min: int | None = Field(None, ge=30, le=120)
     booking_enabled: bool | None = None
     booking_welcome_message: str | None = Field(None, max_length=500)
+
+
+class SisproCredentialsUpdate(BaseModel):
+    tipo_usuario: Literal["PIN", "RE"] = "PIN"
+    doc_type: Literal["CC", "NIT", "PA"] = "CC"
+    doc_number: str = Field(..., min_length=4, max_length=20)
+    sispro_password: str = Field(..., min_length=1)
+
+
+class SisproTestResult(BaseModel):
+    ok: bool
+    message: str

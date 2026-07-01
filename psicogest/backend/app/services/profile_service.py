@@ -41,3 +41,19 @@ class ProfileService:
         self.db.commit()
         self.db.refresh(tenant)
         return tenant
+
+    def update_sispro_credentials(
+        self,
+        tipo_usuario: str,
+        doc_type: str,
+        doc_number: str,
+        sispro_password: str,
+    ) -> Tenant:
+        tenant = self.get_profile()
+        tenant.fevrips_tipo_usuario = tipo_usuario
+        tenant.fevrips_doc_type = doc_type
+        tenant.fevrips_doc_number = doc_number
+        tenant.fevrips_sispro_password = sispro_password
+        self.db.commit()
+        self.db.refresh(tenant)
+        return tenant

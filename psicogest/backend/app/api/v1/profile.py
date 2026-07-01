@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core.deps import get_tenant_db, TenantDB
-from app.schemas.profile import TenantProfileRead, TenantProfileUpdate
+from app.schemas.profile import TenantProfileRead, TenantProfileUpdate, SisproCredentialsUpdate, SisproTestResult
 from app.services.profile_service import ProfileService
 
 router = APIRouter(tags=["profile"])
@@ -30,3 +30,45 @@ def update_profile(
     ctx.db.commit()
     ctx.db.refresh(profile)
     return TenantProfileRead.model_validate(profile)
+
+
+@router.put("/profile/sispro-credentials", response_model=TenantProfileRead)
+def update_sispro_credentials(
+    body: SisproCredentialsUpdate,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> TenantProfileRead:
+    profile = _service(ctx).update_sispro_credentials(
+        tipo_usuario=body.tipo_usuario,
+        doc_type=body.doc_type,
+        doc_number=body.doc_number,
+        sispro_password=body.sispro_password,
+    )
+    return TenantProfileRead.model_validate(profile)
+
+
+@router.post("/rips/test-connection", response_model=SisproTestResult)
+def test_sispro_connection(
+    body: SisproCredentialsUpdate,
+    ctx: Annotated[TenantDB, Depends(get_tenant_db)],
+) -> SisproTestResult:
+    from app.core.config import settings
+    from app.services.fevrips_client import FevRipsClient, FevRipsError
+
+    tenant = _service(ctx).get_profile()
+    base_url = getattr(tenant, "fevrips_base_url", None) or settings.fevrips_base_url
+    if not base_url:
+        return SisproTestResult(ok=False, message="URL del API FEV-RIPS no configurada. Contacte a soporte.")
+
+    client = FevRipsClient(
+        base_url=base_url,
+        nit=tenant.nit or body.doc_number,  # PIN: NIT == CC
+        password=body.sispro_password,
+        tipo_usuario=body.tipo_usuario,
+        doc_type=body.doc_type,
+        doc_number=body.doc_number,
+    )
+    try:
+        client.login()
+        return SisproTestResult(ok=True, message="Conexión exitosa — SISPRO respondió correctamente.")
+    except FevRipsError as exc:
+        return SisproTestResult(ok=False, message=str(exc))

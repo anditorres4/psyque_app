@@ -8,6 +8,7 @@ import { Download, CheckCircle, AlertCircle } from "lucide-react";
 import { useUpgradePrompt } from "@/hooks/useUpgradePrompt";
 import { UpgradePromptDialog } from "@/components/billing/UpgradePromptDialog";
 import { useProfile } from "@/hooks/useProfile";
+import { SisproConfigCard } from "@/components/rips/SisproConfigCard";
 
 const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const MONTH_NAMES_LONG = [
@@ -331,6 +332,9 @@ export function RipsPage() {
           )}
         </PsyCard>
       </div>
+      {isPremium && (
+        <SisproConfigCard configured={profile?.sispro_configured ?? false} />
+      )}
     </div>
     <UpgradePromptDialog open={upgradePromptOpen} onClose={closeUpgradePrompt} />
     </>

@@ -79,6 +79,8 @@ export type {
   TenantProfileUpdate,
   AvailabilityBlock,
   AvailabilityBlockCreate,
+  SisproCredentials,
+  SisproTestResult,
 } from "./profile";
 
 export type {
