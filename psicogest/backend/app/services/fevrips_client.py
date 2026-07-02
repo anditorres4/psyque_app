@@ -36,22 +36,25 @@ class FevRipsClient:
     def login(self) -> str:
         """POST /api/Auth/LoginSISPRO → Bearer token.
 
-        Estructura real del API MinSalud: Nit y Clave van dentro de Identificacion.
+        Schema real (Swagger): nit, clave, tipoUsuario al nivel raíz.
+        persona contiene solo identificacion: {tipo, numero}.
         """
-        persona: dict[str, Any] = {
-            "TipoUsuario": self.tipo_usuario,
-            "Identificacion": {
-                "Tipo": self.doc_type,
-                "Numero": self.doc_number,
-                "Nit": self.nit,
-                "Clave": self.password,
+        body: dict[str, Any] = {
+            "nit": self.nit,
+            "clave": self.password,
+            "tipoUsuario": self.tipo_usuario,
+            "persona": {
+                "identificacion": {
+                    "tipo": self.doc_type,
+                    "numero": self.doc_number,
+                }
             },
         }
 
         with httpx.Client(verify=False, timeout=30) as client:
             resp = client.post(
                 f"{self.base_url}/api/Auth/LoginSISPRO",
-                json={"persona": persona},
+                json=body,
                 headers={"Content-Type": "application/json"},
             )
         resp.raise_for_status()
