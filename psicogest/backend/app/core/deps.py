@@ -64,7 +64,14 @@ CurrentPatientDB = Annotated[PatientDB, Depends(get_patient_db)]
 def require_active_subscription(
     ctx: Annotated[TenantDB, Depends(get_tenant_db)],
 ) -> None:
-    """Raise 402 if subscription has expired beyond the 3-day grace period."""
+    """Raise 402 if subscription has expired beyond the grace period.
+
+    Grace periods by plan:
+    - free_trial: 7 days after plan_expires_at before blocking.
+    - estandar / premium: 7 days after plan_expires_at before blocking.
+
+    free_trial tenants within their trial window are always allowed through.
+    """
     tenant = ctx.db.query(Tenant).filter(
         Tenant.id == uuid.UUID(ctx.tenant.tenant_id)
     ).first()
@@ -73,11 +80,17 @@ def require_active_subscription(
     expires = tenant.plan_expires_at
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
-    if datetime.now(timezone.utc) > expires + timedelta(days=3):
-        raise HTTPException(
-            http_status.HTTP_402_PAYMENT_REQUIRED,
-            "Suscripción vencida. Renueva tu plan en /select-plan",
-        )
+    now = datetime.now(timezone.utc)
+    # Active trial or active paid plan — always pass
+    if now <= expires:
+        return
+    # Within 7-day grace period — allow through regardless of plan
+    if now <= expires + timedelta(days=7):
+        return
+    raise HTTPException(
+        http_status.HTTP_402_PAYMENT_REQUIRED,
+        "Suscripción vencida. Renueva tu plan en /select-plan",
+    )
 
 
 def require_plan(required: str):
