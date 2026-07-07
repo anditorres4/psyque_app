@@ -8,6 +8,7 @@ import { PsyButton } from "@/components/ui/psy";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { type PatientCreatePayload, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { api as rawApi } from "@/lib/api";
@@ -193,9 +194,32 @@ export function PatientsPage() {
         </div>
       )}
       {data && data.items.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          {search ? "No se encontraron pacientes con esa búsqueda." : "Aún no tienes pacientes registrados."}
-        </div>
+        <EmptyState
+          title={search ? `Sin resultados para "${search}"` : "Aún no tienes pacientes registrados."}
+          description={
+            search
+              ? "Intenta con otro nombre, apellido o número de documento."
+              : "Registra tu primer paciente para comenzar."
+          }
+          icon={search ? "🔍" : "🧑‍⚕️"}
+          action={
+            search ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setFilterActive(undefined);
+                  setFilterEps(undefined);
+                  setPage(1);
+                }}
+                className="text-[13px] font-medium"
+                style={{ color: "var(--psy-primary)" }}
+              >
+                Limpiar búsqueda
+              </button>
+            ) : undefined
+          }
+        />
       )}
       {data && data.items.length > 0 && (
         <>
