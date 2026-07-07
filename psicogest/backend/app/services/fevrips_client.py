@@ -87,12 +87,12 @@ class FevRipsClient:
     def cargar_rips_sin_factura(self, rips: dict, token: str) -> dict:
         """Primary method for independent psychologists (no EPS/ERP contracts).
 
-        RIPS without FEV XML. numFactura in the RIPS JSON is the internal invoice number.
+        RIPS without FEV XML. xmlFevFile must be null (not empty string) per API schema.
         Returns dict with CodigoUnicoValidacion (CUV) on success.
         """
         return self._post_gzip(
             "/api/PaquetesFevRips/CargarRipsSinFactura",
-            {"rips": rips, "xmlFevFile": ""},
+            {"rips": rips, "xmlFevFile": None},
             token,
         )
 

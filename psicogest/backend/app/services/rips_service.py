@@ -253,7 +253,17 @@ class RipsService:
                     "codServicio": sess.cod_servicio or 706,
                     "finalidadTecnologiaSalud": sess.finalidad_tecnologia_salud or "44",
                     "causaMotivoAtencion": sess.causa_motivo_atencion or "27",
-                    "codDiagnosticoPrincipal": sess.diagnosis_cie11,
+                    # codDiagnosticoPrincipal = CIE-10 (4 chars, required by API).
+                    # Until diagnosis_cie10 is added to the session model, derive it:
+                    # if stored code looks like CIE-10 (starts with letter), use as-is;
+                    # otherwise fall back to F329 (depressive episode NOS) and put the
+                    # CIE-11 code in the dedicated CIE-11 field.
+                    "codDiagnosticoPrincipal": (
+                        sess.diagnosis_cie11
+                        if sess.diagnosis_cie11 and sess.diagnosis_cie11[0].isalpha()
+                        else "F329"
+                    ),
+                    "codDiagnosticoPrincipalCIE11": sess.diagnosis_cie11,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
