@@ -70,6 +70,40 @@ const inputStyle = (readOnly: boolean) => ({
 const labelClass = "block text-[11px] font-semibold uppercase tracking-wide mb-1";
 const labelStyle = { color: "var(--psy-ink-3)" };
 
+// ─── SectionHeader ────────────────────────────────────────────────────────────
+function SectionHeader({
+  title, sectionKey, open, onToggle,
+}: {
+  title: string;
+  sectionKey: string;
+  open: boolean;
+  onToggle: (key: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sectionKey)}
+      className="w-full flex items-center justify-between py-2 border-b"
+      style={{ borderColor: "var(--psy-line)" }}
+    >
+      <span className="psy-mono text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--psy-ink-3)" }}>
+        {title}
+      </span>
+      <span
+        className="text-[13px]"
+        style={{
+          color: "var(--psy-ink-4)",
+          display: "inline-block",
+          transform: open ? "rotate(180deg)" : "none",
+          transition: "transform 0.15s",
+        }}
+      >
+        ▾
+      </span>
+    </button>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function SessionDocPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -123,6 +157,26 @@ export function SessionDocPage() {
   const [cie11Results, setCie11Results] = useState<Cie11Entry[]>([]);
   const [cie10Query, setCie10Query] = useState("");
   const [cie10Results, setCie10Results] = useState<Cie10Entry[]>([]);
+
+  // ── Section collapse state ─────────────────────────────────────────────────
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("session-doc-sections");
+      return saved
+        ? JSON.parse(saved)
+        : { diagnostico: true, nota: true, plan: true, admin: false };
+    } catch {
+      return { diagnostico: true, nota: true, plan: true, admin: false };
+    }
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("session-doc-sections", JSON.stringify(next));
+      return next;
+    });
+  };
 
   // ── Right panel state ──────────────────────────────────────────────────────
   const [patientSummary, setPatientSummary] = useState("");
@@ -388,7 +442,7 @@ export function SessionDocPage() {
 
         {/* ── LEFT PANEL — Historia clínica ── */}
         <div
-          className="rounded-xl p-5 space-y-5 lg:overflow-y-auto"
+          className="rounded-xl p-5 space-y-4 lg:overflow-y-auto"
           style={{
             background: "var(--psy-surface)",
             border: "1px solid var(--psy-line)",
@@ -399,295 +453,178 @@ export function SessionDocPage() {
             Historia clínica
           </h2>
 
-          {/* Objetivos terapéuticos */}
-          <TherapeuticGoals patientId={String(sess.patient_id)} readOnly={readOnly} />
-
-          <hr style={{ borderColor: "var(--psy-line)" }} />
-
-          {/* Tipo DX + Emergencia */}
-          <div
-            className="p-3 rounded-lg flex items-center justify-between gap-4"
-            style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-line)" }}
-          >
-            <div className="flex-1">
-              <label className={labelClass} style={labelStyle}>Tipo diagnóstico</label>
-              <select
-                className={inputClass}
-                style={inputStyle(readOnly)}
-                value={form.tipo_dx_principal}
-                onChange={(e) => set("tipo_dx_principal", e.target.value)}
-                disabled={readOnly}
-              >
-                {TIPO_DX_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <label className="flex items-center gap-2 text-[13px] cursor-pointer mt-4" style={{ color: "var(--psy-ink-2)" }}>
-              <input
-                type="checkbox"
-                checked={form.is_emergency}
-                onChange={(e) => set("is_emergency", e.target.checked)}
-                disabled={readOnly}
-              />
-              Urgencia
-            </label>
-          </div>
-
-          {/* Fechas */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass} style={labelStyle}>Inicio</label>
-              <input
-                type="datetime-local" className={inputClass} style={inputStyle(readOnly)}
-                value={form.actual_start} onChange={(e) => set("actual_start", e.target.value)}
-                disabled={readOnly} required
-              />
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>Fin</label>
-              <input
-                type="datetime-local" className={inputClass} style={inputStyle(readOnly)}
-                value={form.actual_end} onChange={(e) => set("actual_end", e.target.value)}
-                disabled={readOnly} required
-              />
-            </div>
-          </div>
-
-          {/* CIE-11 */}
-          <div className="relative">
-            <label className={labelClass} style={labelStyle}>Diagnóstico CIE-11</label>
-            <input
-              className={inputClass} style={inputStyle(readOnly)}
-              value={cie11Query}
-              onChange={(e) => setCie11Query(e.target.value)}
-              placeholder="Buscar código CIE-11…"
-              disabled={readOnly}
-            />
-            {!readOnly && cie11Results.length > 0 && (
-              <ul
-                className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden"
-                style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
-              >
-                {cie11Results.map((entry) => (
-                  <li
-                    key={entry.code}
-                    className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]"
-                    style={{ color: "var(--psy-ink-1)" }}
-                    onMouseDown={() => {
-                      set("diagnosis_cie11", entry.code);
-                      set("diagnosis_description", entry.description);
-                      setCie11Query(`${entry.code} — ${entry.description}`);
-                      setCie11Results([]);
-                    }}
-                  >
-                    <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
-                  </li>
-                ))}
-              </ul>
+          {/* ── Diagnóstico ── */}
+          <div className="space-y-3">
+            <SectionHeader title="Diagnóstico" sectionKey="diagnostico" open={openSections.diagnostico} onToggle={toggleSection} />
+            {openSections.diagnostico && (
+              <div className="space-y-4 pt-1">
+                <TherapeuticGoals patientId={String(sess.patient_id)} readOnly={readOnly} />
+                <div
+                  className="p-3 rounded-lg flex items-center justify-between gap-4"
+                  style={{ background: "var(--psy-bg-soft)", border: "1px solid var(--psy-line)" }}
+                >
+                  <div className="flex-1">
+                    <label className={labelClass} style={labelStyle}>Tipo diagnóstico</label>
+                    <select className={inputClass} style={inputStyle(readOnly)} value={form.tipo_dx_principal} onChange={(e) => set("tipo_dx_principal", e.target.value)} disabled={readOnly}>
+                      {TIPO_DX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-[13px] cursor-pointer mt-4" style={{ color: "var(--psy-ink-2)" }}>
+                    <input type="checkbox" checked={form.is_emergency} onChange={(e) => set("is_emergency", e.target.checked)} disabled={readOnly} />
+                    Urgencia
+                  </label>
+                </div>
+                <div className="relative">
+                  <label className={labelClass} style={labelStyle}>Diagnóstico CIE-11</label>
+                  <input className={inputClass} style={inputStyle(readOnly)} value={cie11Query} onChange={(e) => setCie11Query(e.target.value)} placeholder="Buscar código CIE-11…" disabled={readOnly} />
+                  {!readOnly && cie11Results.length > 0 && (
+                    <ul className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
+                      {cie11Results.map((entry) => (
+                        <li key={entry.code} className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]" style={{ color: "var(--psy-ink-1)" }}
+                          onMouseDown={() => { set("diagnosis_cie11", entry.code); set("diagnosis_description", entry.description); setCie11Query(`${entry.code} — ${entry.description}`); setCie11Results([]); }}>
+                          <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative">
+                  <label className={labelClass} style={labelStyle}>Diagnóstico CIE-10 (RIPS)</label>
+                  <input
+                    className={inputClass} style={inputStyle(readOnly)}
+                    value={cie10Query}
+                    onChange={(e) => { setCie10Query(e.target.value); set("diagnosis_cie10", ""); }}
+                    placeholder="Buscar código CIE-10…"
+                    disabled={readOnly}
+                  />
+                  {!readOnly && cie10Results.length > 0 && (
+                    <ul className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
+                      {cie10Results.map((entry) => (
+                        <li key={entry.code} className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]" style={{ color: "var(--psy-ink-1)" }}
+                          onMouseDown={() => { set("diagnosis_cie10", entry.code); setCie10Query(`${entry.code} — ${entry.description}`); setCie10Results([]); }}>
+                          <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <label className={labelClass} style={labelStyle}>Causa / motivo de atención (RIPS)</label>
+                  <select className={inputClass} style={inputStyle(readOnly)} value={form.causa_motivo_atencion} onChange={(e) => set("causa_motivo_atencion", e.target.value)} disabled={readOnly}>
+                    {CAUSA_MOTIVO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass} style={labelStyle}>Descripción diagnóstico</label>
+                  <input className={inputClass} style={inputStyle(readOnly)} value={form.diagnosis_description} onChange={(e) => set("diagnosis_description", e.target.value)} disabled={readOnly} />
+                </div>
+              </div>
             )}
           </div>
 
-          {/* CIE-10 */}
-          <div className="relative">
-            <label className={labelClass} style={labelStyle}>Diagnóstico CIE-10 (RIPS)</label>
-            <input
-              className={inputClass} style={inputStyle(readOnly)}
-              value={cie10Query}
-              onChange={(e) => {
-                setCie10Query(e.target.value);
-                set("diagnosis_cie10", "");
-              }}
-              placeholder="Buscar código CIE-10…"
-              disabled={readOnly}
-            />
-            {!readOnly && cie10Results.length > 0 && (
-              <ul
-                className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden"
-                style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
-              >
-                {cie10Results.map((entry) => (
-                  <li
-                    key={entry.code}
-                    className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]"
-                    style={{ color: "var(--psy-ink-1)" }}
-                    onMouseDown={() => {
-                      set("diagnosis_cie10", entry.code);
-                      setCie10Query(`${entry.code} — ${entry.description}`);
-                      setCie10Results([]);
-                    }}
-                  >
-                    <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
-                  </li>
-                ))}
-              </ul>
+          {/* ── Nota clínica ── */}
+          <div className="space-y-3">
+            <SectionHeader title="Nota clínica" sectionKey="nota" open={openSections.nota} onToggle={toggleSection} />
+            {openSections.nota && (
+              <div className="space-y-4 pt-1">
+                <div>
+                  <label className={labelClass} style={labelStyle}>Motivo de consulta</label>
+                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={3} value={form.consultation_reason} onChange={(e) => set("consultation_reason", e.target.value)} disabled={readOnly} />
+                </div>
+                <div>
+                  <label className={labelClass} style={labelStyle}>Intervención realizada</label>
+                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={4} value={form.intervention} onChange={(e) => set("intervention", e.target.value)} disabled={readOnly} />
+                </div>
+                <div>
+                  <label className={labelClass} style={labelStyle}>Evolución</label>
+                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={3} value={form.evolution} onChange={(e) => set("evolution", e.target.value)} disabled={readOnly} />
+                </div>
+                <div style={readOnly ? { pointerEvents: "none", opacity: 0.7 } : undefined}>
+                  <MentalExamDropdowns value={mentalExam} onChange={setMentalExam} />
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Causa motivo atención */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Causa / motivo de atención (RIPS)</label>
-            <select
-              className={inputClass} style={inputStyle(readOnly)}
-              value={form.causa_motivo_atencion}
-              onChange={(e) => set("causa_motivo_atencion", e.target.value)}
-              disabled={readOnly}
-            >
-              {CAUSA_MOTIVO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+          {/* ── Plan ── */}
+          <div className="space-y-3">
+            <SectionHeader title="Plan" sectionKey="plan" open={openSections.plan} onToggle={toggleSection} />
+            {openSections.plan && (
+              <div className="space-y-4 pt-1">
+                <div>
+                  <label className={labelClass} style={labelStyle}>Plan próxima sesión</label>
+                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={3} value={form.next_session_plan} onChange={(e) => set("next_session_plan", e.target.value)} disabled={readOnly} />
+                </div>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className={labelClass} style={labelStyle}>Descripción diagnóstico</label>
-            <input
-              className={inputClass} style={inputStyle(readOnly)}
-              value={form.diagnosis_description}
-              onChange={(e) => set("diagnosis_description", e.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-
-          {/* CUPS + Modalidad */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass} style={labelStyle}>Código CUPS</label>
-              <select
-                className={inputClass} style={inputStyle(readOnly)}
-                value={form.cups_code} onChange={(e) => set("cups_code", e.target.value)}
-                disabled={readOnly}
-              >
-                {CUPS_OPTIONS.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>Modalidad (RIPS)</label>
-              <select
-                className={inputClass} style={inputStyle(readOnly)}
-                value={form.modalidad_grupo_servicio}
-                onChange={(e) => set("modalidad_grupo_servicio", e.target.value)}
-                disabled={readOnly}
-              >
-                {MODALIDAD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Motivo de consulta */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Motivo de consulta</label>
-            <textarea
-              className={inputClass} style={inputStyle(readOnly)} rows={3}
-              value={form.consultation_reason}
-              onChange={(e) => set("consultation_reason", e.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-
-          {/* Intervención */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Intervención realizada</label>
-            <textarea
-              className={inputClass} style={inputStyle(readOnly)} rows={4}
-              value={form.intervention}
-              onChange={(e) => set("intervention", e.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-
-          {/* Evolución */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Evolución</label>
-            <textarea
-              className={inputClass} style={inputStyle(readOnly)} rows={3}
-              value={form.evolution}
-              onChange={(e) => set("evolution", e.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-
-          {/* Plan próxima sesión */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Plan próxima sesión</label>
-            <textarea
-              className={inputClass} style={inputStyle(readOnly)} rows={3}
-              value={form.next_session_plan}
-              onChange={(e) => set("next_session_plan", e.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-
-          {/* Examen mental */}
-          <div style={readOnly ? { pointerEvents: "none", opacity: 0.7 } : undefined}>
-            <MentalExamDropdowns value={mentalExam} onChange={setMentalExam} />
-          </div>
-
-          {/* Valor + Autorización */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass} style={labelStyle}>Valor sesión (COP)</label>
-              <input
-                type="number" className={inputClass} style={inputStyle(readOnly)}
-                value={form.session_fee}
-                onChange={(e) => set("session_fee", e.target.value)}
-                min={0} disabled={readOnly}
-              />
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>N° autorización</label>
-              <input
-                className={inputClass} style={inputStyle(readOnly)}
-                value={form.authorization_number}
-                onChange={(e) => set("authorization_number", e.target.value)}
-                disabled={readOnly}
-              />
-            </div>
-          </div>
-
-          {/* Recaudo RIPS */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass} style={labelStyle}>Concepto recaudo (RIPS)</label>
-              <select
-                className={inputClass} style={inputStyle(readOnly)}
-                value={form.concepto_recaudo}
-                onChange={(e) => set("concepto_recaudo", e.target.value)}
-                disabled={readOnly}
-              >
-                {CONCEPTO_RECAUDO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>Valor pago moderador (COP)</label>
-              <input
-                type="number" className={inputClass} style={inputStyle(readOnly)}
-                value={form.valor_pago_moderador}
-                onChange={(e) => set("valor_pago_moderador", e.target.value)}
-                min={0} disabled={readOnly}
-              />
-            </div>
+          {/* ── Administrativo ── */}
+          <div className="space-y-3">
+            <SectionHeader title="Administrativo" sectionKey="admin" open={openSections.admin} onToggle={toggleSection} />
+            {openSections.admin && (
+              <div className="space-y-4 pt-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Inicio</label>
+                    <input type="datetime-local" className={inputClass} style={inputStyle(readOnly)} value={form.actual_start} onChange={(e) => set("actual_start", e.target.value)} disabled={readOnly} required />
+                  </div>
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Fin</label>
+                    <input type="datetime-local" className={inputClass} style={inputStyle(readOnly)} value={form.actual_end} onChange={(e) => set("actual_end", e.target.value)} disabled={readOnly} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Código CUPS</label>
+                    <select className={inputClass} style={inputStyle(readOnly)} value={form.cups_code} onChange={(e) => set("cups_code", e.target.value)} disabled={readOnly}>
+                      {CUPS_OPTIONS.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Modalidad (RIPS)</label>
+                    <select className={inputClass} style={inputStyle(readOnly)} value={form.modalidad_grupo_servicio} onChange={(e) => set("modalidad_grupo_servicio", e.target.value)} disabled={readOnly}>
+                      {MODALIDAD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Valor sesión (COP)</label>
+                    <input type="number" className={inputClass} style={inputStyle(readOnly)} value={form.session_fee} onChange={(e) => set("session_fee", e.target.value)} min={0} disabled={readOnly} />
+                  </div>
+                  <div>
+                    <label className={labelClass} style={labelStyle}>N° autorización</label>
+                    <input className={inputClass} style={inputStyle(readOnly)} value={form.authorization_number} onChange={(e) => set("authorization_number", e.target.value)} disabled={readOnly} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Concepto recaudo (RIPS)</label>
+                    <select className={inputClass} style={inputStyle(readOnly)} value={form.concepto_recaudo} onChange={(e) => set("concepto_recaudo", e.target.value)} disabled={readOnly}>
+                      {CONCEPTO_RECAUDO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass} style={labelStyle}>Valor pago moderador (COP)</label>
+                    <input type="number" className={inputClass} style={inputStyle(readOnly)} value={form.valor_pago_moderador} onChange={(e) => set("valor_pago_moderador", e.target.value)} min={0} disabled={readOnly} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Save button */}
           {!readOnly && (
             <div className="pt-1">
-              {saveError && (
-                <p className="psy-mono text-[12px] mb-2" style={{ color: "var(--psy-danger, #e74c3c)" }}>
-                  {saveError}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending}
+              {saveError && <p className="psy-mono text-[12px] mb-2" style={{ color: "var(--psy-danger, #e74c3c)" }}>{saveError}</p>}
+              <button type="button" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
                 className="w-full py-2.5 rounded-lg psy-mono text-[13px] font-semibold transition-opacity disabled:opacity-60"
-                style={{ background: "var(--psy-primary)", color: "#fff" }}
-              >
+                style={{ background: "var(--psy-primary)", color: "#fff" }}>
                 {saveMutation.isPending ? "Guardando…" : "Guardar borrador"}
               </button>
               {savedFeedback && (
-                <p className="psy-mono text-[11px] mt-1 text-center" style={{ color: "var(--psy-sage)" }}>
-                  ✓ Guardado
-                </p>
+                <p className="psy-mono text-[11px] mt-1 text-center" style={{ color: "var(--psy-sage)" }}>✓ Guardado</p>
               )}
             </div>
           )}
