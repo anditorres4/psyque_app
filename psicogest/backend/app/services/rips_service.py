@@ -166,17 +166,6 @@ class RipsService:
 
     def generate(self, year: int, month: int) -> RipsExport:
         """Generate RIPS export for signed sessions in the given period."""
-        existing = self.db.query(RipsExport).filter(
-            RipsExport.tenant_id == self._tenant_uuid,
-            RipsExport.period_year == year,
-            RipsExport.period_month == month,
-        ).first()
-        if existing and existing.status == "generated":
-            raise RipsGenerationError(
-                f"Ya existe exportación RIPS para {year:04d}-{month:02d}. "
-                "Genere un nuevo período o descárguelo."
-            )
-
         validation = self.validate(year, month)
         if not validation["valid"]:
             if validation.get("sessions_count") == 0:
