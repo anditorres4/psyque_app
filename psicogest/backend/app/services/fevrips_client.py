@@ -76,7 +76,12 @@ class FevRipsClient:
                     "Authorization": f"Bearer {token}",
                 },
             )
-        resp.raise_for_status()
+        if not resp.is_success:
+            try:
+                detail = resp.json()
+            except Exception:
+                detail = resp.text
+            raise FevRipsError(f"CargarRips HTTP {resp.status_code}: {detail}")
         return resp.json()
 
     def cargar_rips_sin_factura(self, rips: dict, token: str) -> dict:
