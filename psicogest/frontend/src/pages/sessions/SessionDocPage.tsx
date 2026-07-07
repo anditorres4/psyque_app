@@ -189,6 +189,7 @@ export function SessionDocPage() {
 
   // ── Save draft ─────────────────────────────────────────────────────────────
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedFeedback, setSavedFeedback] = useState(false);
   const saveMutation = useMutation({
     mutationFn: () => {
       const payload: SessionUpdatePayload = {
@@ -222,7 +223,9 @@ export function SessionDocPage() {
       qc.invalidateQueries({ queryKey: ["session", sessionId] });
       qc.invalidateQueries({ queryKey: ["sessions"] });
       setSaveError(null);
-      navigate("/agenda");
+      setSavedFeedback(true);
+      setTimeout(() => setSavedFeedback(false), 2000);
+      // no navigate — psychologist stays on page after saving draft
     },
     onError: (err) => setSaveError(err instanceof ApiError ? err.message : "Error al guardar."),
   });
@@ -635,7 +638,11 @@ export function SessionDocPage() {
           {/* Save button */}
           {!readOnly && (
             <div className="pt-1">
-              {saveError && <p className="psy-mono text-[12px] mb-2" style={{ color: "var(--psy-danger, #e74c3c)" }}>{saveError}</p>}
+              {saveError && (
+                <p className="psy-mono text-[12px] mb-2" style={{ color: "var(--psy-danger, #e74c3c)" }}>
+                  {saveError}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => saveMutation.mutate()}
@@ -645,9 +652,9 @@ export function SessionDocPage() {
               >
                 {saveMutation.isPending ? "Guardando…" : "Guardar borrador"}
               </button>
-              {saveMutation.isSuccess && (
+              {savedFeedback && (
                 <p className="psy-mono text-[11px] mt-1 text-center" style={{ color: "var(--psy-sage)" }}>
-                  Guardado correctamente
+                  ✓ Guardado
                 </p>
               )}
             </div>
