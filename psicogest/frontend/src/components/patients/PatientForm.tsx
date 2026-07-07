@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MUNICIPIOS } from "@/data/municipios";
+import { COUNTRIES } from "@/data/countries";
 import type { PatientCreatePayload, PatientDetail } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,9 @@ const patientSchema = z.object({
   eps_name: z.string().max(200).optional(),
   eps_code: z.string().max(10).optional(),
   authorization_number: z.string().max(30).optional(),
+  incapacidad: z.enum(["NO", "SI"]).default("NO"),
+  cod_pais_residencia: z.string().max(3).default("170"),
+  cod_pais_origen: z.string().max(3).default("170"),
 });
 
 
@@ -182,6 +186,77 @@ function MunicipioCombobox({
 }
 
 // ---------------------------------------------------------------------------
+// CountryCombobox — searchable dropdown for ADRES country codes
+// ---------------------------------------------------------------------------
+function CountryCombobox({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+  disabled?: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const selected = COUNTRIES.find((c) => c.code === value);
+  const displayText = selected ? `${selected.name} (${selected.code})` : value || "";
+
+  const filtered =
+    search.length >= 1
+      ? COUNTRIES.filter(
+          (c) =>
+            c.name.toLowerCase().includes(search.toLowerCase()) ||
+            c.code.includes(search)
+        ).slice(0, 8)
+      : [];
+
+  return (
+    <div className="relative">
+      <Input
+        value={open ? search : displayText}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setOpen(true);
+          onChange("");
+        }}
+        onFocus={() => {
+          setSearch("");
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        placeholder="Buscar país..."
+        disabled={disabled}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-input rounded-md shadow-lg mt-1 max-h-52 overflow-y-auto">
+          {filtered.map((c) => (
+            <li key={c.code}>
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-baseline gap-2"
+                onMouseDown={() => {
+                  onChange(c.code);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                <span className="font-mono text-xs text-muted-foreground shrink-0">
+                  {c.code}
+                </span>
+                <span className="font-medium">{c.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // PatientForm
 // ---------------------------------------------------------------------------
 export function PatientForm({
@@ -221,6 +296,9 @@ export function PatientForm({
       eps_name: defaultValues?.eps_name ?? "",
       eps_code: defaultValues?.eps_code ?? "",
       authorization_number: defaultValues?.authorization_number ?? "",
+      incapacidad: (defaultValues?.incapacidad as "NO" | "SI") ?? "NO",
+      cod_pais_residencia: defaultValues?.cod_pais_residencia ?? "170",
+      cod_pais_origen: defaultValues?.cod_pais_origen ?? "170",
     },
   });
 
@@ -239,6 +317,9 @@ export function PatientForm({
       eps_name: data.eps_name || undefined,
       eps_code: data.eps_code || undefined,
       authorization_number: data.authorization_number || undefined,
+      incapacidad: data.incapacidad,
+      cod_pais_residencia: data.cod_pais_residencia,
+      cod_pais_origen: data.cod_pais_origen,
     });
   };
 
@@ -417,6 +498,48 @@ export function PatientForm({
         </div>
       </section>
 
+      {/* Datos adicionales RIPS */}
+      <section>
+        <h3 className="psy-mono text-[10.5px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--psy-ink-2)" }}>
+          Datos adicionales RIPS
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Incapacidad" error={errors.incapacidad?.message}>
+            <Select
+              {...register("incapacidad")}
+              options={[
+                { value: "NO", label: "NO" },
+                { value: "SI", label: "SI" },
+              ]}
+            />
+          </Field>
+          <div />
+          <Field label="País de residencia" error={errors.cod_pais_residencia?.message}>
+            <Controller
+              name="cod_pais_residencia"
+              control={control}
+              render={({ field }) => (
+                <CountryCombobox
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </Field>
+          <Field label="País de origen" error={errors.cod_pais_origen?.message}>
+            <Controller
+              name="cod_pais_origen"
+              control={control}
+              render={({ field }) => (
+                <CountryCombobox
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </Field>
+        </div>
+      </section>
 
       <Button
         type="submit"

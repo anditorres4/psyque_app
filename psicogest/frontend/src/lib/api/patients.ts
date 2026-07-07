@@ -31,6 +31,9 @@ export interface PatientDetail extends PatientSummary {
   eps_name: string | null;
   eps_code: string | null;
   authorization_number: string | null;
+  incapacidad: string | null;
+  cod_pais_residencia: string | null;
+  cod_pais_origen: string | null;
   consent_signed_at: string;
   updated_at: string;
 }
@@ -73,6 +76,9 @@ export interface PatientCreatePayload {
   eps_name?: string;
   eps_code?: string;
   authorization_number?: string;
+  incapacidad?: string;
+  cod_pais_residencia?: string;
+  cod_pais_origen?: string;
   consent_accepted?: boolean;
 }
 

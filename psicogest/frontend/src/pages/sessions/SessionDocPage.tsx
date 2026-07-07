@@ -9,12 +9,13 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown, Pencil } from "lucide-react";
 
-import { api, type SessionDetail, type SessionUpdatePayload, ApiError } from "@/lib/api";
+import { api, type SessionDetail, type SessionUpdatePayload, type AppointmentDetail, ApiError } from "@/lib/api";
 import { HmsVideoPanel } from "@/components/sessions/HmsVideoPanel";
 import { TherapeuticGoals } from "@/components/sessions/TherapeuticGoals";
 import { SessionTasks } from "@/components/sessions/SessionTasks";
 import { MentalExamDropdowns, type MentalExamData } from "@/components/sessions/MentalExamDropdowns";
 import { searchCie11, type Cie11Entry } from "@/data/cie11_codes";
+import { searchCie10, type Cie10Entry } from "@/data/cie10_mental";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CUPS_OPTIONS = [
@@ -30,6 +31,26 @@ const TIPO_DX_OPTIONS = [
   { value: "1", label: "1 — Impresión diagnóstica" },
   { value: "2", label: "2 — Confirmado nuevo" },
   { value: "3", label: "3 — Confirmado repetido" },
+];
+
+const MODALIDAD_OPTIONS = [
+  { value: "01", label: "01 — Presencial" },
+  { value: "05", label: "05 — Videoconsulta / Telemedicina" },
+];
+
+const CAUSA_MOTIVO_OPTIONS = [
+  { value: "27", label: "27 — Enfermedad general" },
+  { value: "29", label: "29 — Accidente de trabajo" },
+  { value: "30", label: "30 — Accidente de tránsito" },
+  { value: "32", label: "32 — Otro" },
+];
+
+const CONCEPTO_RECAUDO_OPTIONS = [
+  { value: "05", label: "05 — Pago directo (particular)" },
+  { value: "01", label: "01 — Cuota moderadora (EPS)" },
+  { value: "02", label: "02 — Copago (EPS subsidiado)" },
+  { value: "03", label: "03 — Plan voluntario" },
+  { value: "06", label: "06 — Sin recaudo" },
 ];
 
 function toLocal(iso: string): string {
@@ -67,6 +88,12 @@ export function SessionDocPage() {
     enabled: !!sessionId,
   });
 
+  const { data: appointment } = useQuery<AppointmentDetail>({
+    queryKey: ["appointment", String(sess?.appointment_id)],
+    queryFn: () => api.appointments.get(String(sess!.appointment_id)),
+    enabled: !!sess?.appointment_id,
+  });
+
   const [editOverride, setEditOverride] = useState(false);
   const readOnly = sess?.status === "signed" && !editOverride;
 
@@ -75,6 +102,7 @@ export function SessionDocPage() {
     actual_start: "",
     actual_end: "",
     diagnosis_cie11: "",
+    diagnosis_cie10: "",
     diagnosis_description: "",
     cups_code: "890102",
     tipo_dx_principal: "1",
@@ -85,10 +113,16 @@ export function SessionDocPage() {
     next_session_plan: "",
     session_fee: "0",
     authorization_number: "",
+    modalidad_grupo_servicio: "01",
+    causa_motivo_atencion: "27",
+    concepto_recaudo: "05",
+    valor_pago_moderador: "0",
   });
   const [mentalExam, setMentalExam] = useState<MentalExamData>({});
   const [cie11Query, setCie11Query] = useState("");
   const [cie11Results, setCie11Results] = useState<Cie11Entry[]>([]);
+  const [cie10Query, setCie10Query] = useState("");
+  const [cie10Results, setCie10Results] = useState<Cie10Entry[]>([]);
 
   // ── Right panel state ──────────────────────────────────────────────────────
   const [patientSummary, setPatientSummary] = useState("");
@@ -97,10 +131,12 @@ export function SessionDocPage() {
   // Sync state when session loads
   useEffect(() => {
     if (!sess) return;
+    const cie10Code = sess.diagnosis_cie10 ?? "";
     setForm({
       actual_start: toLocal(sess.actual_start),
       actual_end: toLocal(sess.actual_end),
       diagnosis_cie11: sess.diagnosis_cie11,
+      diagnosis_cie10: cie10Code,
       diagnosis_description: sess.diagnosis_description,
       cups_code: sess.cups_code,
       tipo_dx_principal: (sess.tipo_dx_principal ?? "1").replace(/^0+/, "") || "1",
@@ -111,17 +147,42 @@ export function SessionDocPage() {
       next_session_plan: sess.next_session_plan ?? "",
       session_fee: String(sess.session_fee),
       authorization_number: sess.authorization_number ?? "",
+      modalidad_grupo_servicio: sess.modalidad_grupo_servicio ?? "01",
+      causa_motivo_atencion: sess.causa_motivo_atencion ?? "27",
+      concepto_recaudo: sess.concepto_recaudo ?? "05",
+      valor_pago_moderador: String(sess.valor_pago_moderador ?? 0),
     });
     setMentalExam((sess.mental_exam as MentalExamData) ?? {});
     setCie11Query(`${sess.diagnosis_cie11} — ${sess.diagnosis_description}`);
+    if (cie10Code) {
+      const found = searchCie10(cie10Code).find((e) => e.code === cie10Code);
+      setCie10Query(found ? `${found.code} — ${found.description}` : cie10Code);
+    } else {
+      setCie10Query("");
+    }
     setPatientSummary(sess.patient_summary_text ?? "");
     setHomework(sess.homework_assigned ?? "");
   }, [sess?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-derive modalidad from appointment when session has no stored value
+  useEffect(() => {
+    if (!sess?.appointment_id || !appointment) return;
+    if (sess.modalidad_grupo_servicio) return;
+    setForm((f) => ({
+      ...f,
+      modalidad_grupo_servicio: appointment.modality === "virtual" ? "05" : "01",
+    }));
+  }, [appointment?.id, sess?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (cie11Query.length >= 2) setCie11Results(searchCie11(cie11Query).slice(0, 6));
     else setCie11Results([]);
   }, [cie11Query]);
+
+  useEffect(() => {
+    if (cie10Query.length >= 2) setCie10Results(searchCie10(cie10Query).slice(0, 8));
+    else setCie10Results([]);
+  }, [cie10Query]);
 
   const set = (field: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -134,6 +195,7 @@ export function SessionDocPage() {
         actual_start: new Date(form.actual_start).toISOString(),
         actual_end: new Date(form.actual_end).toISOString(),
         diagnosis_cie11: form.diagnosis_cie11,
+        diagnosis_cie10: form.diagnosis_cie10 || null,
         diagnosis_description: form.diagnosis_description,
         cups_code: form.cups_code,
         tipo_dx_principal: form.tipo_dx_principal,
@@ -146,6 +208,10 @@ export function SessionDocPage() {
         patient_summary_text: patientSummary || undefined,
         session_fee: Number(form.session_fee),
         authorization_number: form.authorization_number || undefined,
+        modalidad_grupo_servicio: form.modalidad_grupo_servicio,
+        causa_motivo_atencion: form.causa_motivo_atencion,
+        concepto_recaudo: form.concepto_recaudo,
+        valor_pago_moderador: Number(form.valor_pago_moderador),
         mental_exam: Object.values(mentalExam).some(Boolean)
           ? (mentalExam as Record<string, string>)
           : undefined,
@@ -387,6 +453,55 @@ export function SessionDocPage() {
             )}
           </div>
 
+          {/* CIE-10 */}
+          <div className="relative">
+            <label className={labelClass} style={labelStyle}>Diagnóstico CIE-10 (RIPS)</label>
+            <input
+              className={inputClass} style={inputStyle(readOnly)}
+              value={cie10Query}
+              onChange={(e) => {
+                setCie10Query(e.target.value);
+                set("diagnosis_cie10", "");
+              }}
+              placeholder="Buscar código CIE-10…"
+              disabled={readOnly}
+            />
+            {!readOnly && cie10Results.length > 0 && (
+              <ul
+                className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden"
+                style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+              >
+                {cie10Results.map((entry) => (
+                  <li
+                    key={entry.code}
+                    className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]"
+                    style={{ color: "var(--psy-ink-1)" }}
+                    onMouseDown={() => {
+                      set("diagnosis_cie10", entry.code);
+                      setCie10Query(`${entry.code} — ${entry.description}`);
+                      setCie10Results([]);
+                    }}
+                  >
+                    <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Causa motivo atención */}
+          <div>
+            <label className={labelClass} style={labelStyle}>Causa / motivo de atención (RIPS)</label>
+            <select
+              className={inputClass} style={inputStyle(readOnly)}
+              value={form.causa_motivo_atencion}
+              onChange={(e) => set("causa_motivo_atencion", e.target.value)}
+              disabled={readOnly}
+            >
+              {CAUSA_MOTIVO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
           <div>
             <label className={labelClass} style={labelStyle}>Descripción diagnóstico</label>
             <input
@@ -397,16 +512,29 @@ export function SessionDocPage() {
             />
           </div>
 
-          {/* CUPS */}
-          <div>
-            <label className={labelClass} style={labelStyle}>Código CUPS</label>
-            <select
-              className={inputClass} style={inputStyle(readOnly)}
-              value={form.cups_code} onChange={(e) => set("cups_code", e.target.value)}
-              disabled={readOnly}
-            >
-              {CUPS_OPTIONS.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
-            </select>
+          {/* CUPS + Modalidad */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass} style={labelStyle}>Código CUPS</label>
+              <select
+                className={inputClass} style={inputStyle(readOnly)}
+                value={form.cups_code} onChange={(e) => set("cups_code", e.target.value)}
+                disabled={readOnly}
+              >
+                {CUPS_OPTIONS.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} style={labelStyle}>Modalidad (RIPS)</label>
+              <select
+                className={inputClass} style={inputStyle(readOnly)}
+                value={form.modalidad_grupo_servicio}
+                onChange={(e) => set("modalidad_grupo_servicio", e.target.value)}
+                disabled={readOnly}
+              >
+                {MODALIDAD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Motivo de consulta */}
@@ -476,6 +604,30 @@ export function SessionDocPage() {
                 value={form.authorization_number}
                 onChange={(e) => set("authorization_number", e.target.value)}
                 disabled={readOnly}
+              />
+            </div>
+          </div>
+
+          {/* Recaudo RIPS */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass} style={labelStyle}>Concepto recaudo (RIPS)</label>
+              <select
+                className={inputClass} style={inputStyle(readOnly)}
+                value={form.concepto_recaudo}
+                onChange={(e) => set("concepto_recaudo", e.target.value)}
+                disabled={readOnly}
+              >
+                {CONCEPTO_RECAUDO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} style={labelStyle}>Valor pago moderador (COP)</label>
+              <input
+                type="number" className={inputClass} style={inputStyle(readOnly)}
+                value={form.valor_pago_moderador}
+                onChange={(e) => set("valor_pago_moderador", e.target.value)}
+                min={0} disabled={readOnly}
               />
             </div>
           </div>

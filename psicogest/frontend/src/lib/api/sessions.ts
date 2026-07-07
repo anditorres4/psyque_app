@@ -19,6 +19,7 @@ export interface SessionSummary {
 
 export interface SessionDetail extends SessionSummary {
   diagnosis_description: string;
+  diagnosis_cie10: string | null;
   consultation_reason: string;
   intervention: string;
   evolution: string | null;
@@ -31,6 +32,10 @@ export interface SessionDetail extends SessionSummary {
   mental_exam: Record<string, string> | null;
   is_emergency: boolean;
   tipo_dx_principal: string;
+  modalidad_grupo_servicio: string | null;
+  causa_motivo_atencion: string | null;
+  concepto_recaudo: string | null;
+  valor_pago_moderador: number | null;
   ai_context_summary: string | null;
   patient_summary_text: string | null;
   patient_summary_sent_at: string | null;
@@ -119,6 +124,7 @@ export interface SessionUpdatePayload {
   actual_start?: string;
   actual_end?: string;
   diagnosis_cie11?: string;
+  diagnosis_cie10?: string | null;
   diagnosis_description?: string;
   cups_code?: string;
   consultation_reason?: string;
@@ -130,6 +136,10 @@ export interface SessionUpdatePayload {
   session_fee?: number;
   authorization_number?: string;
   tipo_dx_principal?: string;
+  modalidad_grupo_servicio?: string;
+  causa_motivo_atencion?: string;
+  concepto_recaudo?: string;
+  valor_pago_moderador?: number;
   mental_exam?: Record<string, string>;
   is_emergency?: boolean;
 }
