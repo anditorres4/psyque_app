@@ -279,7 +279,15 @@ class RipsService:
                 "codZonaTerritorialResidencia": "01" if patient.zone == "U" else "02",
                 "incapacidad": patient.incapacidad or "NO",
                 "codPaisOrigen": patient.cod_pais_origen or "170",
-                "servicios": {"consultas": consultas},
+                "servicios": {
+                    "consultas": consultas,
+                    "procedimientos": [],
+                    "urgencias": [],
+                    "hospitalizaciones": [],
+                    "recienNacidos": [],
+                    "medicamentos": [],
+                    "otrosServicios": [],
+                },
             })
 
         root: dict[str, Any] = {
