@@ -155,6 +155,7 @@ export function SessionDocPage() {
   const [mentalExam, setMentalExam] = useState<MentalExamData>({});
   const [cie11Query, setCie11Query] = useState("");
   const [cie11Results, setCie11Results] = useState<Cie11Entry[]>([]);
+  const [cie11FocusedIdx, setCie11FocusedIdx] = useState(-1);
   const [cie10Query, setCie10Query] = useState("");
   const [cie10Results, setCie10Results] = useState<Cie10Entry[]>([]);
 
@@ -235,6 +236,7 @@ export function SessionDocPage() {
   useEffect(() => {
     if (cie11Query.length >= 2) setCie11Results(searchCie11(cie11Query).slice(0, 6));
     else setCie11Results([]);
+    setCie11FocusedIdx(-1);
   }, [cie11Query]);
 
   useEffect(() => {
@@ -244,6 +246,31 @@ export function SessionDocPage() {
 
   const set = (field: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [field]: value }));
+
+  const handleCie11KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (cie11Results.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setCie11FocusedIdx((i) => Math.min(i + 1, cie11Results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCie11FocusedIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const idx = cie11FocusedIdx >= 0 ? cie11FocusedIdx : 0;
+      const entry = cie11Results[idx];
+      if (entry) {
+        set("diagnosis_cie11", entry.code);
+        set("diagnosis_description", entry.description);
+        setCie11Query(`${entry.code} — ${entry.description}`);
+        setCie11Results([]);
+        setCie11FocusedIdx(-1);
+      }
+    } else if (e.key === "Escape") {
+      setCie11Results([]);
+      setCie11FocusedIdx(-1);
+    }
+  };
 
   // ── Save draft ─────────────────────────────────────────────────────────────
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -476,13 +503,39 @@ export function SessionDocPage() {
                 </div>
                 <div className="relative">
                   <label className={labelClass} style={labelStyle}>Diagnóstico CIE-11</label>
-                  <input className={inputClass} style={inputStyle(readOnly)} value={cie11Query} onChange={(e) => setCie11Query(e.target.value)} placeholder="Buscar código CIE-11…" disabled={readOnly} />
+                  <input
+                    className={inputClass}
+                    style={inputStyle(readOnly)}
+                    value={cie11Query}
+                    onChange={(e) => setCie11Query(e.target.value)}
+                    onKeyDown={handleCie11KeyDown}
+                    placeholder="Buscar código CIE-11…"
+                    disabled={readOnly}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={cie11Results.length > 0}
+                  />
                   {!readOnly && cie11Results.length > 0 && (
                     <ul className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
-                      {cie11Results.map((entry) => (
-                        <li key={entry.code} className="px-3 py-2 text-[12px] cursor-pointer hover:bg-[var(--psy-bg-soft)]" style={{ color: "var(--psy-ink-1)" }}
-                          onMouseDown={() => { set("diagnosis_cie11", entry.code); set("diagnosis_description", entry.description); setCie11Query(`${entry.code} — ${entry.description}`); setCie11Results([]); }}>
-                          <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>{" "}— {entry.description}
+                      {cie11Results.map((entry, idx) => (
+                        <li
+                          key={entry.code}
+                          className="px-3 py-2 text-[12px] cursor-pointer"
+                          style={{
+                            color: "var(--psy-ink-1)",
+                            background: idx === cie11FocusedIdx ? "var(--psy-sage-bg)" : undefined,
+                          }}
+                          onMouseEnter={() => setCie11FocusedIdx(idx)}
+                          onMouseDown={() => {
+                            set("diagnosis_cie11", entry.code);
+                            set("diagnosis_description", entry.description);
+                            setCie11Query(`${entry.code} — ${entry.description}`);
+                            setCie11Results([]);
+                            setCie11FocusedIdx(-1);
+                          }}
+                        >
+                          <span className="font-semibold psy-mono" style={{ color: "var(--psy-primary)" }}>{entry.code}</span>
+                          {" "}— {entry.description}
                         </li>
                       ))}
                     </ul>
