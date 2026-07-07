@@ -283,7 +283,6 @@ class RipsService:
                     "consultas": consultas,
                     "procedimientos": [],
                     "urgencias": [],
-                    "hospitalizaciones": [],
                     "recienNacidos": [],
                     "medicamentos": [],
                     "otrosServicios": [],
