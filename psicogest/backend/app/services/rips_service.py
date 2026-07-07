@@ -180,6 +180,13 @@ class RipsService:
                     "message": f"Sexo biológico inválido: '{patient.biological_sex}'. Valores válidos: M, F, I",
                 })
 
+            if not sess.diagnosis_cie10:
+                warnings.append({
+                    "session_id": str(sess.id),
+                    "field": "session.diagnosis_cie10",
+                    "message": "Código CIE-10 no configurado. Se usará F329 como fallback.",
+                })
+
         return {
             "valid": len(errors) == 0,
             "errors": errors,
@@ -269,18 +276,21 @@ class RipsService:
                     "finalidadTecnologiaSalud": sess.finalidad_tecnologia_salud or "44",
                     "causaMotivoAtencion": sess.causa_motivo_atencion or "27",
                     # codDiagnosticoPrincipal = CIE-10 (4 chars, required by API).
-                    # Until diagnosis_cie10 is added to the session model, derive it:
-                    # if stored code looks like CIE-10 (starts with letter), use as-is;
-                    # otherwise fall back to F329 (depressive episode NOS) and put the
-                    # CIE-11 code in the dedicated CIE-11 field.
+                    # Use dedicated field if available; fall back to extracting from
+                    # CIE-11 code (only if it looks like CIE-10, i.e. starts with letter
+                    # and is 4 chars), or default F329 (depressive episode NOS).
                     "codDiagnosticoPrincipal": (
-                        sess.diagnosis_cie11
-                        if sess.diagnosis_cie11 and sess.diagnosis_cie11[0].isalpha()
-                        else "F329"
+                        sess.diagnosis_cie10
+                        if sess.diagnosis_cie10
+                        else (
+                            sess.diagnosis_cie11
+                            if sess.diagnosis_cie11
+                            and sess.diagnosis_cie11[0].isalpha()
+                            and len(sess.diagnosis_cie11) == 4
+                            else "F329"
+                        )
                     ),
-                    # CIE-11 field: omit until a separate diagnosis_cie10 column exists.
-                    # Sending the stored code risks a NullRef if the API's lookup table
-                    # doesn't contain it.
+                    # CIE-11 field: send null (prevents NullRef in API's internal lookup table)
                     "codDiagnosticoPrincipalCIE11": None,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,

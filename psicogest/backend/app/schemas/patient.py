@@ -110,6 +110,9 @@ class PatientUpdate(BaseModel):
     authorization_number: str | None = Field(None, max_length=30)
     current_diagnosis_cie11: str | None = Field(None, max_length=20)
     is_active: bool | None = None
+    incapacidad: str | None = Field(None, pattern="^(SI|NO)$")
+    cod_pais_residencia: str | None = Field(None, min_length=3, max_length=3)
+    cod_pais_origen: str | None = Field(None, min_length=3, max_length=3)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +158,9 @@ class PatientDetail(PatientSummary):
     authorization_number: str | None
     consent_signed_at: datetime | None = None
     updated_at: datetime
+    incapacidad: str | None
+    cod_pais_residencia: str | None
+    cod_pais_origen: str | None
 
 
 # ---------------------------------------------------------------------------

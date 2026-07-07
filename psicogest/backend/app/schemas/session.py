@@ -10,6 +10,7 @@ from app.core.constants import DIAGNOSIS_TYPE
 _CIE11_RE = re.compile(
     r"^(?:\d{3}|(?:\d[A-Z]\d{2}|[A-Z]{2}\d{2}|\d{2}[A-Z]\d)(?:\.[0-9A-Z]+)*(?:\/[A-Z0-9]+)?)$"
 )
+_CIE10_RE = re.compile(r"^[A-Z]\d{2}[0-9A-Z]$")
 _CUPS_RE = re.compile(r"^\d{6}$")
 
 
@@ -32,6 +33,18 @@ class SessionCreate(BaseModel):
     tipo_dx_principal: str = Field(default="1", max_length=1)
     mental_exam: dict | None = None
     is_emergency: bool = False
+    diagnosis_cie10: str | None = Field(None, max_length=4, description="Código CIE-10 (4 chars, ej. F329)")
+    modalidad_grupo_servicio: str = Field(default="01", max_length=2)
+    causa_motivo_atencion: str = Field(default="27", max_length=2)
+    concepto_recaudo: str = Field(default="05", max_length=2)
+    valor_pago_moderador: int = Field(default=0, ge=0)
+
+    @field_validator("diagnosis_cie10")
+    @classmethod
+    def validate_cie10(cls, v: str | None) -> str | None:
+        if v is not None and not _CIE10_RE.match(v):
+            raise ValueError("diagnosis_cie10 debe seguir el formato CIE-10 (ej. F329, Z000)")
+        return v
 
     @field_validator("tipo_dx_principal")
     @classmethod
@@ -76,6 +89,18 @@ class SessionUpdate(BaseModel):
     tipo_dx_principal: str | None = Field(None, max_length=1)
     mental_exam: dict | None = None
     is_emergency: bool | None = None
+    diagnosis_cie10: str | None = Field(None, max_length=4)
+    modalidad_grupo_servicio: str | None = Field(None, max_length=2)
+    causa_motivo_atencion: str | None = Field(None, max_length=2)
+    concepto_recaudo: str | None = Field(None, max_length=2)
+    valor_pago_moderador: int | None = Field(None, ge=0)
+
+    @field_validator("diagnosis_cie10")
+    @classmethod
+    def validate_cie10(cls, v: str | None) -> str | None:
+        if v is not None and not _CIE10_RE.match(v):
+            raise ValueError("diagnosis_cie10 debe seguir el formato CIE-10 (ej. F329, Z000)")
+        return v
 
     @field_validator("tipo_dx_principal")
     @classmethod
@@ -128,6 +153,11 @@ class SessionDetail(SessionSummary):
     patient_summary_text: str | None
     patient_summary_sent_at: datetime | None
     updated_at: datetime
+    diagnosis_cie10: str | None
+    modalidad_grupo_servicio: str | None
+    causa_motivo_atencion: str | None
+    concepto_recaudo: str | None
+    valor_pago_moderador: int | None
 
 
 class SessionContextOut(BaseModel):

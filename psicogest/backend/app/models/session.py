@@ -70,6 +70,8 @@ class Session(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     patient_summary_sent_at: Mapped[datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
     )
+    # CIE-10 code for RIPS API (migration 0050); CIE-11 stays in diagnosis_cie11
+    diagnosis_cie10: Mapped[str | None] = mapped_column(sa.String(4), nullable=True)
     # RIPS v4.3 clinical/billing fields (migration 0042)
     modalidad_grupo_servicio: Mapped[str | None] = mapped_column(sa.String(2), default="01")
     grupo_servicios: Mapped[str | None] = mapped_column(sa.String(2), default="02")
