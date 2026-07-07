@@ -247,7 +247,6 @@ class RipsService:
                     "codPrestador": tenant.reps_code or "",
                     "fechaInicioAtencion": sess.actual_start.strftime("%Y-%m-%d %H:%M"),
                     "numAutorizacion": sess.authorization_number,
-                    "idMIPRES": None,
                     "codConsulta": sess.cups_code,
                     "modalidadGrupoServicioTecSal": sess.modalidad_grupo_servicio or "01",
                     "grupoServicios": sess.grupo_servicios or "02",
