@@ -4,7 +4,7 @@
  * Panel derecho: videollamada embebida + resumen para paciente + tareas.
  * Todos los campos editables mientras status=draft. Inmutables tras firmar.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown, Pencil } from "lucide-react";
@@ -128,6 +128,10 @@ export function SessionDocPage() {
   const [patientSummary, setPatientSummary] = useState("");
   const [homework, setHomework] = useState("");
 
+  // ── Autosave state ─────────────────────────────────────────────────────────
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Sync state when session loads
   useEffect(() => {
     if (!sess) return;
@@ -184,41 +188,63 @@ export function SessionDocPage() {
     else setCie10Results([]);
   }, [cie10Query]);
 
+  // ── Autosave debounce (30 s) ───────────────────────────────────────────────
+  useEffect(() => {
+    if (readOnly || !sess) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await api.sessions.update(sessionId!, buildPayload());
+        qc.invalidateQueries({ queryKey: ["session", sessionId] });
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch (e) {
+        console.error("[autosave]", e);
+        setAutoSaveStatus("idle");
+      }
+    }, 30_000);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, mentalExam, patientSummary, homework]);
+
   const set = (field: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [field]: value }));
 
   // ── Save draft ─────────────────────────────────────────────────────────────
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedFeedback, setSavedFeedback] = useState(false);
+
+  const buildPayload = (): SessionUpdatePayload => ({
+    actual_start: new Date(form.actual_start).toISOString(),
+    actual_end: new Date(form.actual_end).toISOString(),
+    diagnosis_cie11: form.diagnosis_cie11,
+    diagnosis_cie10: form.diagnosis_cie10 || null,
+    diagnosis_description: form.diagnosis_description,
+    cups_code: form.cups_code,
+    tipo_dx_principal: form.tipo_dx_principal,
+    is_emergency: form.is_emergency,
+    consultation_reason: form.consultation_reason,
+    intervention: form.intervention,
+    evolution: form.evolution || undefined,
+    next_session_plan: form.next_session_plan || undefined,
+    homework_assigned: homework || undefined,
+    patient_summary_text: patientSummary || undefined,
+    session_fee: Number(form.session_fee),
+    authorization_number: form.authorization_number || undefined,
+    modalidad_grupo_servicio: form.modalidad_grupo_servicio,
+    causa_motivo_atencion: form.causa_motivo_atencion,
+    concepto_recaudo: form.concepto_recaudo,
+    valor_pago_moderador: Number(form.valor_pago_moderador),
+    mental_exam: Object.values(mentalExam).some(Boolean)
+      ? (mentalExam as Record<string, string>)
+      : undefined,
+  });
+
   const saveMutation = useMutation({
-    mutationFn: () => {
-      const payload: SessionUpdatePayload = {
-        actual_start: new Date(form.actual_start).toISOString(),
-        actual_end: new Date(form.actual_end).toISOString(),
-        diagnosis_cie11: form.diagnosis_cie11,
-        diagnosis_cie10: form.diagnosis_cie10 || null,
-        diagnosis_description: form.diagnosis_description,
-        cups_code: form.cups_code,
-        tipo_dx_principal: form.tipo_dx_principal,
-        is_emergency: form.is_emergency,
-        consultation_reason: form.consultation_reason,
-        intervention: form.intervention,
-        evolution: form.evolution || undefined,
-        next_session_plan: form.next_session_plan || undefined,
-        homework_assigned: homework || undefined,
-        patient_summary_text: patientSummary || undefined,
-        session_fee: Number(form.session_fee),
-        authorization_number: form.authorization_number || undefined,
-        modalidad_grupo_servicio: form.modalidad_grupo_servicio,
-        causa_motivo_atencion: form.causa_motivo_atencion,
-        concepto_recaudo: form.concepto_recaudo,
-        valor_pago_moderador: Number(form.valor_pago_moderador),
-        mental_exam: Object.values(mentalExam).some(Boolean)
-          ? (mentalExam as Record<string, string>)
-          : undefined,
-      };
-      return api.sessions.update(sessionId!, payload);
-    },
+    mutationFn: () => api.sessions.update(sessionId!, buildPayload()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["session", sessionId] });
       qc.invalidateQueries({ queryKey: ["sessions"] });
@@ -317,6 +343,12 @@ export function SessionDocPage() {
           >
             <Lock size={10} />
             Firmada
+          </span>
+        )}
+        {!readOnly && autoSaveStatus !== "idle" && (
+          <span className="ml-auto psy-mono text-[10px]" style={{ color: "var(--psy-ink-4)" }}>
+            {autoSaveStatus === "saving" && "Guardando…"}
+            {autoSaveStatus === "saved" && "✓ Guardado"}
           </span>
         )}
         {sess?.status === "signed" && (
