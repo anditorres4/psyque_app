@@ -188,28 +188,6 @@ export function SessionDocPage() {
     else setCie10Results([]);
   }, [cie10Query]);
 
-  // ── Autosave debounce (30 s) ───────────────────────────────────────────────
-  useEffect(() => {
-    if (readOnly || !sess) return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(async () => {
-      setAutoSaveStatus("saving");
-      try {
-        await api.sessions.update(sessionId!, buildPayload());
-        qc.invalidateQueries({ queryKey: ["session", sessionId] });
-        setAutoSaveStatus("saved");
-        setTimeout(() => setAutoSaveStatus("idle"), 3000);
-      } catch (e) {
-        console.error("[autosave]", e);
-        setAutoSaveStatus("idle");
-      }
-    }, 30_000);
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, mentalExam, patientSummary, homework]);
-
   const set = (field: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [field]: value }));
 
@@ -242,6 +220,28 @@ export function SessionDocPage() {
       ? (mentalExam as Record<string, string>)
       : undefined,
   });
+
+  // ── Autosave debounce (30 s) ───────────────────────────────────────────────
+  useEffect(() => {
+    if (readOnly || !sess) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await api.sessions.update(sessionId!, buildPayload());
+        qc.invalidateQueries({ queryKey: ["session", sessionId] });
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch (e) {
+        console.error("[autosave]", e);
+        setAutoSaveStatus("idle");
+      }
+    }, 30_000);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, mentalExam, patientSummary, homework]);
 
   const saveMutation = useMutation({
     mutationFn: () => api.sessions.update(sessionId!, buildPayload()),
@@ -346,7 +346,7 @@ export function SessionDocPage() {
           </span>
         )}
         {!readOnly && autoSaveStatus !== "idle" && (
-          <span className="ml-auto psy-mono text-[10px]" style={{ color: "var(--psy-ink-4)" }}>
+          <span className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-4)" }}>
             {autoSaveStatus === "saving" && "Guardando…"}
             {autoSaveStatus === "saved" && "✓ Guardado"}
           </span>
