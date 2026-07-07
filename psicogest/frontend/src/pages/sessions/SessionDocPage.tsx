@@ -7,7 +7,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, PenLine, Lock, Loader2, AlertCircle, FileDown, Pencil } from "lucide-react";
+import { Send, PenLine, Lock, Loader2, AlertCircle, FileDown, Pencil } from "lucide-react";
 
 import { api, type SessionDetail, type SessionUpdatePayload, type AppointmentDetail, ApiError } from "@/lib/api";
 import { HmsVideoPanel } from "@/components/sessions/HmsVideoPanel";
@@ -16,6 +16,7 @@ import { SessionTasks } from "@/components/sessions/SessionTasks";
 import { MentalExamDropdowns, type MentalExamData } from "@/components/sessions/MentalExamDropdowns";
 import { searchCie11, type Cie11Entry } from "@/data/cie11_codes";
 import { searchCie10, type Cie10Entry } from "@/data/cie10_mental";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CUPS_OPTIONS = [
@@ -126,6 +127,13 @@ export function SessionDocPage() {
     queryKey: ["appointment", String(sess?.appointment_id)],
     queryFn: () => api.appointments.get(String(sess!.appointment_id)),
     enabled: !!sess?.appointment_id,
+  });
+
+  const { data: sessionPatient } = useQuery({
+    queryKey: ["patient-name", sess?.patient_id],
+    queryFn: () => api.patients.get(String(sess!.patient_id)),
+    enabled: !!sess?.patient_id,
+    staleTime: 300_000,
   });
 
   const [editOverride, setEditOverride] = useState(false);
@@ -402,21 +410,22 @@ export function SessionDocPage() {
     <div className="flex flex-col gap-4" style={{ maxWidth: "1400px" }}>
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/sessions")}
-          className="psy-mono text-[12px] flex items-center gap-1 transition-colors"
-          style={{ color: "var(--psy-ink-3)" }}
-        >
-          <ArrowLeft size={14} />
-          Sesiones
-        </button>
-        <span style={{ color: "var(--psy-line)" }}>|</span>
-        <span className="psy-mono text-[13px] font-medium" style={{ color: "var(--psy-ink-2)" }}>
-          {new Date(sess.actual_start).toLocaleDateString("es-CO", {
-            weekday: "long", year: "numeric", month: "long", day: "numeric",
-          })}
-        </span>
+        <Breadcrumb
+          items={[
+            { label: "Pacientes", href: "/patients" },
+            sessionPatient
+              ? {
+                  label: [sessionPatient.first_name, sessionPatient.first_surname].filter(Boolean).join(" "),
+                  href: `/patients/${sess.patient_id}?tab=sesiones`,
+                }
+              : { label: "Paciente", href: `/patients/${sess.patient_id}?tab=sesiones` },
+            {
+              label: new Date(sess.actual_start).toLocaleDateString("es-CO", {
+                day: "numeric", month: "short", year: "numeric",
+              }),
+            },
+          ]}
+        />
         {readOnly && (
           <span
             className="psy-mono text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1"

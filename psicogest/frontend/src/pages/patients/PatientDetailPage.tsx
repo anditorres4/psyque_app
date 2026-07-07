@@ -3,7 +3,7 @@
  * 5 tabs: Información general, Historia clínica, Sesiones, Documentos, RIPS
  */
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
@@ -17,6 +17,7 @@ import { useSessions } from "@/hooks/useSessions";
 import { SessionDetail } from "@/components/sessions/SessionDetail";
 import { api } from "@/lib/api";
 import { PsyButton, PsyCard, Tag } from "@/components/ui/psy";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { ClinicalRecordSection } from "@/components/patients/ClinicalRecordSection";
 import { SessionTimeline } from "@/components/patients/SessionTimeline";
@@ -93,7 +94,11 @@ function PsyFieldRow({ label, value, mono }: { label: string; value?: string | n
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>("info");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    return t && TABS.some((tab) => tab.id === t) ? t : "info";
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -208,6 +213,12 @@ export function PatientDetailPage() {
 
   return (
     <div className="space-y-5">
+      <Breadcrumb
+        items={[
+          { label: "Pacientes", href: "/patients" },
+          { label: fullName },
+        ]}
+      />
       {/* Patient header */}
       <div
         className="rounded-[var(--radius)] p-5"
