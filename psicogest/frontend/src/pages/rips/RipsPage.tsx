@@ -33,6 +33,7 @@ export function RipsPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [validation, setValidation] = useState<RipsValidateResponse | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const [submitError, setSubmitError] = useState<{ id: string; message: string } | null>(null);
   const { upgradePromptOpen, closeUpgradePrompt, handleQueryError } = useUpgradePrompt();
   const { data: profile } = useProfile();
   const isPremium = profile?.plan === "premium";
@@ -71,8 +72,13 @@ export function RipsPage() {
     mutationFn: (id: string) => api.rips.submit(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rips"] });
+      setSubmitError(null);
     },
-    onError: handleQueryError,
+    onError: (error, id) => {
+      handleQueryError(error);
+      const message = error instanceof Error ? error.message : "Error al enviar a MinSalud";
+      setSubmitError({ id, message });
+    },
   });
 
   const handleDownload = async (id: string) => {
@@ -300,15 +306,25 @@ export function RipsPage() {
                             </div>
                           )}
                           {isPremium && (
-                            <button
-                              type="button"
-                              onClick={() => submitMutation.mutate(exp.id)}
-                              disabled={submitMutation.isPending}
-                              className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70 mt-1"
-                              style={{ color: "var(--psy-primary)" }}
-                            >
-                              {submitMutation.isPending ? "Enviando…" : "Enviar MinSalud"}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => { setSubmitError(null); submitMutation.mutate(exp.id); }}
+                                disabled={submitMutation.isPending && submitMutation.variables === exp.id}
+                                className="inline-flex items-center gap-1 psy-mono text-[11px] transition-colors hover:opacity-70 mt-1"
+                                style={{ color: "var(--psy-primary)" }}
+                              >
+                                {submitMutation.isPending && submitMutation.variables === exp.id ? "Enviando…" : "Enviar MinSalud"}
+                              </button>
+                              {submitError?.id === exp.id && (
+                                <div
+                                  className="psy-mono text-[10px] mt-1 max-w-[220px] leading-snug"
+                                  style={{ color: "var(--psy-danger)" }}
+                                >
+                                  {submitError.message}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
