@@ -54,6 +54,9 @@ class ProfileService:
         tenant.fevrips_doc_type = doc_type
         tenant.fevrips_doc_number = doc_number
         tenant.fevrips_sispro_password = sispro_password
+        # PIN: NIT == CC — keep tenant.nit in sync to avoid SISPRO mismatch on submit
+        if tipo_usuario == "PIN":
+            tenant.nit = doc_number
         self.db.commit()
         self.db.refresh(tenant)
         return tenant

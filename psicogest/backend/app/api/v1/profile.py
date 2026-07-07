@@ -59,9 +59,11 @@ def test_sispro_connection(
     if not base_url:
         return SisproTestResult(ok=False, message="URL del API FEV-RIPS no configurada. Contacte a soporte.")
 
+    # For PIN: NIT must equal CC (SISPRO validation rule)
+    nit = body.doc_number if body.tipo_usuario == "PIN" else (tenant.nit or body.doc_number)
     client = FevRipsClient(
         base_url=base_url,
-        nit=tenant.nit or body.doc_number,  # PIN: NIT == CC
+        nit=nit,
         password=body.sispro_password,
         tipo_usuario=body.tipo_usuario,
         doc_type=body.doc_type,
