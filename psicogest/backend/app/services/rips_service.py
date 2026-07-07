@@ -232,6 +232,7 @@ class RipsService:
         sessions: list[Session],
         patients: dict[uuid.UUID, Patient],
         num_factura: str | None = None,
+        num_nota: str | None = None,
     ) -> dict[str, Any]:
         """Build RIPS v4.3 nested JSON per Res. 0948/2026 (Doc. Técnico 1)."""
         patient_sessions: dict[uuid.UUID, list[Session]] = {}
@@ -285,7 +286,7 @@ class RipsService:
             "numDocumentoIdObligado": tenant.nit or "",
             "numFactura": num_factura,
             "tipoNota": "RS",
-            "numNota": None,
+            "numNota": num_nota,
             "usuarios": usuarios,
         }
 
@@ -332,7 +333,15 @@ class RipsService:
         sessions, patients = self._fetch_sessions_and_patients(
             export.period_year, export.period_month
         )
-        rips_json = self._build_fev_rips_json(tenant, sessions, patients, num_factura)
+        # numNota: sequential document ref for CargarRipsSinFactura (tipoNota=RS).
+        # Format: RS + YYYYMM + 3-digit count of prior exports for this period.
+        prior_count = self.db.query(RipsExport).filter(
+            RipsExport.tenant_id == self._tenant_uuid,
+            RipsExport.period_year == export.period_year,
+            RipsExport.period_month == export.period_month,
+        ).count()
+        num_nota = f"RS{export.period_year:04d}{export.period_month:02d}{prior_count:03d}"
+        rips_json = self._build_fev_rips_json(tenant, sessions, patients, num_factura, num_nota)
 
         client = FevRipsClient(
             base_url=base_url,
