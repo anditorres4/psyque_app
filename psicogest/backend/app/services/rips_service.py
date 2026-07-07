@@ -244,10 +244,9 @@ class RipsService:
             patient = patients[patient_id]
             consultas = []
             for svc_idx, sess in enumerate(sess_list):
-                consultas.append({
+                consulta: dict[str, Any] = {
                     "codPrestador": tenant.reps_code or "",
                     "fechaInicioAtencion": sess.actual_start.strftime("%Y-%m-%d %H:%M"),
-                    "numAutorizacion": sess.authorization_number,
                     "codConsulta": sess.cups_code,
                     "modalidadGrupoServicioTecSal": sess.modalidad_grupo_servicio or "01",
                     "grupoServicios": sess.grupo_servicios or "02",
@@ -255,18 +254,19 @@ class RipsService:
                     "finalidadTecnologiaSalud": sess.finalidad_tecnologia_salud or "44",
                     "causaMotivoAtencion": sess.causa_motivo_atencion or "27",
                     "codDiagnosticoPrincipal": sess.diagnosis_cie11,
-                    "codDiagnosticoRelacionado1": None,
-                    "codDiagnosticoRelacionado2": None,
-                    "codDiagnosticoRelacionado3": None,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
                     "vrServicio": sess.session_fee,
                     "conceptoRecaudo": sess.concepto_recaudo or "05",
                     "valorPagoModerador": sess.valor_pago_moderador or 0,
-                    "numFEVPagoModerador": None,
                     "consecutivo": svc_idx + 1,
-                })
+                }
+                # Only include optional string fields when they have a value —
+                # sending null causes a .NET NullReferenceException in the API.
+                if sess.authorization_number:
+                    consulta["numAutorizacion"] = sess.authorization_number
+                consultas.append(consulta)
             usuarios.append({
                 "consecutivo": usr_idx + 1,
                 "tipoDocumentoIdentificacion": patient.doc_type,
@@ -275,20 +275,22 @@ class RipsService:
                 "fechaNacimiento": patient.birth_date.isoformat(),
                 "codSexo": patient.biological_sex,
                 "codPaisResidencia": patient.cod_pais_residencia or "170",
-                "codMunicipioResidencia": patient.municipality_dane,
+                "codMunicipioResidencia": patient.municipality_dane or "11001",
                 "codZonaTerritorialResidencia": "01" if patient.zone == "U" else "02",
                 "incapacidad": patient.incapacidad or "NO",
                 "codPaisOrigen": patient.cod_pais_origen or "170",
                 "servicios": {"consultas": consultas},
             })
 
-        return {
+        root: dict[str, Any] = {
             "numDocumentoIdObligado": tenant.nit or "",
-            "numFactura": num_factura,
             "tipoNota": "RS",
             "numNota": num_nota,
             "usuarios": usuarios,
         }
+        if num_factura:
+            root["numFactura"] = num_factura
+        return root
 
     def _build_zip_from_snapshot(
         self,
