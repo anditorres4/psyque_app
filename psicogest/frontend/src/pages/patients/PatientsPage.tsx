@@ -112,37 +112,54 @@ export function PatientsPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-col gap-2 mb-4">
         <Input
           placeholder="Buscar por nombre, apellido o documento..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           className="max-w-sm"
         />
-        <select
-          className="h-10 rounded-md border border-input px-3 text-sm"
-          value={filterActive === undefined ? "" : String(filterActive)}
-          onChange={(e) => {
-            setFilterActive(e.target.value === "" ? undefined : e.target.value === "true");
-            setPage(1);
-          }}
-        >
-          <option value="">Todos</option>
-          <option value="true">Activos</option>
-          <option value="false">Inactivos</option>
-        </select>
-        <select
-          className="h-10 rounded-md border border-input px-3 text-sm"
-          value={filterEps === undefined ? "" : String(filterEps)}
-          onChange={(e) => {
-            setFilterEps(e.target.value === "" ? undefined : e.target.value === "true");
-            setPage(1);
-          }}
-        >
-          <option value="">Con y sin EPS</option>
-          <option value="true">Con EPS</option>
-          <option value="false">Sin EPS</option>
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          {([
+            { value: undefined, label: "Todos" },
+            { value: true,      label: "Activos" },
+            { value: false,     label: "Inactivos" },
+          ] as const).map((opt) => (
+            <button
+              key={String(opt.value)}
+              type="button"
+              onClick={() => { setFilterActive(opt.value); setPage(1); }}
+              className="text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors border"
+              style={
+                filterActive === opt.value
+                  ? { background: "var(--psy-primary)", color: "#fff", borderColor: "var(--psy-primary)" }
+                  : { background: "var(--psy-surface)", color: "var(--psy-ink-2)", borderColor: "var(--psy-line)" }
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+          <span className="mx-1 text-[11px]" style={{ color: "var(--psy-line)" }}>|</span>
+          {([
+            { value: undefined, label: "Con y sin EPS" },
+            { value: true,      label: "Con EPS" },
+            { value: false,     label: "Sin EPS" },
+          ] as const).map((opt) => (
+            <button
+              key={`eps-${String(opt.value)}`}
+              type="button"
+              onClick={() => { setFilterEps(opt.value); setPage(1); }}
+              className="text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors border"
+              style={
+                filterEps === opt.value
+                  ? { background: "var(--psy-primary)", color: "#fff", borderColor: "var(--psy-primary)" }
+                  : { background: "var(--psy-surface)", color: "var(--psy-ink-2)", borderColor: "var(--psy-line)" }
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Patient list */}
