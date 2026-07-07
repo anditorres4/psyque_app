@@ -104,6 +104,16 @@ class RipsService:
                 "field": "tenant.reps_code",
                 "message": "Código REPS del prestador no configurado",
             })
+        elif len(tenant.reps_code) != 12:
+            errors.append({
+                "field": "tenant.reps_code",
+                "message": (
+                    f"El codPrestador debe tener exactamente 12 caracteres "
+                    f"(actual: '{tenant.reps_code}', {len(tenant.reps_code)} chars). "
+                    "Formato: NIT relleno a 10 dígitos + 2 dígitos de sede. "
+                    "Ej: NIT 902058078 → 090205807801"
+                ),
+            })
         if not tenant.nit:
             errors.append({
                 "field": "tenant.nit",
