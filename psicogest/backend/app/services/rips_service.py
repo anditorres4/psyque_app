@@ -375,7 +375,7 @@ class RipsService:
             export.status = "submitted"
         else:
             validation_msgs = [
-                r.get("Observaciones", r.get("Descripcion", ""))
+                f"[{r.get('PathFuente', '')}] {r.get('Observaciones', r.get('Descripcion', ''))}"
                 for r in response.get("ResultadosValidacion", [])
             ]
             raise RipsGenerationError(
