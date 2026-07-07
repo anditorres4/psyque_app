@@ -8,11 +8,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { KPI, PsyCard, AiCard, PageHeader, PsyButton, Tag } from "@/components/ui/psy";
 import type { AppointmentSummary } from "@/lib/api";
 
-const SPARK_APT  = [3, 5, 4, 6, 5, 7, 8, 6, 9, 8, 10, 11];
-const SPARK_NOTES = [2, 3, 1, 4, 2, 1, 0, 2, 1, 2, 3, 2];
-const SPARK_ATTEND = [88, 90, 92, 89, 95, 94, 96, 98, 97, 95, 96, 98];
-const SPARK_SESS = [1, 0, 1, 2, 1, 0, 1, 1, 2, 1, 0, 1];
-
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return "Buenos días";
@@ -167,7 +162,6 @@ export function DashboardPage() {
         <KPI
           label="Citas hoy"
           value={data.appointments_today}
-          sparkline={SPARK_APT}
           accent="info"
         />
         <KPI
@@ -175,24 +169,18 @@ export function DashboardPage() {
           value={data.pending_to_close}
           delta={data.pending_to_close > 0 ? "requieren atención" : "al día"}
           trend={data.pending_to_close > 0 ? "down" : undefined}
-          sparkline={SPARK_NOTES}
-          sparklineColor="var(--psy-warn)"
           accent={data.pending_to_close > 0 ? "warn" : "ok"}
         />
         <KPI
           label="Asistencia 30d"
           value={attendanceVal ?? "—"}
           unit={attendanceVal !== null ? "%" : undefined}
-          sparkline={SPARK_ATTEND}
-          sparklineColor="var(--psy-ok)"
           accent="ok"
         />
         <KPI
           label="Sesiones abiertas"
           value={draftSessions.length}
           delta={draftSessions.length > 0 ? "en curso" : "ninguna"}
-          sparkline={SPARK_SESS}
-          sparklineColor="var(--psy-terracotta)"
           accent={draftSessions.length > 0 ? "warn" : undefined}
         />
       </div>
