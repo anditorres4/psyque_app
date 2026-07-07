@@ -102,6 +102,7 @@ export function PatientDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [certModalOpen, setCertModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -275,129 +276,94 @@ export function PatientDetailPage() {
           >
             {isEditing ? "Cancelar edición" : "Editar"}
           </PsyButton>
+          {/* Dialog 1: Exportar HC */}
           <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
             <DialogTrigger asChild>
               <PsyButton variant="ghost">Exportar HC</PsyButton>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Opciones de exportación</DialogTitle>
-              </DialogHeader>
-
+              <DialogHeader><DialogTitle>Exportar historia clínica</DialogTitle></DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Perfil del paciente</p>
                   <div className="flex gap-4">
                     {(["adulto", "infante", "familiar"] as const).map((p) => (
                       <label key={p} className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="patient_profile"
-                          value={p}
+                        <input type="radio" name="patient_profile" value={p}
                           checked={exportOptions.patient_profile === p}
                           onChange={() => setExportOptions((o) => ({ ...o, patient_profile: p }))}
-                          className="accent-primary"
-                        />
+                          className="accent-primary" />
                         <span className="text-sm capitalize">{p}</span>
                       </label>
                     ))}
                   </div>
                   {exportOptions.patient_profile === "infante" && (
-                    <p className="text-xs text-muted-foreground">
-                      Incluye responsable legal desde contacto de emergencia.
-                    </p>
+                    <p className="text-xs text-muted-foreground">Incluye responsable legal desde contacto de emergencia.</p>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Secciones a incluir</p>
-                  {(
-                    [
-                      { key: "include_diagnosis", label: "Diagnóstico (CIE-11)" },
-                      { key: "include_treatment", label: "Intervención y plan" },
-                      { key: "include_evolution", label: "Evolución" },
-                    ] as const
-                  ).map(({ key, label }) => (
+                  {([
+                    { key: "include_diagnosis", label: "Diagnóstico (CIE-11)" },
+                    { key: "include_treatment", label: "Intervención y plan" },
+                    { key: "include_evolution", label: "Evolución" },
+                  ] as const).map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Checkbox
-                        id={key}
-                        checked={exportOptions[key]}
-                        onCheckedChange={(checked) =>
-                          setExportOptions((o) => ({ ...o, [key]: !!checked }))
-                        }
-                      />
-                      <Label htmlFor={key} className="text-sm font-normal cursor-pointer">
-                        {label}
-                      </Label>
+                      <Checkbox id={key} checked={exportOptions[key]}
+                        onCheckedChange={(checked) => setExportOptions((o) => ({ ...o, [key]: !!checked }))} />
+                      <Label htmlFor={key} className="text-sm font-normal cursor-pointer">{label}</Label>
                     </div>
                   ))}
                 </div>
-
                 <div className="space-y-2 pt-2 border-t">
-                  <p className="text-sm font-medium">Opciones de seguridad</p>
+                  <p className="text-sm font-medium">Seguridad</p>
                   <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="protected_pdf"
-                      checked={exportOptions.protected}
-                      onCheckedChange={(checked) =>
-                        setExportOptions((o) => ({ ...o, protected: !!checked }))
-                      }
-                    />
+                    <Checkbox id="protected_pdf" checked={exportOptions.protected}
+                      onCheckedChange={(checked) => setExportOptions((o) => ({ ...o, protected: !!checked }))} />
                     <Label htmlFor="protected_pdf" className="text-sm font-normal cursor-pointer">
                       PDF con contraseña (N° documento del paciente)
                     </Label>
                   </div>
                 </div>
-
-                <div className="space-y-2 pt-2 border-t">
-                  <p className="text-sm font-medium">Constancia de asistencia</p>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="cert_count"
-                      checked={certIncludeCount}
-                      onCheckedChange={(c) => setCertIncludeCount(!!c)}
-                    />
-                    <Label htmlFor="cert_count" className="text-sm font-normal cursor-pointer">
-                      Incluir número de sesiones
-                    </Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Desde (opcional)</Label>
-                      <input
-                        type="date"
-                        value={certFromDate}
-                        onChange={(e) => setCertFromDate(e.target.value)}
-                        className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Hasta (opcional)</Label>
-                      <input
-                        type="date"
-                        value={certToDate}
-                        onChange={(e) => setCertToDate(e.target.value)}
-                        className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleExportCertificate}
-                    disabled={isCertExporting}
-                  >
-                    {isCertExporting ? "Generando..." : "Descargar constancia"}
-                  </Button>
-                </div>
               </div>
-
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setExportModalOpen(false)}>
-                  Cancelar
-                </Button>
+                <Button variant="outline" onClick={() => setExportModalOpen(false)}>Cancelar</Button>
                 <Button onClick={handleExportHistory} disabled={isExporting}>
                   {isExporting ? "Generando..." : `Descargar HC${exportOptions.protected ? " (protegido)" : ""}`}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog 2: Constancia de asistencia */}
+          <Dialog open={certModalOpen} onOpenChange={setCertModalOpen}>
+            <DialogTrigger asChild>
+              <PsyButton variant="ghost">Constancia</PsyButton>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>Constancia de asistencia</DialogTitle></DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox id="cert_count" checked={certIncludeCount} onCheckedChange={(c) => setCertIncludeCount(!!c)} />
+                  <Label htmlFor="cert_count" className="text-sm font-normal cursor-pointer">Incluir número de sesiones</Label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Desde (opcional)</Label>
+                    <input type="date" value={certFromDate} onChange={(e) => setCertFromDate(e.target.value)}
+                      className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Hasta (opcional)</Label>
+                    <input type="date" value={certToDate} onChange={(e) => setCertToDate(e.target.value)}
+                      className="w-full mt-1 rounded-md border border-input px-2 py-1.5 text-sm" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setCertModalOpen(false)}>Cancelar</Button>
+                <Button onClick={() => { handleExportCertificate(); setCertModalOpen(false); }} disabled={isCertExporting}>
+                  {isCertExporting ? "Generando..." : "Descargar constancia"}
                 </Button>
               </div>
             </DialogContent>
