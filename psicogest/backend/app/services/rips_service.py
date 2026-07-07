@@ -345,6 +345,9 @@ class RipsService:
         num_nota = f"RS{export.period_year:04d}{export.period_month:02d}{prior_count:03d}"
         rips_json = self._build_fev_rips_json(tenant, sessions, patients, num_factura, num_nota)
 
+        import logging as _log
+        _log.getLogger(__name__).warning("RIPS_DEBUG payload: %s", json.dumps(rips_json, ensure_ascii=False, default=str))
+
         client = FevRipsClient(
             base_url=base_url,
             nit=tenant.nit or "",
