@@ -1,10 +1,13 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, Users, Activity, FileText,
-  CreditCard, BarChart3, Settings, LogOut, Search, X, ClipboardList, MessageSquare, type LucideIcon,
+  CreditCard, BarChart3, Settings, LogOut, Search, X,
+  ClipboardList, MessageSquare, Wallet, DollarSign, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { useSessions } from "@/hooks/useSessions";
 
 interface NavItem {
   to: string;
@@ -16,19 +19,19 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: "/dashboard",      label: "Dashboard",        Icon: LayoutDashboard, group: "practice" },
-  { to: "/agenda",         label: "Agenda",           Icon: Calendar,        group: "practice" },
-  { to: "/patients",       label: "Pacientes",        Icon: Users,           group: "practice" },
-  { to: "/sessions",       label: "Sesiones activas", Icon: Activity,        group: "practice", live: true },
+  { to: "/dashboard",           label: "Dashboard",          Icon: LayoutDashboard, group: "practice" },
+  { to: "/agenda",              label: "Agenda",             Icon: Calendar,        group: "practice" },
+  { to: "/patients",            label: "Pacientes",          Icon: Users,           group: "practice" },
+  { to: "/sessions",            label: "Sesiones",           Icon: Activity,        group: "practice", live: true },
   { to: "/patient-registrations", label: "Registros pacientes", Icon: ClipboardList, group: "practice" },
-  { to: "/triage",              label: "Triage",               Icon: MessageSquare,  group: "practice" },
-  { to: "/rips",           label: "RIPS",             Icon: FileText,        group: "admin" },
-  { to: "/invoices",       label: "Facturas",         Icon: CreditCard,      group: "admin" },
-  { to: "/invoices/bulk",  label: "Facturación masa", Icon: CreditCard,      group: "admin", indent: true },
-  { to: "/cartera",        label: "Cartera",          Icon: FileText,        group: "admin" },
-  { to: "/caja",           label: "Caja",             Icon: CreditCard,      group: "admin" },
-  { to: "/reports",        label: "Reportes",         Icon: BarChart3,       group: "admin" },
-  { to: "/settings",       label: "Configuración",    Icon: Settings,        group: "admin" },
+  { to: "/triage",              label: "Triage",             Icon: MessageSquare,   group: "practice" },
+  { to: "/rips",                label: "RIPS",               Icon: FileText,        group: "admin" },
+  { to: "/invoices",            label: "Facturas",           Icon: CreditCard,      group: "admin" },
+  { to: "/invoices/bulk",       label: "Facturación masa",   Icon: CreditCard,      group: "admin", indent: true },
+  { to: "/cartera",             label: "Cartera",            Icon: Wallet,          group: "admin" },
+  { to: "/caja",                label: "Caja",               Icon: DollarSign,      group: "admin" },
+  { to: "/reports",             label: "Reportes",           Icon: BarChart3,       group: "admin" },
+  { to: "/settings",            label: "Configuración",      Icon: Settings,        group: "admin" },
 ];
 
 interface SidebarProps { 
@@ -39,6 +42,19 @@ interface SidebarProps {
 
 export function Sidebar({ onSearchClick, isOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: draftData } = useSessions({ status: "draft" });
+  const draftCount = draftData?.items?.length ?? 0;
+
+  const displayName =
+    user?.user_metadata?.full_name ??
+    user?.email?.split("@")[0] ??
+    "Psicólogo";
+  const initials = displayName
+    .split(" ")
+    .map((w: string) => w[0]?.toUpperCase() ?? "")
+    .slice(0, 2)
+    .join("") || "PS";
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -119,7 +135,13 @@ export function Sidebar({ onSearchClick, isOpen = false, onClose }: SidebarProps
 
       <NavGroup label="Práctica">
         {practiceItems.map((it) => (
-          <NavItemLink key={it.to} item={it} linkClass={linkClass} onNavigate={onClose} />
+          <NavItemLink
+            key={it.to}
+            item={it}
+            linkClass={linkClass}
+            onNavigate={onClose}
+            draftCount={it.live ? draftCount : 0}
+          />
         ))}
       </NavGroup>
 
@@ -133,15 +155,13 @@ export function Sidebar({ onSearchClick, isOpen = false, onClose }: SidebarProps
         <div className="flex items-center gap-2.5 p-2">
           <div
             className="w-[30px] h-[30px] rounded-full grid place-items-center text-[12px] font-semibold shrink-0"
-            style={{
-              background: "var(--psy-sage-bg)",
-              color: "var(--psy-primary)",
-              border: "1px solid var(--psy-sage-soft)",
-            }}
-          >PS</div>
+            style={{ background: "var(--psy-sage-bg)", color: "var(--psy-primary)", border: "1px solid var(--psy-sage-soft)" }}
+          >
+            {initials}
+          </div>
           <div className="overflow-hidden">
             <div className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--psy-ink-1)" }}>
-              Psicólogo
+              {displayName}
             </div>
             <div className="psy-mono text-[10px]" style={{ color: "var(--psy-ink-3)" }}>PSI · Colombia</div>
           </div>
@@ -182,16 +202,14 @@ function NavGroup({ label, children }: { label: string; children: React.ReactNod
 }
 
 function NavItemLink({
-  item, linkClass, onNavigate,
+  item, linkClass, onNavigate, draftCount = 0,
 }: {
   item: NavItem;
   linkClass: (s: { isActive: boolean }, indent?: boolean) => string;
   onNavigate?: () => void;
+  draftCount?: number;
 }) {
   const Icon = item.Icon;
-  const handleClick = () => {
-    if (onNavigate) onNavigate();
-  };
   return (
     <NavLink
       to={item.to}
@@ -201,7 +219,7 @@ function NavItemLink({
         background: isActive ? "var(--psy-sage-bg)" : "transparent",
         color: isActive ? "var(--psy-primary)" : "var(--psy-ink-2)",
       })}
-      onClick={handleClick}
+      onClick={onNavigate}
     >
       {({ isActive }) => (
         <>
@@ -213,7 +231,15 @@ function NavItemLink({
           )}
           <Icon size={16} className="opacity-85 shrink-0" />
           <span>{item.label}</span>
-          {item.live && <span className="psy-live-dot ml-auto" />}
+          {item.live && draftCount > 0 && (
+            <span
+              className="ml-auto psy-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+              style={{ background: "var(--psy-warn)", color: "#fff", minWidth: 18, textAlign: "center" as const }}
+            >
+              {draftCount}
+            </span>
+          )}
+          {item.live && draftCount === 0 && <span className="psy-live-dot ml-auto" />}
         </>
       )}
     </NavLink>
