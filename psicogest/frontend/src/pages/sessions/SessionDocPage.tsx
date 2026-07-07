@@ -167,6 +167,11 @@ export function SessionDocPage() {
   const [cie10Query, setCie10Query] = useState("");
   const [cie10Results, setCie10Results] = useState<Cie10Entry[]>([]);
 
+  // ── Word count for clinical textareas ────────────────────────────────────
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const wordCount = (text: string) =>
+    text.trim() ? text.trim().split(/\s+/).length : 0;
+
   // ── Section collapse state ─────────────────────────────────────────────────
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -591,15 +596,57 @@ export function SessionDocPage() {
               <div className="space-y-4 pt-1">
                 <div>
                   <label className={labelClass} style={labelStyle}>Motivo de consulta</label>
-                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={3} value={form.consultation_reason} onChange={(e) => set("consultation_reason", e.target.value)} disabled={readOnly} />
+                  <textarea
+                    className={inputClass}
+                    style={inputStyle(readOnly)}
+                    rows={3}
+                    value={form.consultation_reason}
+                    onChange={(e) => set("consultation_reason", e.target.value)}
+                    onFocus={() => setFocusedField("consultation_reason")}
+                    onBlur={() => setFocusedField(null)}
+                    disabled={readOnly}
+                  />
+                  {focusedField === "consultation_reason" && (
+                    <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
+                      {wordCount(form.consultation_reason)} palabras
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass} style={labelStyle}>Intervención realizada</label>
-                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={4} value={form.intervention} onChange={(e) => set("intervention", e.target.value)} disabled={readOnly} />
+                  <textarea
+                    className={inputClass}
+                    style={inputStyle(readOnly)}
+                    rows={4}
+                    value={form.intervention}
+                    onChange={(e) => set("intervention", e.target.value)}
+                    onFocus={() => setFocusedField("intervention")}
+                    onBlur={() => setFocusedField(null)}
+                    disabled={readOnly}
+                  />
+                  {focusedField === "intervention" && (
+                    <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
+                      {wordCount(form.intervention)} palabras
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass} style={labelStyle}>Evolución</label>
-                  <textarea className={inputClass} style={inputStyle(readOnly)} rows={3} value={form.evolution} onChange={(e) => set("evolution", e.target.value)} disabled={readOnly} />
+                  <textarea
+                    className={inputClass}
+                    style={inputStyle(readOnly)}
+                    rows={3}
+                    value={form.evolution}
+                    onChange={(e) => set("evolution", e.target.value)}
+                    onFocus={() => setFocusedField("evolution")}
+                    onBlur={() => setFocusedField(null)}
+                    disabled={readOnly}
+                  />
+                  {focusedField === "evolution" && (
+                    <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
+                      {wordCount(form.evolution)} palabras
+                    </div>
+                  )}
                 </div>
                 <div style={readOnly ? { pointerEvents: "none", opacity: 0.7 } : undefined}>
                   <MentalExamDropdowns value={mentalExam} onChange={setMentalExam} />
