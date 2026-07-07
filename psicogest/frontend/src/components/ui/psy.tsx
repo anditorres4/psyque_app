@@ -144,10 +144,10 @@ export function PageHeader({
 /* ─────────── PsyButton ─────────── */
 type BtnVariant = "primary" | "ghost" | "sage";
 export function PsyButton({
-  variant = "ghost", icon, children, onClick, type = "button", className,
+  variant = "ghost", icon, children, onClick, type = "button", className, disabled,
 }: {
   variant?: BtnVariant; icon?: ReactNode; children?: ReactNode;
-  onClick?: () => void; type?: "button" | "submit"; className?: string;
+  onClick?: () => void; type?: "button" | "submit"; className?: string; disabled?: boolean;
 }) {
   const styles: Record<BtnVariant, React.CSSProperties> = {
     primary: { background: "var(--psy-primary)", color: "#fff", borderColor: "var(--psy-primary)" },
@@ -158,8 +158,10 @@ export function PsyButton({
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-[13px] font-medium leading-none transition-colors border",
+        disabled && "opacity-50 cursor-not-allowed",
         className,
       )}
       style={styles[variant]}

@@ -4,6 +4,7 @@ import { usePatients, useCreatePatient } from "@/hooks/usePatients";
 import { PatientCard } from "@/components/patients/PatientCard";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { Button } from "@/components/ui/button";
+import { PsyButton } from "@/components/ui/psy";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -75,12 +76,12 @@ export function PatientsPage() {
             </p>
           )}
         </div>
-        <Button
-          className="bg-[var(--psy-primary)] hover:bg-[var(--psy-primary-soft)]"
+        <PsyButton
+          variant="primary"
           onClick={() => { setShowForm(true); setFormError(null); }}
         >
           + Nuevo paciente
-        </Button>
+        </PsyButton>
       </div>
 
       {/* New patient form (inline modal) */}

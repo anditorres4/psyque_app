@@ -256,28 +256,28 @@ export function PatientDetailPage() {
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
           {patient.email && (
-            <Button
-              variant="outline"
+            <PsyButton
+              variant="ghost"
               onClick={handleInviteToPortal}
               disabled={isInviting || inviteSent}
             >
               {inviteSent ? "Invitación enviada" : isInviting ? "Enviando..." : "Invitar al portal"}
-            </Button>
+            </PsyButton>
           )}
           {inviteError && (
             <span className="psy-mono text-[11px] self-center" style={{ color: "var(--psy-danger)" }}>
               {inviteError}
             </span>
           )}
-          <Button
-            variant="outline"
+          <PsyButton
+            variant="ghost"
             onClick={() => setIsEditing(!isEditing)}
           >
             {isEditing ? "Cancelar edición" : "Editar"}
-          </Button>
+          </PsyButton>
           <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">Exportar HC</Button>
+              <PsyButton variant="ghost">Exportar HC</PsyButton>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>
