@@ -730,67 +730,25 @@ function PatientSessionsTab({
 }
 
 function RipsTab() {
-  const { data: exports, isLoading, isError } = useQuery({
-    queryKey: ["rips"],
-    queryFn: () => api.rips.list(),
-  });
-
-  const MONTH_NAMES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-  ];
-
-  if (isLoading) return <Skeleton className="h-24 max-w-xl" />;
-  if (isError) return <ErrorState message="Error al cargar RIPS." />;
-
-  if (!exports || exports.length === 0) {
-    return (
-      <div className="max-w-xl">
-        <EmptyState
-          title="Sin RIPS generados"
-          description="Genera RIPS desde la página de RIPS después de firmar sesiones."
-          icon="📦"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-xl space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Exportaciones RIPS del consultorio. Incluyen todas las sesiones firmadas del período.
+    <div
+      className="max-w-xl rounded-[var(--radius)] p-6 flex flex-col gap-4"
+      style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}
+    >
+      <div className="psy-mono text-[10.5px] uppercase tracking-wider" style={{ color: "var(--psy-ink-3)" }}>
+        RIPS · Resolución 0948/2026
+      </div>
+      <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--psy-ink-2)" }}>
+        Los reportes RIPS se generan por período (mes/año) e incluyen todas las sesiones
+        firmadas del consultorio. Para generar o descargar un RIPS, usa la sección global.
       </p>
-      {exports.map((exp) => (
-        <div key={exp.id} className="border rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[#1E3A5F]">
-              {MONTH_NAMES[(exp.period_month ?? 1) - 1]} {exp.period_year}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {exp.sessions_count} sesión(es) · ${Number(exp.total_value_cop).toLocaleString("es-CO")} COP
-            </p>
-            {exp.generated_at && (
-              <p className="text-xs text-muted-foreground">
-                Generado: {new Date(exp.generated_at).toLocaleDateString("es-CO")}
-              </p>
-            )}
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => api.rips.download(exp.id).then(({ blob, filename }) => {
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = filename;
-              a.click();
-              URL.revokeObjectURL(url);
-            })}
-          >
-            Descargar
-          </Button>
-        </div>
-      ))}
+      <a
+        href="/rips"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium"
+        style={{ color: "var(--psy-primary)" }}
+      >
+        Ir a RIPS →
+      </a>
     </div>
   );
 }
