@@ -164,6 +164,21 @@ class RipsService:
                     "value": sess.cups_code,
                     "message": "Código CUPS no puede estar vacío",
                 })
+            elif len(sess.cups_code.strip()) != 6:
+                errors.append({
+                    "session_id": str(sess.id),
+                    "field": "session.cups_code",
+                    "value": sess.cups_code,
+                    "message": f"Código CUPS debe tener exactamente 6 caracteres (actual: '{sess.cups_code}', {len(sess.cups_code)} chars)",
+                })
+
+            if patient.biological_sex not in ("M", "F", "I"):
+                errors.append({
+                    "session_id": str(sess.id),
+                    "field": "patient.biological_sex",
+                    "value": patient.biological_sex,
+                    "message": f"Sexo biológico inválido: '{patient.biological_sex}'. Valores válidos: M, F, I",
+                })
 
         return {
             "valid": len(errors) == 0,
@@ -263,7 +278,10 @@ class RipsService:
                         if sess.diagnosis_cie11 and sess.diagnosis_cie11[0].isalpha()
                         else "F329"
                     ),
-                    "codDiagnosticoPrincipalCIE11": sess.diagnosis_cie11,
+                    # CIE-11 field: omit until a separate diagnosis_cie10 column exists.
+                    # Sending the stored code risks a NullRef if the API's lookup table
+                    # doesn't contain it.
+                    "codDiagnosticoPrincipalCIE11": None,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
@@ -291,12 +309,14 @@ class RipsService:
                 "codPaisOrigen": patient.cod_pais_origen or "170",
                 "servicios": {
                     "consultas": consultas,
-                    "procedimientos": [],
-                    "urgencias": [],
-                    "hospitalizacion": [],
-                    "recienNacidos": [],
-                    "medicamentos": [],
-                    "otrosServicios": [],
+                    # Nullable arrays — send null (not []) for unused service types.
+                    # Some .NET deserializers iterate null arrays and throw NullRef.
+                    "procedimientos": None,
+                    "urgencias": None,
+                    "hospitalizacion": None,
+                    "recienNacidos": None,
+                    "medicamentos": None,
+                    "otrosServicios": None,
                 },
             })
 
@@ -362,9 +382,6 @@ class RipsService:
         ).count()
         num_nota = f"RS{export.period_year:04d}{export.period_month:02d}{prior_count:03d}"
         rips_json = self._build_fev_rips_json(tenant, sessions, patients, num_factura, num_nota)
-
-        import logging as _log
-        _log.getLogger(__name__).warning("RIPS_DEBUG payload: %s", json.dumps(rips_json, ensure_ascii=False, default=str))
 
         client = FevRipsClient(
             base_url=base_url,
