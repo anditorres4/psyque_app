@@ -284,7 +284,7 @@ class RipsService:
         return {
             "numDocumentoIdObligado": tenant.nit or "",
             "numFactura": num_factura,
-            "tipoNota": None,
+            "tipoNota": "RS",
             "numNota": None,
             "usuarios": usuarios,
         }
@@ -352,12 +352,21 @@ class RipsService:
         except FevRipsError as exc:
             raise RipsGenerationError(f"Error en API MinSalud: {exc}") from exc
 
-        export.cuv = response.get("CodigoUnicoValidacion")
-        export.fecha_radicacion = response.get("FechaRadicacion")
-        export.num_factura = num_factura
+        result_ok = bool(response.get("ResultState"))
         export.fevrips_api_response = response
-        if response.get("ResultState"):
+        export.num_factura = num_factura
+        if result_ok:
+            export.cuv = response.get("CodigoUnicoValidacion")
+            export.fecha_radicacion = response.get("FechaRadicacion")
             export.status = "submitted"
+        else:
+            validation_msgs = [
+                r.get("Observaciones", r.get("Descripcion", ""))
+                for r in response.get("ResultadosValidacion", [])
+            ]
+            raise RipsGenerationError(
+                "MinSalud rechazó el RIPS: " + " | ".join(dict.fromkeys(validation_msgs))
+            )
         self.db.flush()
         self.db.refresh(export)
         return export

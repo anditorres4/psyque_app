@@ -34,7 +34,7 @@ class RipsExport(Base, UUIDPrimaryKey, TenantMixin, TimestampMixin):
     validation_errors: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
     snapshot: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
     # MinSalud FEV-RIPS API response fields (migration 0042)
-    cuv: Mapped[str | None] = mapped_column(sa.String(128), nullable=True)
+    cuv: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     fecha_radicacion: Mapped[datetime | None] = mapped_column(sa.TIMESTAMP(timezone=True), nullable=True)
     num_factura: Mapped[str | None] = mapped_column(sa.String(30), nullable=True)
     fevrips_api_response: Mapped[dict | None] = mapped_column(JSONB(), nullable=True)
