@@ -71,6 +71,7 @@ export function SessionsPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [nameSearch, setNameSearch] = useState<string>("");
 
   const { data, isLoading, isError } = useSessions({ status: statusFilter || undefined });
   const createMutation = useCreateSession();
@@ -130,7 +131,12 @@ export function SessionsPage() {
     );
   }
 
-  const items = data?.items ?? [];
+  const allItems = data?.items ?? [];
+  const items = nameSearch.trim().length >= 2
+    ? allItems.filter((s) =>
+        s.patient_name?.toLowerCase().includes(nameSearch.toLowerCase())
+      )
+    : allItems;
   const draftCount = items.filter((s) => s.status === "draft").length;
   const signedCount = items.filter((s) => s.status === "signed").length;
 
@@ -155,7 +161,21 @@ export function SessionsPage() {
       />
 
       {/* Filter strip */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <input
+          type="text"
+          placeholder="Buscar por paciente…"
+          value={nameSearch}
+          onChange={(e) => setNameSearch(e.target.value)}
+          className="h-8 rounded-md border px-3 psy-mono text-[12px]"
+          style={{
+            border: "1px solid var(--psy-line)",
+            background: "var(--psy-surface)",
+            color: "var(--psy-ink-1)",
+            width: 200,
+            outline: "none",
+          }}
+        />
         {(["", "draft", "signed"] as const).map((val) => (
           <button
             key={val}
