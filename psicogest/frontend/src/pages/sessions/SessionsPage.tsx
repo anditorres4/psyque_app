@@ -137,7 +137,7 @@ export function SessionsPage() {
         s.patient_name?.toLowerCase().includes(nameSearch.toLowerCase())
       )
     : allItems;
-  const draftCount = items.filter((s) => s.status === "draft").length;
+  const draftCount = allItems.filter((s) => s.status === "draft").length;
   const signedCount = items.filter((s) => s.status === "signed").length;
 
   return (

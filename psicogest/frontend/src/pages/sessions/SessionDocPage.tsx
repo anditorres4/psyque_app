@@ -199,6 +199,7 @@ export function SessionDocPage() {
   // ── Autosave state ─────────────────────────────────────────────────────────
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasEdited = useRef(false);
 
   // Sync state when session loads
   useEffect(() => {
@@ -257,8 +258,10 @@ export function SessionDocPage() {
     else setCie10Results([]);
   }, [cie10Query]);
 
-  const set = (field: string, value: string | boolean) =>
+  const set = (field: string, value: string | boolean) => {
+    hasEdited.current = true;
     setForm((f) => ({ ...f, [field]: value }));
+  };
 
   const handleCie11KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (cie11Results.length === 0) return;
@@ -317,7 +320,7 @@ export function SessionDocPage() {
 
   // ── Autosave debounce (30 s) ───────────────────────────────────────────────
   useEffect(() => {
-    if (readOnly || !sess) return;
+    if (readOnly || !sess || !hasEdited.current) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
       setAutoSaveStatus("saving");
@@ -649,7 +652,7 @@ export function SessionDocPage() {
                   )}
                 </div>
                 <div style={readOnly ? { pointerEvents: "none", opacity: 0.7 } : undefined}>
-                  <MentalExamDropdowns value={mentalExam} onChange={setMentalExam} />
+                  <MentalExamDropdowns value={mentalExam} onChange={(v) => { hasEdited.current = true; setMentalExam(v); }} />
                 </div>
               </div>
             )}
@@ -763,7 +766,7 @@ export function SessionDocPage() {
               style={inputStyle(readOnly || summaryAlreadySent)}
               rows={6}
               value={patientSummary}
-              onChange={(e) => setPatientSummary(e.target.value)}
+              onChange={(e) => { hasEdited.current = true; setPatientSummary(e.target.value); }}
               disabled={readOnly || summaryAlreadySent}
               placeholder="Escribe un resumen de la sesión para enviar al paciente antes de firmar…"
             />

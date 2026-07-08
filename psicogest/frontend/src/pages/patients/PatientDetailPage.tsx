@@ -3,7 +3,7 @@
  * 5 tabs: Información general, Historia clínica, Sesiones, Documentos, RIPS
  */
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { usePatient, useUpdatePatient } from "@/hooks/usePatients";
@@ -719,13 +719,13 @@ function RipsTab() {
         Los reportes RIPS se generan por período (mes/año) e incluyen todas las sesiones
         firmadas del consultorio. Para generar o descargar un RIPS, usa la sección global.
       </p>
-      <a
-        href="/rips"
+      <Link
+        to="/rips"
         className="inline-flex items-center gap-1.5 text-[13px] font-medium"
         style={{ color: "var(--psy-primary)" }}
       >
         Ir a RIPS →
-      </a>
+      </Link>
     </div>
   );
 }
