@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useDashboardStats, useTopDiagnoses } from "@/hooks/useDashboard";
 import { useSessions } from "@/hooks/useSessions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -144,7 +144,13 @@ export function DashboardPage() {
         title={`${greeting()}.`}
         subtitle={`${today.charAt(0).toUpperCase()}${today.slice(1)} · ${data.appointments_today} cita${data.appointments_today !== 1 ? "s" : ""} hoy${draftSessions.length > 0 ? ` · ${draftSessions.length} sesión activa en curso` : ""}`}
         actions={
-          <PsyButton variant="ghost" icon={<Download size={14} />}>Exportar día</PsyButton>
+          <PsyButton
+            variant="primary"
+            icon={<span className="text-[16px] leading-none">+</span>}
+            onClick={() => navigate("/agenda")}
+          >
+            Nueva cita
+          </PsyButton>
         }
       />
 
