@@ -171,6 +171,8 @@ export function SessionDocPage() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const wordCount = (text: string) =>
     text.trim() ? text.trim().split(/\s+/).length : 0;
+  const showWordCount = (field: string, text: string) =>
+    focusedField === field && wordCount(text) > 0;
 
   // ── Section collapse state ─────────────────────────────────────────────────
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
@@ -199,7 +201,12 @@ export function SessionDocPage() {
   // ── Autosave state ─────────────────────────────────────────────────────────
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasEdited = useRef(false);
+
+  useEffect(() => () => {
+    if (savedFeedbackTimer.current) clearTimeout(savedFeedbackTimer.current);
+  }, []);
 
   // Sync state when session loads
   useEffect(() => {
@@ -347,7 +354,8 @@ export function SessionDocPage() {
       qc.invalidateQueries({ queryKey: ["sessions"] });
       setSaveError(null);
       setSavedFeedback(true);
-      setTimeout(() => setSavedFeedback(false), 2000);
+      if (savedFeedbackTimer.current) clearTimeout(savedFeedbackTimer.current);
+      savedFeedbackTimer.current = setTimeout(() => setSavedFeedback(false), 2000);
       // no navigate — psychologist stays on page after saving draft
     },
     onError: (err) => setSaveError(err instanceof ApiError ? err.message : "Error al guardar."),
@@ -531,11 +539,13 @@ export function SessionDocPage() {
                     role="combobox"
                     aria-autocomplete="list"
                     aria-expanded={cie11Results.length > 0}
+                    aria-activedescendant={cie11FocusedIdx >= 0 ? `cie11-option-${cie11FocusedIdx}` : undefined}
                   />
                   {!readOnly && cie11Results.length > 0 && (
                     <ul className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden" style={{ background: "var(--psy-surface)", border: "1px solid var(--psy-line)" }}>
                       {cie11Results.map((entry, idx) => (
                         <li
+                          id={`cie11-option-${idx}`}
                           key={entry.code}
                           className="px-3 py-2 text-[12px] cursor-pointer"
                           style={{
@@ -609,7 +619,7 @@ export function SessionDocPage() {
                     onBlur={() => setFocusedField(null)}
                     disabled={readOnly}
                   />
-                  {focusedField === "consultation_reason" && (
+                  {showWordCount("consultation_reason", form.consultation_reason) && (
                     <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
                       {wordCount(form.consultation_reason)} palabras
                     </div>
@@ -627,7 +637,7 @@ export function SessionDocPage() {
                     onBlur={() => setFocusedField(null)}
                     disabled={readOnly}
                   />
-                  {focusedField === "intervention" && (
+                  {showWordCount("intervention", form.intervention) && (
                     <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
                       {wordCount(form.intervention)} palabras
                     </div>
@@ -645,7 +655,7 @@ export function SessionDocPage() {
                     onBlur={() => setFocusedField(null)}
                     disabled={readOnly}
                   />
-                  {focusedField === "evolution" && (
+                  {showWordCount("evolution", form.evolution) && (
                     <div className="text-right psy-mono text-[10px] mt-0.5" style={{ color: "var(--psy-ink-4)" }}>
                       {wordCount(form.evolution)} palabras
                     </div>
