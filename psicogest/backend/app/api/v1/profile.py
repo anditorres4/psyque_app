@@ -74,3 +74,5 @@ def test_sispro_connection(
         return SisproTestResult(ok=True, message="Conexión exitosa — SISPRO respondió correctamente.")
     except FevRipsError as exc:
         return SisproTestResult(ok=False, message=str(exc))
+    except Exception as exc:
+        return SisproTestResult(ok=False, message=f"No se pudo conectar al servidor FEV-RIPS: {exc}")
