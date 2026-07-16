@@ -290,8 +290,9 @@ class RipsService:
                             else "F329"
                         )
                     ),
-                    # CIE-11 field: send actual code (v5.4.10+ supports it; v5.4.9 had NullRef bug)
-                    "codDiagnosticoPrincipalCIE11": sess.diagnosis_cie11 or None,
+                    # CIE-11 field: must be null — FEV-RIPS API (≤5.4.10) throws NullRef
+                    # when the code is not in its internal lookup table.
+                    "codDiagnosticoPrincipalCIE11": None,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
