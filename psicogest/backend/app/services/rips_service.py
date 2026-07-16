@@ -1,4 +1,6 @@
 """RIPS generation service (Res. 0948/2026).
+import logging as _logging
+_log = _logging.getLogger(__name__)
 
 Aggregates signed sessions for a given month/year and generates the RIPS
 JSON structure (v4.3 nested format) required by Res. 0948/2026
@@ -403,6 +405,11 @@ class RipsService:
             doc_number=tenant.fevrips_doc_number,
         )
 
+        _log.info(
+            "RIPS submit attempt | export=%s num_nota=%s num_usuarios=%d",
+            export_id, num_nota, len(rips_json.get("usuarios", [])),
+        )
+
         try:
             token = client.login()
             if xml_fev_b64:
@@ -410,24 +417,50 @@ class RipsService:
             else:
                 response = client.cargar_rips_sin_factura(rips_json, token)
         except FevRipsError as exc:
+            audit: dict = {
+                "attempt_at": datetime.now(tz=timezone.utc).isoformat(),
+                "num_nota": num_nota,
+                "sent_usuarios": len(rips_json.get("usuarios", [])),
+                "error": str(exc),
+            }
+            export.fevrips_api_response = audit
+            export.num_factura = num_factura
+            self.db.flush()
+            _log.error("RIPS submit network error | %s", audit)
             raise RipsGenerationError(f"Error en API MinSalud: {exc}") from exc
 
         result_ok = bool(response.get("ResultState"))
-        export.fevrips_api_response = response
+
+        # Always persist full audit record — includes sent payload summary + raw response.
+        audit = {
+            "attempt_at": datetime.now(tz=timezone.utc).isoformat(),
+            "num_nota": num_nota,
+            "result_state": result_ok,
+            "sent_num_usuarios": len(rips_json.get("usuarios", [])),
+            "raw_response": response,
+        }
+        export.fevrips_api_response = audit
         export.num_factura = num_factura
+        self.db.flush()  # persist before any raise
+
         if result_ok:
             export.cuv = response.get("CodigoUnicoValidacion")
             export.fecha_radicacion = response.get("FechaRadicacion")
             export.status = "submitted"
+            _log.info("RIPS accepted | CUV=%s", export.cuv)
+            self.db.flush()
         else:
             validation_msgs = [
                 f"[{r.get('PathFuente', '')}] {r.get('Observaciones', r.get('Descripcion', ''))}"
                 for r in response.get("ResultadosValidacion", [])
             ]
-            raise RipsGenerationError(
-                "MinSalud rechazó el RIPS: " + " | ".join(dict.fromkeys(validation_msgs))
+            error_str = " | ".join(dict.fromkeys(validation_msgs))
+            _log.error(
+                "RIPS rejected | num_nota=%s | validacion=%s | full_response=%s",
+                num_nota, error_str, response,
             )
-        self.db.flush()
+            raise RipsGenerationError("MinSalud rechazó el RIPS: " + error_str)
+
         self.db.refresh(export)
         return export
 
