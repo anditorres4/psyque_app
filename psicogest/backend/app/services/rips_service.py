@@ -290,8 +290,8 @@ class RipsService:
                             else "F329"
                         )
                     ),
-                    # CIE-11 field: send null (prevents NullRef in API's internal lookup table)
-                    "codDiagnosticoPrincipalCIE11": None,
+                    # CIE-11 field: send actual code (v5.4.10+ supports it; v5.4.9 had NullRef bug)
+                    "codDiagnosticoPrincipalCIE11": sess.diagnosis_cie11 or None,
                     "tipoDiagnosticoPrincipal": sess.tipo_dx_principal or "01",
                     "tipoDocumentoIdentificacion": patient.doc_type,
                     "numDocumentoIdentificacion": patient.doc_number,
