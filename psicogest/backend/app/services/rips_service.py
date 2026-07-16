@@ -274,9 +274,9 @@ class RipsService:
                     "fechaInicioAtencion": sess.actual_start.strftime("%Y-%m-%d %H:%M"),
                     "codConsulta": sess.cups_code,
                     "modalidadGrupoServicioTecSal": sess.modalidad_grupo_servicio or "01",
-                    "grupoServicios": sess.grupo_servicios or "02",
-                    "codServicio": sess.cod_servicio or 706,
-                    "finalidadTecnologiaSalud": sess.finalidad_tecnologia_salud or "44",
+                    "grupoServicios": sess.grupo_servicios or "01",
+                    "codServicio": sess.cod_servicio or 344,
+                    "finalidadTecnologiaSalud": sess.finalidad_tecnologia_salud or "27",
                     "causaMotivoAtencion": sess.causa_motivo_atencion or "27",
                     # codDiagnosticoPrincipal = CIE-10 (4 chars, required by API).
                     # Use dedicated field if available; fall back to extracting from
@@ -384,9 +384,9 @@ class RipsService:
                 "Contacte a soporte para configurar la integración."
             )
 
-        sessions, patients = self._fetch_sessions_and_patients(
-            export.period_year, export.period_month
-        )
+        if not export.snapshot:
+            raise RipsGenerationError("Exportación sin snapshot. Regenere el RIPS antes de enviar.")
+
         # numNota: sequential document ref for CargarRipsSinFactura (tipoNota=RS).
         # Format: RS + YYYYMM + 3-digit count of prior exports for this period.
         prior_count = self.db.query(RipsExport).filter(
@@ -395,7 +395,15 @@ class RipsService:
             RipsExport.period_month == export.period_month,
         ).count()
         num_nota = f"RS{export.period_year:04d}{export.period_month:02d}{prior_count:03d}"
-        rips_json = self._build_fev_rips_json(tenant, sessions, patients, num_factura, num_nota)
+
+        # Use the stored snapshot (what was validated at generation time) rather than
+        # rebuilding from sessions, which could produce different data if session
+        # fields changed between generate and submit.
+        import copy
+        rips_json = copy.deepcopy(export.snapshot)
+        rips_json["numNota"] = num_nota
+        if num_factura:
+            rips_json["numFactura"] = num_factura
 
         client = FevRipsClient(
             base_url=base_url,
@@ -407,7 +415,7 @@ class RipsService:
         )
 
         _log.info(
-            "RIPS submit attempt | export=%s num_nota=%s num_usuarios=%d",
+            "RIPS submit attempt | export=%s num_nota=%s num_usuarios=%d (from snapshot)",
             export_id, num_nota, len(rips_json.get("usuarios", [])),
         )
 
