@@ -1,6 +1,4 @@
 """RIPS generation service (Res. 0948/2026).
-import logging as _logging
-_log = _logging.getLogger(__name__)
 
 Aggregates signed sessions for a given month/year and generates the RIPS
 JSON structure (v4.3 nested format) required by Res. 0948/2026
@@ -9,7 +7,10 @@ JSON structure (v4.3 nested format) required by Res. 0948/2026
 from __future__ import annotations
 
 import hashlib
+import logging as _logging
 import json
+
+_log = _logging.getLogger(__name__)
 import uuid
 from datetime import datetime, timezone
 from io import BytesIO
