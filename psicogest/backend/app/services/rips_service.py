@@ -320,14 +320,14 @@ class RipsService:
                 "codPaisOrigen": patient.cod_pais_origen or "170",
                 "servicios": {
                     "consultas": consultas,
-                    # Nullable arrays — send null (not []) for unused service types.
-                    # Some .NET deserializers iterate null arrays and throw NullRef.
-                    "procedimientos": None,
-                    "urgencias": None,
-                    "hospitalizacion": None,
-                    "recienNacidos": None,
-                    "medicamentos": None,
-                    "otrosServicios": None,
+                    # Empty arrays (not null) — the FEV-RIPS .NET API iterates these
+                    # without null-checking; null causes NullReferenceException.
+                    "procedimientos": [],
+                    "urgencias": [],
+                    "hospitalizacion": [],
+                    "recienNacidos": [],
+                    "medicamentos": [],
+                    "otrosServicios": [],
                 },
             })
 
