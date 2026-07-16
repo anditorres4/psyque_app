@@ -41,14 +41,16 @@ _PAYER_TIPO: dict[str, str] = {
 }
 
 # Maps patient payer_type to coberturaPlanBeneficios (ConsultaDTO required field).
-# Values from Rips.REFs_ModalidadPago in FEV-RIPS; standard RIPS v4.3 codes.
+# Validated against Rips.REFs_ModalidadPago in FEV-RIPS (5 rows: "01"–"04", "05"=disabled).
+# "01" = Pago individual por caso / Conjunto integral → valid for all payer types.
+# Adjust per-payer once correct mapping is confirmed with MinSalud.
 _PAYER_COBERTURA: dict[str, str] = {
-    "SS": "01",  # EPS contributivo → PBS con UPC
-    "SC": "02",  # EPS subsidiado → PBS sin UPC
-    "CC": "03",  # Compañía de seguros → planes complementarios
-    "PA": "12",  # Particular / pago directo
-    "PE": "12",
-    "SE": "12",
+    "SS": "01",
+    "SC": "01",
+    "CC": "01",
+    "PA": "01",
+    "PE": "01",
+    "SE": "01",
 }
 
 
