@@ -40,6 +40,17 @@ _PAYER_TIPO: dict[str, str] = {
     "SE": "12",
 }
 
+# Maps patient payer_type to coberturaPlanBeneficios (ConsultaDTO required field).
+# Values from Rips.REFs_ModalidadPago in FEV-RIPS; standard RIPS v4.3 codes.
+_PAYER_COBERTURA: dict[str, str] = {
+    "SS": "01",  # EPS contributivo → PBS con UPC
+    "SC": "02",  # EPS subsidiado → PBS sin UPC
+    "CC": "03",  # Compañía de seguros → planes complementarios
+    "PA": "12",  # Particular / pago directo
+    "PE": "12",
+    "SE": "12",
+}
+
 
 class RipsService:
     """Generate RIPS JSON exports for EPS/aseguradoras."""
@@ -302,6 +313,9 @@ class RipsService:
                     "vrServicio": sess.session_fee,
                     "conceptoRecaudo": sess.concepto_recaudo or "05",
                     "valorPagoModerador": sess.valor_pago_moderador or 0,
+                    # coberturaPlanBeneficios is required by FEV-RIPS (validated against
+                    # Rips.REFs_ModalidadPago in-memory cache); omitting it → NullRef.
+                    "coberturaPlanBeneficios": _PAYER_COBERTURA.get(patient.payer_type, "12"),
                     "consecutivo": svc_idx + 1,
                 }
                 # Only include optional string fields when they have a value —
