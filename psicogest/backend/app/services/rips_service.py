@@ -332,9 +332,6 @@ class RipsService:
                 "codZonaTerritorialResidencia": "01" if patient.zone == "U" else "02",
                 "incapacidad": patient.incapacidad or "NO",
                 "codPaisOrigen": patient.cod_pais_origen or "170",
-                # coberturaPlanBeneficios belongs in UsuarioDTO (not ConsultaDTO).
-                # Validated against Rips.REFs_CoberturaPlan (17 codes).
-                "coberturaPlanBeneficios": _PAYER_COBERTURA.get(patient.payer_type, "15"),
                 "servicios": {
                     "consultas": consultas,
                     # Empty arrays (not null) — the FEV-RIPS .NET API iterates these
