@@ -313,9 +313,6 @@ class RipsService:
                     "vrServicio": sess.session_fee,
                     "conceptoRecaudo": sess.concepto_recaudo or "05",
                     "valorPagoModerador": sess.valor_pago_moderador or 0,
-                    # coberturaPlanBeneficios is required by FEV-RIPS (validated against
-                    # Rips.REFs_ModalidadPago in-memory cache); omitting it → NullRef.
-                    "coberturaPlanBeneficios": _PAYER_COBERTURA.get(patient.payer_type, "12"),
                     "consecutivo": svc_idx + 1,
                 }
                 # Only include optional string fields when they have a value —
@@ -335,6 +332,9 @@ class RipsService:
                 "codZonaTerritorialResidencia": "01" if patient.zone == "U" else "02",
                 "incapacidad": patient.incapacidad or "NO",
                 "codPaisOrigen": patient.cod_pais_origen or "170",
+                # coberturaPlanBeneficios belongs in UsuarioDTO (not ConsultaDTO).
+                # Validated against Rips.REFs_CoberturaPlan (17 codes).
+                "coberturaPlanBeneficios": _PAYER_COBERTURA.get(patient.payer_type, "15"),
                 "servicios": {
                     "consultas": consultas,
                     # Empty arrays (not null) — the FEV-RIPS .NET API iterates these
